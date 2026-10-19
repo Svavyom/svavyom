@@ -6,6 +6,10 @@
 * **Free to use on as many servers as you like.** No limit, licence key, trial or call home (`LICENSING.md`).
 * **Tested on:** Ubuntu 24.04 LTS, x86_64, KVM, libvirt `qemu:///system`. One host per installation.
 * **Not supported in the current release:** high availability, multi-host management, stability guarantees, or suitability for production workloads. Release artifacts are **not signed** yet.
+## Tour
+[svavyom-tour.webm](https://github.com/user-attachments/assets/8293edf6-4208-4dbe-873a-39e9535e2304)
+
+
 
 ## What you get
 VM lifecycle (create from a qualified cloud image with an SSH key, start, stop, reboot, force off, delete), serial and graphical (VNC) consoles in the browser, installation media and rescue mode, snapshots, backups and restore (local and to a directory or SSH target), scheduled backups, managed NAT networks and an optional host bridge, alerts with a webhook, a nightly guest boot check, usage graphs, three roles (admin, operator, viewer), and an installer, upgrader and support-bundle tool (`svavyom-ctl`).
