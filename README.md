@@ -34,4 +34,4 @@ VM lifecycle (create from a qualified cloud image with an SSH key, start, stop, 
 Local-admin authentication with server-side sessions and derived CSRF; a non-root API; a separate read-only libvirt agent, a separate mutation supervisor and a separate console broker; a closed mutation protocol that carries names, never paths or XML; root-owned trust anchors that no runtime identity can write; AppArmor required; ownership proven before anything destructive. No arbitrary shell or libvirt call is reachable from the browser ).
 
 ## Licence
-Copyright 2026 Dhanraj Sheth. The server product is **AGPL-3.0-or-later**; contracts, tools and documentation are **Apache-2.0** (`LICENSING.md`). "Svavyom" is not a registered trademark.
+Copyright 2026 Dhanraj Sheth. The server product is **AGPL-3.0-or-later**; contracts, tools and documentation are **Apache-2.0** (`LICENSING.md`). 
