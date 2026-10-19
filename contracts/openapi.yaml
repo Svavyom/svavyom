@@ -1,0 +1,2370 @@
+openapi: 3.1.0
+info:
+  title: Svavyom Dedicated Cloud API (development)
+  version: 0.1.0-dev
+  description: >-
+    Schema-first definition of the browser-api shapes (M0-E01-S04, DR-012). Implemented: GET /healthz, the
+    authentication session (status, sign-in, sign-out), the read-only host summary (DR-015) and the read-only VM inventory. Every other path is
+    declared and rejected with a typed Error. Shapes are checked by tools/check_openapi.py; this file is the single source for them.
+x-versioning: >-
+  The major version is in the path (/api/v1). A new major version needs an approved decision record (DR-012 D6).
+paths:
+  /healthz:
+    get:
+      operationId: health
+      x-request-category: health
+      x-implementation-status: implemented
+      security: []
+      responses:
+        '200':
+          description: Development scaffold health
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Health'}
+  /api/v1/auth/session:
+    get:
+      operationId: authStatus
+      x-request-category: auth_status
+      x-implementation-status: implemented
+      security: []
+      responses:
+        '200':
+          description: Whether the caller has a valid session. Never fails for lack of a session.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/AuthSession'}
+        '500': {$ref: '#/components/responses/InternalError'}
+        '503': {$ref: '#/components/responses/Unavailable'}
+    post:
+      operationId: signIn
+      x-request-category: sign_in
+      x-implementation-status: implemented
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/SignInRequest'}
+      responses:
+        '200':
+          description: Signed in. The session cookie is set; the CSRF token is in the X-CSRF-Token response header.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/AuthSession'}
+        '400': {$ref: '#/components/responses/ValidationError'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '429': {$ref: '#/components/responses/RateLimited'}
+        '500': {$ref: '#/components/responses/InternalError'}
+        '503': {$ref: '#/components/responses/Unavailable'}
+    delete:
+      operationId: signOut
+      x-request-category: sign_out
+      x-implementation-status: implemented
+      security: []
+      responses:
+        '200':
+          description: The session is revoked (idempotent). The caller is anonymous afterwards.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/AuthSession'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '500': {$ref: '#/components/responses/InternalError'}
+        '503': {$ref: '#/components/responses/Unavailable'}
+  /api/v1/hosts:
+    get:
+      operationId: listHost
+      x-request-category: list_resources
+      x-implementation-status: implemented
+      security: [{ownerSession: []}]
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+      responses:
+        '200':
+          description: A page of Host resources
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/HostList'}
+        '400': {$ref: '#/components/responses/ValidationError'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '429': {$ref: '#/components/responses/RateLimited'}
+        '500': {$ref: '#/components/responses/InternalError'}
+        '503': {$ref: '#/components/responses/Unavailable'}
+  /api/v1/hosts/{id}:
+    get:
+      operationId: readHost
+      x-request-category: read_resource
+      x-implementation-status: implemented
+      security: [{ownerSession: []}]
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          description: The Host resource
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Host'}
+        '400': {$ref: '#/components/responses/ValidationError'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '429': {$ref: '#/components/responses/RateLimited'}
+        '500': {$ref: '#/components/responses/InternalError'}
+        '503': {$ref: '#/components/responses/Unavailable'}
+  /api/v1/projects:
+    get:
+      operationId: listProject
+      x-request-category: list_resources
+      x-implementation-status: not_implemented
+      security: [{ownerSession: []}]
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+      responses:
+        '200':
+          description: A page of Project resources
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ProjectList'}
+        '400': {$ref: '#/components/responses/ValidationError'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '429': {$ref: '#/components/responses/RateLimited'}
+        '500': {$ref: '#/components/responses/InternalError'}
+        '503': {$ref: '#/components/responses/Unavailable'}
+  /api/v1/projects/{id}:
+    get:
+      operationId: readProject
+      x-request-category: read_resource
+      x-implementation-status: not_implemented
+      security: [{ownerSession: []}]
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          description: The Project resource
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Project'}
+        '400': {$ref: '#/components/responses/ValidationError'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '429': {$ref: '#/components/responses/RateLimited'}
+        '500': {$ref: '#/components/responses/InternalError'}
+        '503': {$ref: '#/components/responses/Unavailable'}
+  /api/v1/vms:
+    get:
+      operationId: listVM
+      x-request-category: list_resources
+      x-implementation-status: implemented
+      security: [{ownerSession: []}]
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+      responses:
+        '200':
+          description: A page of VM resources
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/VMList'}
+        '400': {$ref: '#/components/responses/ValidationError'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '429': {$ref: '#/components/responses/RateLimited'}
+        '500': {$ref: '#/components/responses/InternalError'}
+        '503': {$ref: '#/components/responses/Unavailable'}
+  /api/v1/vms/{id}:
+    get:
+      operationId: readVM
+      x-request-category: read_resource
+      x-implementation-status: implemented
+      security: [{ownerSession: []}]
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          description: The VM resource
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/VM'}
+        '400': {$ref: '#/components/responses/ValidationError'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '429': {$ref: '#/components/responses/RateLimited'}
+        '500': {$ref: '#/components/responses/InternalError'}
+        '503': {$ref: '#/components/responses/Unavailable'}
+  /api/v1/volumes:
+    get:
+      operationId: listVolume
+      x-request-category: list_resources
+      x-implementation-status: implemented
+      security: [{ownerSession: []}]
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+      responses:
+        '200':
+          description: A page of Volume resources
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/VolumeList'}
+        '400': {$ref: '#/components/responses/ValidationError'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '429': {$ref: '#/components/responses/RateLimited'}
+        '500': {$ref: '#/components/responses/InternalError'}
+        '503': {$ref: '#/components/responses/Unavailable'}
+  /api/v1/volumes/{id}:
+    get:
+      operationId: readVolume
+      x-request-category: read_resource
+      x-implementation-status: implemented
+      security: [{ownerSession: []}]
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          description: The Volume resource
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Volume'}
+        '400': {$ref: '#/components/responses/ValidationError'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '429': {$ref: '#/components/responses/RateLimited'}
+        '500': {$ref: '#/components/responses/InternalError'}
+        '503': {$ref: '#/components/responses/Unavailable'}
+  /api/v1/virtual-networks:
+    get:
+      operationId: listVirtualNetwork
+      x-request-category: list_resources
+      x-implementation-status: implemented
+      security: [{ownerSession: []}]
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+      responses:
+        '200':
+          description: A page of VirtualNetwork resources
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/VirtualNetworkList'}
+        '400': {$ref: '#/components/responses/ValidationError'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '429': {$ref: '#/components/responses/RateLimited'}
+        '500': {$ref: '#/components/responses/InternalError'}
+        '503': {$ref: '#/components/responses/Unavailable'}
+  /api/v1/virtual-networks/{id}:
+    get:
+      operationId: readVirtualNetwork
+      x-request-category: read_resource
+      x-implementation-status: implemented
+      security: [{ownerSession: []}]
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          description: The VirtualNetwork resource
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/VirtualNetwork'}
+        '400': {$ref: '#/components/responses/ValidationError'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '429': {$ref: '#/components/responses/RateLimited'}
+        '500': {$ref: '#/components/responses/InternalError'}
+        '503': {$ref: '#/components/responses/Unavailable'}
+  /api/v1/images:
+    get:
+      operationId: listImage
+      x-request-category: list_resources
+      x-implementation-status: implemented
+      security: [{ownerSession: []}]
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+      responses:
+        '200':
+          description: A page of Image resources
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ImageList'}
+        '400': {$ref: '#/components/responses/ValidationError'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '429': {$ref: '#/components/responses/RateLimited'}
+        '500': {$ref: '#/components/responses/InternalError'}
+        '503': {$ref: '#/components/responses/Unavailable'}
+  /api/v1/images/{id}:
+    get:
+      operationId: readImage
+      x-request-category: read_resource
+      x-implementation-status: implemented
+      security: [{ownerSession: []}]
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          description: The Image resource
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Image'}
+        '400': {$ref: '#/components/responses/ValidationError'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '429': {$ref: '#/components/responses/RateLimited'}
+        '500': {$ref: '#/components/responses/InternalError'}
+        '503': {$ref: '#/components/responses/Unavailable'}
+  /api/v1/backups:
+    get:
+      operationId: listBackup
+      x-request-category: list_resources
+      x-implementation-status: implemented
+      security: [{ownerSession: []}]
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+      responses:
+        '200':
+          description: A page of Backup resources
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/BackupList'}
+        '400': {$ref: '#/components/responses/ValidationError'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '429': {$ref: '#/components/responses/RateLimited'}
+        '500': {$ref: '#/components/responses/InternalError'}
+        '503': {$ref: '#/components/responses/Unavailable'}
+  /api/v1/backups/{id}:
+    get:
+      operationId: readBackup
+      x-request-category: read_resource
+      x-implementation-status: implemented
+      security: [{ownerSession: []}]
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          description: The Backup resource
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Backup'}
+        '400': {$ref: '#/components/responses/ValidationError'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '429': {$ref: '#/components/responses/RateLimited'}
+        '500': {$ref: '#/components/responses/InternalError'}
+        '503': {$ref: '#/components/responses/Unavailable'}
+  /api/v1/apps:
+    get:
+      operationId: listApp
+      x-request-category: list_resources
+      x-implementation-status: not_implemented
+      security: [{ownerSession: []}]
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+      responses:
+        '200':
+          description: A page of App resources
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/AppList'}
+        '400': {$ref: '#/components/responses/ValidationError'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '429': {$ref: '#/components/responses/RateLimited'}
+        '500': {$ref: '#/components/responses/InternalError'}
+        '503': {$ref: '#/components/responses/Unavailable'}
+  /api/v1/apps/{id}:
+    get:
+      operationId: readApp
+      x-request-category: read_resource
+      x-implementation-status: not_implemented
+      security: [{ownerSession: []}]
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          description: The App resource
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/App'}
+        '400': {$ref: '#/components/responses/ValidationError'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '429': {$ref: '#/components/responses/RateLimited'}
+        '500': {$ref: '#/components/responses/InternalError'}
+        '503': {$ref: '#/components/responses/Unavailable'}
+  /api/v1/operations:
+    get:
+      operationId: listOperation
+      x-request-category: list_resources
+      x-implementation-status: implemented
+      security: [{ownerSession: []}]
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+      responses:
+        '200':
+          description: A page of Operation resources
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/OperationList'}
+        '400': {$ref: '#/components/responses/ValidationError'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '429': {$ref: '#/components/responses/RateLimited'}
+        '500': {$ref: '#/components/responses/InternalError'}
+        '503': {$ref: '#/components/responses/Unavailable'}
+    post:
+      operationId: submitOperation
+      x-request-category: submit_operation
+      x-implementation-status: implemented
+      security: [{ownerSession: []}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/SubmitOperationRequest'}
+      responses:
+        '202':
+          description: Operation accepted
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Operation'}
+        '400': {$ref: '#/components/responses/ValidationError'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+        '422': {$ref: '#/components/responses/Prohibited'}
+        '429': {$ref: '#/components/responses/RateLimited'}
+        '500': {$ref: '#/components/responses/InternalError'}
+        '503': {$ref: '#/components/responses/Unavailable'}
+  /api/v1/operations/{id}:
+    get:
+      operationId: readOperation
+      x-request-category: read_resource
+      x-implementation-status: implemented
+      security: [{ownerSession: []}]
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          description: The Operation resource
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Operation'}
+        '400': {$ref: '#/components/responses/ValidationError'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '429': {$ref: '#/components/responses/RateLimited'}
+        '500': {$ref: '#/components/responses/InternalError'}
+        '503': {$ref: '#/components/responses/Unavailable'}
+  /api/v1/operations/{id}/cancel:
+    post:
+      operationId: cancelOperation
+      x-request-category: cancel_operation
+      x-implementation-status: not_implemented
+      security: [{ownerSession: []}]
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          description: The cancelled or cancelling Operation
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Operation'}
+        '400': {$ref: '#/components/responses/ValidationError'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+        '429': {$ref: '#/components/responses/RateLimited'}
+        '500': {$ref: '#/components/responses/InternalError'}
+        '503': {$ref: '#/components/responses/Unavailable'}
+  /api/v1/events:
+    get:
+      operationId: listEvent
+      x-request-category: list_resources
+      x-implementation-status: implemented
+      security: [{ownerSession: []}]
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+      responses:
+        '200':
+          description: A page of Event resources
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/EventList'}
+        '400': {$ref: '#/components/responses/ValidationError'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '429': {$ref: '#/components/responses/RateLimited'}
+        '500': {$ref: '#/components/responses/InternalError'}
+        '503': {$ref: '#/components/responses/Unavailable'}
+  /api/v1/events/{id}:
+    get:
+      operationId: readEvent
+      x-request-category: read_resource
+      x-implementation-status: implemented
+      security: [{ownerSession: []}]
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          description: The Event resource
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Event'}
+        '400': {$ref: '#/components/responses/ValidationError'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '429': {$ref: '#/components/responses/RateLimited'}
+        '500': {$ref: '#/components/responses/InternalError'}
+        '503': {$ref: '#/components/responses/Unavailable'}
+components:
+  securitySchemes:
+    ownerSession:
+      type: apiKey
+      in: cookie
+      name: ownerSession
+      description: >-
+        Opaque server-side session token in an HttpOnly, SameSite=Strict cookie (DR-015 D2; named __Host-svavyom_session
+        over HTTPS, svavyom_session otherwise). Cookie-authenticated state-changing requests also need X-CSRF-Token.
+  parameters:
+    Id:
+      name: id
+      in: path
+      required: true
+      schema: {type: string, pattern: "^[A-Za-z0-9][A-Za-z0-9._-]{0,62}$", maxLength: 63}
+    Limit:
+      name: limit
+      in: query
+      required: false
+      schema: {type: integer, minimum: 1, maximum: 200}
+    Cursor:
+      name: cursor
+      in: query
+      required: false
+      schema: {type: string, pattern: "^[A-Za-z0-9_-]{1,128}$", maxLength: 128}
+  responses:
+    ValidationError:
+      description: Typed error (validation)
+      x-error-category: validation
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Error'}
+    Unauthenticated:
+      description: Typed error (unauthenticated)
+      x-error-category: unauthenticated
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Error'}
+    Forbidden:
+      description: Typed error (forbidden)
+      x-error-category: forbidden
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Error'}
+    NotFound:
+      description: Typed error (not_found)
+      x-error-category: not_found
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Error'}
+    Conflict:
+      description: Typed error (conflict)
+      x-error-category: conflict
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Error'}
+    Prohibited:
+      description: Typed error (prohibited)
+      x-error-category: prohibited
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Error'}
+    RateLimited:
+      description: Typed error (rate_limited)
+      x-error-category: rate_limited
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Error'}
+    InternalError:
+      description: Typed error (internal)
+      x-error-category: internal
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Error'}
+    Unavailable:
+      description: Typed error (unavailable)
+      x-error-category: unavailable
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Error'}
+  schemas:
+    Health:
+      type: object
+      additionalProperties: false
+      required: [status]
+      x-data-class: operational
+      properties:
+        status:
+          type: string
+          const: scaffold
+          x-data-class: public
+    Error:
+      type: object
+      additionalProperties: false
+      required: [category, retryable, correlation_id]
+      x-data-class: operational
+      description: Typed error. There is no free-text message; the UI shows fixed text per category. field_errors appears only with category validation and names declared request keys only.
+      properties:
+        category:
+          type: string
+          enum: [validation, unauthenticated, forbidden, not_found, conflict, rate_limited, prohibited, unavailable, timeout, host_error, internal]
+          x-data-class: operational
+        retryable:
+          type: boolean
+          x-data-class: operational
+        correlation_id:
+          type: string
+          pattern: "^[A-Za-z0-9-]{8,64}$"
+          maxLength: 64
+          x-data-class: operational
+        field_errors:
+          type: array
+          maxItems: 64
+          x-data-class: operational
+          items:
+            type: object
+            additionalProperties: false
+            required: [field, code]
+            x-data-class: operational
+            properties:
+              field:
+                type: string
+                pattern: "^[a-z][a-z0-9_]{0,31}$"
+                maxLength: 32
+                x-data-class: operational
+              code:
+                type: string
+                enum: [required, unknown_field, type, pattern, enum, too_long]
+                x-data-class: operational
+      oneOf:
+        - {properties: {category: {const: validation}, retryable: {const: false}}, required: [category, retryable], x-http-status: 400}
+        - {properties: {category: {const: unauthenticated}, retryable: {const: false}}, required: [category, retryable], x-http-status: 401}
+        - {properties: {category: {const: forbidden}, retryable: {const: false}}, required: [category, retryable], x-http-status: 403}
+        - {properties: {category: {const: not_found}, retryable: {const: false}}, required: [category, retryable], x-http-status: 404}
+        - {properties: {category: {const: conflict}, retryable: {const: false}}, required: [category, retryable], x-http-status: 409}
+        - {properties: {category: {const: rate_limited}, retryable: {const: true}}, required: [category, retryable], x-http-status: 429}
+        - {properties: {category: {const: prohibited}, retryable: {const: false}}, required: [category, retryable], x-http-status: 422}
+        - {properties: {category: {const: unavailable}, retryable: {const: true}}, required: [category, retryable], x-http-status: 503}
+        - {properties: {category: {const: timeout}, retryable: {const: true}}, required: [category, retryable], x-http-status: 504}
+        - {properties: {category: {const: host_error}, retryable: {const: false}}, required: [category, retryable], x-http-status: 502}
+        - {properties: {category: {const: internal}, retryable: {const: false}}, required: [category, retryable], x-http-status: 500}
+    Host:
+      type: object
+      additionalProperties: false
+      required: [id, generation, name, desired, observed, allowed_actions]
+      x-data-class: operational
+      properties:
+        id:
+          type: string
+          pattern: "^[A-Za-z0-9][A-Za-z0-9._-]{0,62}$"
+          maxLength: 63
+          x-data-class: operational
+        generation:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+          x-data-class: operational
+        name:
+          type: string
+          minLength: 1
+          maxLength: 63
+          x-data-class: operational
+        desired:
+          type: object
+          additionalProperties: false
+          required: [maintenance]
+          x-data-class: operational
+          properties:
+            maintenance:
+              type: boolean
+              x-data-class: operational
+        observed:
+          type: object
+          additionalProperties: false
+          required: [reachable, agent_version, cpu_count, memory_mib, capability_verdict, virtualization, distribution, creation, storage, usage, alerts, nightly_boot, bridge, capability_findings]
+          x-data-class: operational
+          properties:
+            reachable:
+              type: boolean
+              x-data-class: operational
+            agent_version:
+              type: string
+              maxLength: 64
+              x-data-class: operational
+            cpu_count:
+              type: integer
+              minimum: 1
+              maximum: 9007199254740991
+              x-data-class: operational
+            memory_mib:
+              type: integer
+              minimum: 1
+              maximum: 9007199254740991
+              x-data-class: operational
+            capability_verdict:
+              type: string
+              enum: [supported, unsupported, unknown]
+              x-data-class: operational
+            virtualization:
+              type: object
+              additionalProperties: false
+              required: [hardware, kvm_device, libvirt_packages, qemu_packages]
+              x-data-class: operational
+              properties:
+                hardware:
+                  type: string
+                  enum: [available, unavailable, unknown]
+                  x-data-class: operational
+                kvm_device:
+                  type: string
+                  enum: [available, unavailable, unknown]
+                  x-data-class: operational
+                libvirt_packages:
+                  type: string
+                  enum: [available, unavailable, unknown]
+                  x-data-class: operational
+                qemu_packages:
+                  type: string
+                  enum: [available, unavailable, unknown]
+                  x-data-class: operational
+            distribution:
+              type: object
+              additionalProperties: false
+              required: [id, version_id]
+              x-data-class: operational
+              properties:
+                id:
+                  type: string
+                  maxLength: 64
+                  x-data-class: operational
+                version_id:
+                  type: string
+                  maxLength: 64
+                  x-data-class: operational
+            creation:
+              type: object
+              additionalProperties: false
+              required: [enabled, network, storage, vcpu_options, memory_mib_options, disk_gib_options, ready, reasons]
+              x-data-class: operational
+              description: Whether VM creation is enabled (a server-owned Development Preview setting) and ready, and the choices the UI may offer.
+              properties:
+                enabled:
+                  type: boolean
+                  x-data-class: operational
+                network:
+                  type: string
+                  enum: [available, unavailable, unknown]
+                  x-data-class: operational
+                storage:
+                  type: string
+                  enum: [available, unavailable, unknown]
+                  x-data-class: operational
+                vcpu_options:
+                  type: array
+                  maxItems: 16
+                  x-data-class: operational
+                  items:
+                    type: integer
+                    minimum: 1
+                    maximum: 1048576
+                    x-data-class: operational
+                memory_mib_options:
+                  type: array
+                  maxItems: 16
+                  x-data-class: operational
+                  items:
+                    type: integer
+                    minimum: 1
+                    maximum: 1048576
+                    x-data-class: operational
+                disk_gib_options:
+                  type: array
+                  maxItems: 16
+                  x-data-class: operational
+                  items:
+                    type: integer
+                    minimum: 1
+                    maximum: 1048576
+                    x-data-class: operational
+                ready:
+                  type: boolean
+                  x-data-class: operational
+                reasons:
+                  type: array
+                  maxItems: 8
+                  uniqueItems: true
+                  x-data-class: operational
+                  description: Closed codes explaining why creation is unavailable (or what to know). Never a path or host error text.
+                  items:
+                    type: string
+                    enum: [mutation_disabled, no_usable_image, storage_unavailable, network_unavailable, virtualization_unavailable, host_not_qualified, image_unqualified]
+                    x-data-class: operational
+            storage:
+              type: object
+              additionalProperties: false
+              required: [state, pool_total_gib, pool_free_gib, images_gib, backups_configured, backups_gib, backups_free_gib, allocation_note, snapshots, backup_targets]
+              x-data-class: operational
+              description: Pool and backup-store facts the UI shows next to the VM sizes. VM disk sizes are virtual; the pool free figure is what counts.
+              properties:
+                state:
+                  type: string
+                  enum: [available, unavailable, unknown]
+                  x-data-class: operational
+                pool_total_gib:
+                  type: [integer, "null"]
+                  minimum: 0
+                  maximum: 9007199254740991
+                  x-data-class: operational
+                pool_free_gib:
+                  type: [integer, "null"]
+                  minimum: 0
+                  maximum: 9007199254740991
+                  x-data-class: operational
+                images_gib:
+                  type: [integer, "null"]
+                  minimum: 0
+                  maximum: 9007199254740991
+                  x-data-class: operational
+                backups_configured:
+                  type: boolean
+                  x-data-class: operational
+                backups_gib:
+                  type: [integer, "null"]
+                  minimum: 0
+                  maximum: 9007199254740991
+                  x-data-class: operational
+                backups_free_gib:
+                  type: [integer, "null"]
+                  minimum: 0
+                  maximum: 9007199254740991
+                  x-data-class: operational
+                backup_targets:
+                  type: array
+                  maxItems: 8
+                  x-data-class: operational
+                  description: The off-host backup targets the operator declared and whether each can be used now (DR-023 D4). Never a host, a path or a key.
+                  items:
+                    type: object
+                    additionalProperties: false
+                    required: [id, kind, state]
+                    x-data-class: operational
+                    properties:
+                      id:
+                        type: string
+                        pattern: "^[a-z][a-z0-9-]{1,30}[a-z0-9]$"
+                        maxLength: 32
+                        x-data-class: operational
+                      kind:
+                        type: string
+                        enum: [ssh, path]
+                        x-data-class: operational
+                      state:
+                        type: string
+                        enum: [ready, unavailable]
+                        x-data-class: operational
+                snapshots:
+                  type: string
+                  enum: [available, unavailable, unknown]
+                  x-data-class: operational
+                  description: Whether the configured pool can hold Svavyom's internal qcow2 snapshots (DR-023 D6). When it is not available the snapshot actions are not offered.
+                allocation_note:
+                  type: string
+                  maxLength: 300
+                  x-data-class: operational
+            usage:
+              type: object
+              additionalProperties: false
+              required: [state, interval_seconds, cpu_percent, memory_used_mib, disk_kib_s, net_kib_s, history]
+              x-data-class: operational
+              description: Sampled host CPU, memory, disk and network use (DR-022, DR-023 D5; disk and network are rates in KiB per second). A reading every interval_seconds; the history covers about the last hour, oldest first. Never a per-process or per-user figure.
+              properties:
+                state:
+                  type: string
+                  enum: [available, unavailable]
+                  x-data-class: operational
+                interval_seconds:
+                  type: integer
+                  minimum: 1
+                  maximum: 3600
+                  x-data-class: operational
+                cpu_percent:
+                  type: [integer, "null"]
+                  minimum: 0
+                  maximum: 100
+                  x-data-class: operational
+                memory_used_mib:
+                  type: [integer, "null"]
+                  minimum: 0
+                  maximum: 9007199254740991
+                  x-data-class: operational
+                disk_kib_s:
+                  type: [integer, "null"]
+                  minimum: 0
+                  maximum: 9007199254740991
+                  x-data-class: operational
+                net_kib_s:
+                  type: [integer, "null"]
+                  minimum: 0
+                  maximum: 9007199254740991
+                  x-data-class: operational
+                history:
+                  type: array
+                  maxItems: 240
+                  x-data-class: operational
+                  items:
+                    type: object
+                    additionalProperties: false
+                    required: [at, cpu_percent, memory_used_mib, disk_kib_s, net_kib_s]
+                    x-data-class: operational
+                    properties:
+                      at:
+                        type: string
+                        format: date-time
+                        maxLength: 40
+                        x-data-class: operational
+                      cpu_percent:
+                        type: integer
+                        minimum: 0
+                        maximum: 100
+                        x-data-class: operational
+                      memory_used_mib:
+                        type: integer
+                        minimum: 0
+                        maximum: 9007199254740991
+                        x-data-class: operational
+                      disk_kib_s:
+                        type: integer
+                        minimum: 0
+                        maximum: 9007199254740991
+                        x-data-class: operational
+                      net_kib_s:
+                        type: integer
+                        minimum: 0
+                        maximum: 9007199254740991
+                        x-data-class: operational
+            alerts:
+              type: object
+              additionalProperties: false
+              required: [open, webhook]
+              x-data-class: operational
+              description: The number of open alerts and whether the operator configured a webhook (the address is never returned). DR-024 D2.
+              properties:
+                open:
+                  type: integer
+                  minimum: 0
+                  maximum: 9007199254740991
+                  x-data-class: operational
+                webhook:
+                  type: string
+                  enum: [none, configured]
+                  x-data-class: operational
+            nightly_boot:
+              type: [object, "null"]
+              additionalProperties: false
+              required: [at, result, seconds]
+              x-data-class: operational
+              description: The last nightly real guest boot (DR-024 D4); null when none has run.
+              properties:
+                at:
+                  type: string
+                  format: date-time
+                  maxLength: 40
+                  x-data-class: operational
+                result:
+                  type: string
+                  enum: [pass, fail, skipped]
+                  x-data-class: operational
+                seconds:
+                  type: integer
+                  minimum: 0
+                  maximum: 86400
+                  x-data-class: operational
+            bridge:
+              type: [object, "null"]
+              additionalProperties: false
+              required: [state, bridge, interface, seconds_left]
+              x-data-class: operational
+              description: The host bridge work recorded by svavyom-ctl (DR-024 D5); null when there is none. The API only reports it; applying and confirming need root on the host.
+              properties:
+                state:
+                  type: string
+                  enum: [planned, pending_confirmation, active]
+                  x-data-class: operational
+                bridge:
+                  type: string
+                  pattern: "^[a-zA-Z][a-zA-Z0-9_.:-]{0,14}$"
+                  maxLength: 15
+                  x-data-class: operational
+                interface:
+                  type: string
+                  pattern: "^[a-zA-Z][a-zA-Z0-9_.:-]{0,14}$"
+                  maxLength: 15
+                  x-data-class: operational
+                seconds_left:
+                  type: [integer, "null"]
+                  minimum: 0
+                  maximum: 3600
+                  x-data-class: operational
+                  description: Seconds left to confirm while the state is pending_confirmation, otherwise null.
+            capability_findings:
+              type: array
+              maxItems: 16
+              x-data-class: operational
+              items:
+                type: object
+                additionalProperties: false
+                required: [code, remediation]
+                x-data-class: operational
+                properties:
+                  code:
+                    type: string
+                    pattern: "^[A-Z][A-Z0-9_]{0,39}$"
+                    maxLength: 40
+                    x-data-class: operational
+                  remediation:
+                    type: string
+                    maxLength: 200
+                    x-data-class: operational
+        allowed_actions:
+          type: array
+          maxItems: 0
+          x-data-class: operational
+          items:
+            type: string
+            maxLength: 32
+    HostList:
+      type: object
+      additionalProperties: false
+      required: [items, allowed_actions, next_cursor]
+      x-data-class: operational
+      properties:
+        items:
+          type: array
+          maxItems: 200
+          x-data-class: operational
+          items:
+            $ref: "#/components/schemas/Host"
+        allowed_actions:
+          type: array
+          maxItems: 0
+          x-data-class: operational
+          items:
+            type: string
+            maxLength: 32
+        next_cursor:
+          type: [string, "null"]
+          pattern: "^[A-Za-z0-9_-]{1,128}$"
+          maxLength: 128
+          x-data-class: operational
+    Project:
+      type: object
+      additionalProperties: false
+      required: [id, generation, name, desired, observed, allowed_actions]
+      x-data-class: operational
+      properties:
+        id:
+          type: string
+          pattern: "^[A-Za-z0-9][A-Za-z0-9._-]{0,62}$"
+          maxLength: 63
+          x-data-class: operational
+        generation:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+          x-data-class: operational
+        name:
+          type: string
+          minLength: 1
+          maxLength: 63
+          x-data-class: operational
+        desired:
+          type: object
+          additionalProperties: false
+          required: []
+          x-data-class: operational
+          properties: {}
+        observed:
+          type: object
+          additionalProperties: false
+          required: []
+          x-data-class: operational
+          properties: {}
+        allowed_actions:
+          type: array
+          maxItems: 0
+          x-data-class: operational
+          items:
+            type: string
+            maxLength: 32
+    ProjectList:
+      type: object
+      additionalProperties: false
+      required: [items, allowed_actions, next_cursor]
+      x-data-class: operational
+      properties:
+        items:
+          type: array
+          maxItems: 200
+          x-data-class: operational
+          items:
+            $ref: "#/components/schemas/Project"
+        allowed_actions:
+          type: array
+          maxItems: 0
+          x-data-class: operational
+          items:
+            type: string
+            maxLength: 32
+        next_cursor:
+          type: [string, "null"]
+          pattern: "^[A-Za-z0-9_-]{1,128}$"
+          maxLength: 128
+          x-data-class: operational
+    VM:
+      type: object
+      additionalProperties: false
+      required: [id, project_id, generation, name, desired, observed, allowed_actions]
+      x-data-class: operational
+      properties:
+        id:
+          type: string
+          pattern: "^[A-Za-z0-9][A-Za-z0-9._-]{0,62}$"
+          maxLength: 63
+          x-data-class: operational
+        project_id:
+          type: string
+          pattern: "^[A-Za-z0-9][A-Za-z0-9._-]{0,62}$"
+          maxLength: 63
+          x-data-class: operational
+        generation:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+          x-data-class: operational
+        name:
+          type: string
+          minLength: 1
+          maxLength: 63
+          x-data-class: operational
+        desired:
+          type: object
+          additionalProperties: false
+          required: [power, backup_schedule]
+          x-data-class: operational
+          properties:
+            power:
+              type: string
+              enum: [running, stopped]
+              x-data-class: operational
+            backup_schedule:
+              type: [object, "null"]
+              additionalProperties: false
+              required: [every_hours, at, keep_local, keep_offsite, target_id, downtime_acknowledged]
+              x-data-class: operational
+              description: The maintenance-window backup schedule of the VM (DR-024 D3), or null. Exactly one of every_hours and at is set.
+              properties:
+                every_hours:
+                  type: [integer, "null"]
+                  minimum: 1
+                  maximum: 168
+                  x-data-class: operational
+                at:
+                  type: [string, "null"]
+                  pattern: "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+                  maxLength: 5
+                  x-data-class: operational
+                keep_local:
+                  type: integer
+                  minimum: 1
+                  maximum: 30
+                  x-data-class: operational
+                keep_offsite:
+                  type: integer
+                  minimum: 0
+                  maximum: 30
+                  x-data-class: operational
+                target_id:
+                  type: [string, "null"]
+                  pattern: "^[a-z][a-z0-9-]{1,30}[a-z0-9]$"
+                  maxLength: 32
+                  x-data-class: operational
+                downtime_acknowledged:
+                  type: boolean
+                  x-data-class: operational
+        observed:
+          type: object
+          additionalProperties: false
+          required: [power, last_seen_at, managed, ip_address, login_user, iso, disk_gib, snapshots, network, vcpus, memory_mib, usage, backup, graphical_console, rescue]
+          x-data-class: operational
+          properties:
+            power:
+              type: string
+              enum: [running, stopped, paused, crashed, unknown]
+              x-data-class: operational
+            last_seen_at:
+              type: string
+              format: date-time
+              maxLength: 40
+              x-data-class: operational
+            managed:
+              type: boolean
+              x-data-class: operational
+            ip_address:
+              type: [string, "null"]
+              pattern: "^(?:[0-9]{1,3}\\.){3}[0-9]{1,3}$"
+              maxLength: 15
+              x-data-class: operational
+            login_user:
+              type: [string, "null"]
+              pattern: "^[a-z_][a-z0-9_-]{0,31}$"
+              maxLength: 32
+              x-data-class: operational
+            backup:
+              type: object
+              additionalProperties: false
+              required: [next_run_at, last_run]
+              x-data-class: operational
+              description: The scheduled backup of the VM (DR-024 D3).
+              properties:
+                next_run_at:
+                  type: [string, "null"]
+                  format: date-time
+                  maxLength: 40
+                  x-data-class: operational
+                last_run:
+                  type: [object, "null"]
+                  additionalProperties: false
+                  required: [at, result]
+                  x-data-class: operational
+                  properties:
+                    at:
+                      type: string
+                      format: date-time
+                      maxLength: 40
+                      x-data-class: operational
+                    result:
+                      type: string
+                      enum: [ok, failed, skipped]
+                      x-data-class: operational
+            graphical_console:
+              type: string
+              enum: [absent, present]
+              x-data-class: operational
+              description: Whether the VM has the VNC graphical console device (DR-026 D1). The console itself is opened through the console routes.
+            rescue:
+              type: boolean
+              x-data-class: operational
+              description: True while the VM is in rescue mode (DR-026 D2).
+            iso:
+              type: [string, "null"]
+              pattern: "^[a-z0-9][a-z0-9._-]{0,62}$"
+              maxLength: 63
+              x-data-class: operational
+              description: The image id of the installation media attached now (DR-023 D3); null when none is attached or the catalog no longer names it.
+            disk_gib:
+              type: [integer, "null"]
+              minimum: 1
+              maximum: 4096
+              x-data-class: operational
+              description: The root disk's virtual size; null for a VM Svavyom does not manage.
+            snapshots:
+              type: array
+              maxItems: 8
+              x-data-class: operational
+              description: The VM's own snapshots (never another tool's).
+              items:
+                type: object
+                additionalProperties: false
+                required: [id, created_at]
+                x-data-class: operational
+                properties:
+                  id:
+                    type: string
+                    pattern: "^snap-[0-9a-f]{12}$"
+                    maxLength: 17
+                    x-data-class: operational
+                  created_at:
+                    type: string
+                    format: date-time
+                    maxLength: 40
+                    x-data-class: operational
+            network:
+              type: [object, "null"]
+              additionalProperties: false
+              required: [name, mac, reserved_ip, state]
+              x-data-class: operational
+              description: The VM's network, MAC, static reservation (if any) and whether that network is active; null for a VM Svavyom does not manage.
+              properties:
+                name:
+                  type: string
+                  pattern: "^[A-Za-z0-9][A-Za-z0-9._-]{0,62}$"
+                  maxLength: 63
+                  x-data-class: operational
+                mac:
+                  type: string
+                  pattern: "^(?:[0-9a-f]{2}:){5}[0-9a-f]{2}$"
+                  maxLength: 17
+                  x-data-class: operational
+                reserved_ip:
+                  type: [string, "null"]
+                  pattern: "^(?:[0-9]{1,3}\\.){3}[0-9]{1,3}$"
+                  maxLength: 15
+                  x-data-class: operational
+                state:
+                  type: string
+                  enum: [active, inactive, unknown]
+                  x-data-class: operational
+            vcpus:
+              type: [integer, "null"]
+              minimum: 1
+              maximum: 1048576
+              x-data-class: operational
+              description: The VM's configured vCPU count from its stored definition (DR-022); null when it cannot be read.
+            memory_mib:
+              type: [integer, "null"]
+              minimum: 1
+              maximum: 1073741824
+              x-data-class: operational
+              description: The VM's configured memory from its stored definition (DR-022); null when it cannot be read.
+            usage:
+              type: object
+              additionalProperties: false
+              required: [state, cpu_percent, memory_used_mib, disk_kib_s, net_kib_s, history]
+              x-data-class: operational
+              description: Sampled CPU use as a share of the VM's own vCPU capacity (DR-022); the history covers about the last hour, oldest first.
+              properties:
+                state:
+                  type: string
+                  enum: [available, unavailable]
+                  x-data-class: operational
+                cpu_percent:
+                  type: [integer, "null"]
+                  minimum: 0
+                  maximum: 100
+                  x-data-class: operational
+                memory_used_mib:
+                  type: [integer, "null"]
+                  minimum: 0
+                  maximum: 9007199254740991
+                  x-data-class: operational
+                disk_kib_s:
+                  type: [integer, "null"]
+                  minimum: 0
+                  maximum: 9007199254740991
+                  x-data-class: operational
+                net_kib_s:
+                  type: [integer, "null"]
+                  minimum: 0
+                  maximum: 9007199254740991
+                  x-data-class: operational
+                history:
+                  type: array
+                  maxItems: 240
+                  x-data-class: operational
+                  items:
+                    type: object
+                    additionalProperties: false
+                    required: [at, cpu_percent, memory_used_mib, disk_kib_s, net_kib_s]
+                    x-data-class: operational
+                    properties:
+                      at:
+                        type: string
+                        format: date-time
+                        maxLength: 40
+                        x-data-class: operational
+                      cpu_percent:
+                        type: integer
+                        minimum: 0
+                        maximum: 100
+                        x-data-class: operational
+                      memory_used_mib:
+                        type: integer
+                        minimum: 0
+                        maximum: 9007199254740991
+                        x-data-class: operational
+                      disk_kib_s:
+                        type: integer
+                        minimum: 0
+                        maximum: 9007199254740991
+                        x-data-class: operational
+                      net_kib_s:
+                        type: integer
+                        minimum: 0
+                        maximum: 9007199254740991
+                        x-data-class: operational
+        allowed_actions:
+          type: array
+          maxItems: 13
+          uniqueItems: true
+          x-data-class: operational
+          items:
+            type: string
+            enum: [start, stop, reboot, force_off, delete, resize, reinstall, snapshot, backup, compute, reserve_ip, release_ip, eject_iso, set_schedule, clear_schedule, graphics_enable, iso_attach, rescue, unrescue]
+    VMList:
+      type: object
+      additionalProperties: false
+      required: [items, allowed_actions, next_cursor]
+      x-data-class: operational
+      properties:
+        items:
+          type: array
+          maxItems: 200
+          x-data-class: operational
+          items:
+            $ref: "#/components/schemas/VM"
+        allowed_actions:
+          type: array
+          maxItems: 1
+          uniqueItems: true
+          x-data-class: operational
+          items:
+            type: string
+            enum: [create]
+        next_cursor:
+          type: [string, "null"]
+          pattern: "^[A-Za-z0-9_-]{1,128}$"
+          maxLength: 128
+          x-data-class: operational
+    Volume:
+      type: object
+      additionalProperties: false
+      required: [id, project_id, generation, name, desired, observed, allowed_actions]
+      x-data-class: operational
+      properties:
+        id:
+          type: string
+          pattern: "^[A-Za-z0-9][A-Za-z0-9._-]{0,62}$"
+          maxLength: 63
+          x-data-class: operational
+        project_id:
+          type: string
+          pattern: "^[A-Za-z0-9][A-Za-z0-9._-]{0,62}$"
+          maxLength: 63
+          x-data-class: operational
+        generation:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+          x-data-class: operational
+        name:
+          type: string
+          minLength: 1
+          maxLength: 63
+          x-data-class: operational
+        desired:
+          type: object
+          additionalProperties: false
+          required: [size_gib, attached_to]
+          x-data-class: operational
+          properties:
+            size_gib:
+              type: integer
+              minimum: 1
+              maximum: 9007199254740991
+              x-data-class: operational
+            attached_to:
+              type: [string, "null"]
+              pattern: "^[A-Za-z0-9][A-Za-z0-9._-]{0,62}$"
+              maxLength: 63
+              x-data-class: operational
+        observed:
+          type: object
+          additionalProperties: false
+          required: [state]
+          x-data-class: operational
+          properties:
+            state:
+              type: string
+              enum: [available, attached, error, unknown]
+              x-data-class: operational
+        allowed_actions:
+          type: array
+          maxItems: 2
+          uniqueItems: true
+          x-data-class: operational
+          items:
+            type: string
+            enum: [attach, detach, delete]
+    VolumeList:
+      type: object
+      additionalProperties: false
+      required: [items, allowed_actions, next_cursor]
+      x-data-class: operational
+      properties:
+        items:
+          type: array
+          maxItems: 200
+          x-data-class: operational
+          items:
+            $ref: "#/components/schemas/Volume"
+        allowed_actions:
+          type: array
+          maxItems: 1
+          uniqueItems: true
+          x-data-class: operational
+          items:
+            type: string
+            enum: [create]
+        next_cursor:
+          type: [string, "null"]
+          pattern: "^[A-Za-z0-9_-]{1,128}$"
+          maxLength: 128
+          x-data-class: operational
+    VirtualNetwork:
+      type: object
+      additionalProperties: false
+      required: [id, project_id, generation, name, desired, observed, allowed_actions]
+      x-data-class: operational
+      properties:
+        id:
+          type: string
+          pattern: "^[A-Za-z0-9][A-Za-z0-9._-]{0,62}$"
+          maxLength: 63
+          x-data-class: operational
+        project_id:
+          type: string
+          pattern: "^[A-Za-z0-9][A-Za-z0-9._-]{0,62}$"
+          maxLength: 63
+          x-data-class: operational
+        generation:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+          x-data-class: operational
+        name:
+          type: string
+          minLength: 1
+          maxLength: 63
+          x-data-class: operational
+        desired:
+          type: object
+          additionalProperties: false
+          required: [mode, autostart]
+          x-data-class: operational
+          properties:
+            mode:
+              type: string
+              enum: [nat, route, bridge, open, isolated, other]
+              x-data-class: operational
+            autostart:
+              type: boolean
+              x-data-class: operational
+        observed:
+          type: object
+          additionalProperties: false
+          required: [state, managed, bridge, subnet, gateway, dhcp_start, dhcp_end, attached_vms, reservations]
+          x-data-class: operational
+          properties:
+            state:
+              type: string
+              enum: [active, inactive, unknown]
+              x-data-class: operational
+            managed:
+              type: boolean
+              x-data-class: operational
+              description: True only for a network Svavyom created (it carries Svavyom's ownership marker). Every other network is foreign and read-only to Svavyom.
+            bridge:
+              type: [string, "null"]
+              pattern: "^[A-Za-z0-9_.:-]{1,15}$"
+              maxLength: 15
+              x-data-class: operational
+            subnet:
+              type: [string, "null"]
+              pattern: "^(?:[0-9]{1,3}\\.){3}[0-9]{1,3}/[0-9]{1,2}$"
+              maxLength: 18
+              x-data-class: operational
+            gateway:
+              type: [string, "null"]
+              pattern: "^(?:[0-9]{1,3}\\.){3}[0-9]{1,3}$"
+              maxLength: 15
+              x-data-class: operational
+            dhcp_start:
+              type: [string, "null"]
+              pattern: "^(?:[0-9]{1,3}\\.){3}[0-9]{1,3}$"
+              maxLength: 15
+              x-data-class: operational
+            dhcp_end:
+              type: [string, "null"]
+              pattern: "^(?:[0-9]{1,3}\\.){3}[0-9]{1,3}$"
+              maxLength: 15
+              x-data-class: operational
+            attached_vms:
+              type: integer
+              minimum: 0
+              maximum: 100000
+              x-data-class: operational
+            reservations:
+              type: array
+              maxItems: 256
+              x-data-class: operational
+              description: Static DHCP reservations (a fixed address bound to one VM's MAC; the guest still uses DHCP).
+              items:
+                type: object
+                additionalProperties: false
+                required: [mac, ip]
+                x-data-class: operational
+                properties:
+                  mac:
+                    type: string
+                    pattern: "^(?:[0-9a-f]{2}:){5}[0-9a-f]{2}$"
+                    maxLength: 17
+                    x-data-class: operational
+                  ip:
+                    type: string
+                    pattern: "^(?:[0-9]{1,3}\\.){3}[0-9]{1,3}$"
+                    maxLength: 15
+                    x-data-class: operational
+        allowed_actions:
+          type: array
+          maxItems: 5
+          uniqueItems: true
+          x-data-class: operational
+          items:
+            type: string
+            enum: [start, stop, delete, enable_autostart, disable_autostart]
+    VirtualNetworkList:
+      type: object
+      additionalProperties: false
+      required: [items, allowed_actions, next_cursor]
+      x-data-class: operational
+      properties:
+        items:
+          type: array
+          maxItems: 200
+          x-data-class: operational
+          items:
+            $ref: "#/components/schemas/VirtualNetwork"
+        allowed_actions:
+          type: array
+          maxItems: 1
+          uniqueItems: true
+          x-data-class: operational
+          items:
+            type: string
+            enum: [create]
+        next_cursor:
+          type: [string, "null"]
+          pattern: "^[A-Za-z0-9_-]{1,128}$"
+          maxLength: 128
+          x-data-class: operational
+    Image:
+      type: object
+      additionalProperties: false
+      required: [id, project_id, generation, name, desired, observed, allowed_actions]
+      x-data-class: operational
+      properties:
+        id:
+          type: string
+          pattern: "^[A-Za-z0-9][A-Za-z0-9._-]{0,62}$"
+          maxLength: 63
+          x-data-class: operational
+        project_id:
+          type: string
+          pattern: "^[A-Za-z0-9][A-Za-z0-9._-]{0,62}$"
+          maxLength: 63
+          x-data-class: operational
+        generation:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+          x-data-class: operational
+        name:
+          type: string
+          minLength: 1
+          maxLength: 63
+          x-data-class: operational
+        desired:
+          type: object
+          additionalProperties: false
+          required: [source_digest]
+          x-data-class: operational
+          properties:
+            source_digest:
+              type: string
+              pattern: "^sha256:[0-9a-f]{64}$"
+              maxLength: 71
+              x-data-class: operational
+        observed:
+          type: object
+          additionalProperties: false
+          required: [state, distribution, version, architecture, login_user, media, min_disk_gib, qualification, qualification_evidence]
+          x-data-class: operational
+          properties:
+            state:
+              type: string
+              enum: [available, verifying, failed]
+              x-data-class: operational
+            distribution:
+              type: string
+              maxLength: 64
+              x-data-class: operational
+            version:
+              type: string
+              maxLength: 64
+              x-data-class: operational
+            architecture:
+              type: string
+              enum: [x86_64]
+              x-data-class: operational
+            login_user:
+              type: [string, "null"]
+              pattern: "^[a-z_][a-z0-9_-]{0,31}$"
+              maxLength: 32
+              x-data-class: operational
+              description: The image's default account; null for installation media (DR-023 D3).
+            media:
+              type: string
+              enum: [disk, iso]
+              x-data-class: operational
+              description: disk is a bootable cloud image; iso is installation media, attached to a new VM as a read-only CD (DR-023 D3).
+            min_disk_gib:
+              type: integer
+              minimum: 1
+              maximum: 4096
+              x-data-class: operational
+            qualification:
+              type: string
+              enum: [registered, verified, qualified]
+              x-data-class: operational
+              description: registered = imported and hashed only; verified = the operator accepted its cloud-init metadata; qualified = a real-host test proved access (never from simulation). Only verified and qualified images can be chosen.
+            qualification_evidence:
+              type: [string, "null"]
+              pattern: "^[A-Za-z0-9][A-Za-z0-9 ._()+-]{0,62}$"
+              maxLength: 63
+              x-data-class: operational
+              description: The operator-recorded reference to the real-host qualification record; null unless the image is qualified.
+        allowed_actions:
+          type: array
+          maxItems: 1
+          uniqueItems: true
+          x-data-class: operational
+          items:
+            type: string
+            enum: [delete]
+    ImageList:
+      type: object
+      additionalProperties: false
+      required: [items, allowed_actions, next_cursor]
+      x-data-class: operational
+      properties:
+        items:
+          type: array
+          maxItems: 200
+          x-data-class: operational
+          items:
+            $ref: "#/components/schemas/Image"
+        allowed_actions:
+          type: array
+          maxItems: 1
+          uniqueItems: true
+          x-data-class: operational
+          items:
+            type: string
+            enum: [create]
+        next_cursor:
+          type: [string, "null"]
+          pattern: "^[A-Za-z0-9_-]{1,128}$"
+          maxLength: 128
+          x-data-class: operational
+    Backup:
+      type: object
+      additionalProperties: false
+      required: [id, project_id, generation, name, desired, observed, allowed_actions]
+      x-data-class: operational
+      properties:
+        id:
+          type: string
+          pattern: "^[A-Za-z0-9][A-Za-z0-9._-]{0,62}$"
+          maxLength: 63
+          x-data-class: operational
+        project_id:
+          type: string
+          pattern: "^[A-Za-z0-9][A-Za-z0-9._-]{0,62}$"
+          maxLength: 63
+          x-data-class: operational
+        generation:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+          x-data-class: operational
+        name:
+          type: string
+          minLength: 1
+          maxLength: 63
+          x-data-class: operational
+        desired:
+          type: object
+          additionalProperties: false
+          required: [source_volume_id]
+          x-data-class: operational
+          properties:
+            source_volume_id:
+              type: string
+              pattern: "^[A-Za-z0-9][A-Za-z0-9._-]{0,62}$"
+              maxLength: 63
+              x-data-class: operational
+        observed:
+          type: object
+          additionalProperties: false
+          required: [state, copies]
+          x-data-class: operational
+          properties:
+            state:
+              type: string
+              enum: [pending, complete, failed]
+              x-data-class: operational
+            copies:
+              type: array
+              maxItems: 8
+              uniqueItems: true
+              x-data-class: operational
+              description: The ids of the off-host targets that hold a copy verified by SHA-256 at the target (DR-023 D4).
+              items:
+                type: string
+                pattern: "^[a-z][a-z0-9-]{1,30}[a-z0-9]$"
+                maxLength: 32
+                x-data-class: operational
+        allowed_actions:
+          type: array
+          maxItems: 3
+          uniqueItems: true
+          x-data-class: operational
+          items:
+            type: string
+            enum: [restore, delete, export]
+    BackupList:
+      type: object
+      additionalProperties: false
+      required: [items, allowed_actions, next_cursor]
+      x-data-class: operational
+      properties:
+        items:
+          type: array
+          maxItems: 200
+          x-data-class: operational
+          items:
+            $ref: "#/components/schemas/Backup"
+        allowed_actions:
+          type: array
+          maxItems: 1
+          uniqueItems: true
+          x-data-class: operational
+          items:
+            type: string
+            enum: [create]
+        next_cursor:
+          type: [string, "null"]
+          pattern: "^[A-Za-z0-9_-]{1,128}$"
+          maxLength: 128
+          x-data-class: operational
+    App:
+      type: object
+      additionalProperties: false
+      required: [id, project_id, generation, name, desired, observed, allowed_actions]
+      x-data-class: operational
+      properties:
+        id:
+          type: string
+          pattern: "^[A-Za-z0-9][A-Za-z0-9._-]{0,62}$"
+          maxLength: 63
+          x-data-class: operational
+        project_id:
+          type: string
+          pattern: "^[A-Za-z0-9][A-Za-z0-9._-]{0,62}$"
+          maxLength: 63
+          x-data-class: operational
+        generation:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+          x-data-class: operational
+        name:
+          type: string
+          minLength: 1
+          maxLength: 63
+          x-data-class: operational
+        desired:
+          type: object
+          additionalProperties: false
+          required: [image_digest]
+          x-data-class: operational
+          properties:
+            image_digest:
+              type: string
+              pattern: "^sha256:[0-9a-f]{64}$"
+              maxLength: 71
+              x-data-class: operational
+        observed:
+          type: object
+          additionalProperties: false
+          required: [state]
+          x-data-class: operational
+          properties:
+            state:
+              type: string
+              enum: [running, stopped, failed]
+              x-data-class: operational
+        allowed_actions:
+          type: array
+          maxItems: 3
+          uniqueItems: true
+          x-data-class: operational
+          items:
+            type: string
+            enum: [start, stop, delete]
+    AppList:
+      type: object
+      additionalProperties: false
+      required: [items, allowed_actions, next_cursor]
+      x-data-class: operational
+      properties:
+        items:
+          type: array
+          maxItems: 200
+          x-data-class: operational
+          items:
+            $ref: "#/components/schemas/App"
+        allowed_actions:
+          type: array
+          maxItems: 1
+          uniqueItems: true
+          x-data-class: operational
+          items:
+            type: string
+            enum: [create]
+        next_cursor:
+          type: [string, "null"]
+          pattern: "^[A-Za-z0-9_-]{1,128}$"
+          maxLength: 128
+          x-data-class: operational
+    Operation:
+      type: object
+      additionalProperties: false
+      required: [id, project_id, resource_kind, resource_id, type, status, requested_by, generation, attempts, error_category, created_at, updated_at, allowed_actions]
+      x-data-class: operational
+      properties:
+        id:
+          type: string
+          pattern: "^[A-Za-z0-9][A-Za-z0-9._-]{0,62}$"
+          maxLength: 63
+          x-data-class: operational
+        project_id:
+          type: string
+          pattern: "^[A-Za-z0-9][A-Za-z0-9._-]{0,62}$"
+          maxLength: 63
+          x-data-class: operational
+        resource_kind:
+          type: string
+          enum: [VM, Volume, VirtualNetwork, Image, Backup, App, Event]
+          x-data-class: operational
+        resource_id:
+          type: string
+          pattern: "^[A-Za-z0-9][A-Za-z0-9._-]{0,62}$"
+          maxLength: 63
+          x-data-class: operational
+        type:
+          type: string
+          enum: [create, start, stop, reboot, force_off, delete, resize, reinstall, snapshot, restore_snapshot, delete_snapshot, backup, restore, network_create, network_start, network_stop, network_autostart, network_delete, compute, reserve_ip, release_ip, volume_create, volume_attach, volume_detach, volume_delete, eject_iso, backup_export, alert_acknowledge, schedule_set, schedule_clear, graphics_enable, iso_attach, rescue, unrescue]
+          x-data-class: operational
+        status:
+          type: string
+          enum: [pending, running, succeeded, failed, retryable_failure, cancelled]
+          x-data-class: operational
+        requested_by:
+          type: string
+          minLength: 1
+          maxLength: 63
+          x-data-class: personal
+        generation:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+          x-data-class: operational
+        attempts:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+          x-data-class: operational
+        error_category:
+          type: [string, "null"]
+          enum: [validation, unauthenticated, forbidden, not_found, conflict, rate_limited, prohibited, unavailable, timeout, host_error, internal, null]
+          x-data-class: operational
+        created_at:
+          type: string
+          format: date-time
+          maxLength: 40
+          x-data-class: operational
+        updated_at:
+          type: string
+          format: date-time
+          maxLength: 40
+          x-data-class: operational
+        allowed_actions:
+          type: array
+          maxItems: 1
+          uniqueItems: true
+          x-data-class: operational
+          items:
+            type: string
+            enum: [cancel]
+    OperationList:
+      type: object
+      additionalProperties: false
+      required: [items, allowed_actions, next_cursor]
+      x-data-class: operational
+      properties:
+        items:
+          type: array
+          maxItems: 200
+          x-data-class: operational
+          items:
+            $ref: "#/components/schemas/Operation"
+        allowed_actions:
+          type: array
+          maxItems: 0
+          x-data-class: operational
+          items:
+            type: string
+            maxLength: 32
+        next_cursor:
+          type: [string, "null"]
+          pattern: "^[A-Za-z0-9_-]{1,128}$"
+          maxLength: 128
+          x-data-class: operational
+    Event:
+      type: object
+      additionalProperties: false
+      required: [id, project_id, type, resource_kind, resource_id, severity, state, value, created_at, updated_at, allowed_actions]
+      x-data-class: operational
+      description: An alert (DR-024 D2). type is a closed rule id; there is no free text from the host.
+      properties:
+        id:
+          type: string
+          pattern: "^[A-Za-z0-9][A-Za-z0-9._-]{0,62}$"
+          maxLength: 63
+          x-data-class: operational
+        project_id:
+          type: string
+          pattern: "^[A-Za-z0-9][A-Za-z0-9._-]{0,62}$"
+          maxLength: 63
+          x-data-class: operational
+        type:
+          type: string
+          pattern: "^[a-z][a-z0-9_.]{0,62}$"
+          maxLength: 63
+          x-data-class: operational
+        resource_kind:
+          type: string
+          enum: [Host, Project, VM, Volume, VirtualNetwork, Image, Backup, App, Operation, Event]
+          x-data-class: operational
+        resource_id:
+          type: string
+          pattern: "^[A-Za-z0-9][A-Za-z0-9._-]{0,62}$"
+          maxLength: 63
+          x-data-class: operational
+        severity:
+          type: string
+          enum: [info, warning, critical]
+          x-data-class: operational
+        state:
+          type: string
+          enum: [open, acknowledged, resolved]
+          x-data-class: operational
+        value:
+          type: [integer, "null"]
+          minimum: 0
+          maximum: 9007199254740991
+          x-data-class: operational
+          description: A bounded figure that explains the alert, for example the percentage of space still free; null when there is none.
+        created_at:
+          type: string
+          format: date-time
+          maxLength: 40
+          x-data-class: operational
+        updated_at:
+          type: string
+          format: date-time
+          maxLength: 40
+          x-data-class: operational
+        allowed_actions:
+          type: array
+          maxItems: 1
+          uniqueItems: true
+          x-data-class: operational
+          items:
+            type: string
+            enum: [acknowledge]
+    EventList:
+      type: object
+      additionalProperties: false
+      required: [items, allowed_actions, next_cursor]
+      x-data-class: operational
+      properties:
+        items:
+          type: array
+          maxItems: 200
+          x-data-class: operational
+          items:
+            $ref: "#/components/schemas/Event"
+        allowed_actions:
+          type: array
+          maxItems: 0
+          x-data-class: operational
+          items:
+            type: string
+            maxLength: 32
+        next_cursor:
+          type: [string, "null"]
+          pattern: "^[A-Za-z0-9_-]{1,128}$"
+          maxLength: 128
+          x-data-class: operational
+    AuthSession:
+      type: object
+      additionalProperties: false
+      required: [authenticated, username, expires_at, role]
+      x-data-class: operational
+      description: No secret is ever in this body. The CSRF token travels in the X-CSRF-Token response header. role (DR-023 D1) is null when anonymous.
+      properties:
+        authenticated:
+          type: boolean
+          x-data-class: operational
+        username:
+          type: [string, "null"]
+          pattern: "^[a-z][a-z0-9._-]{2,31}$"
+          maxLength: 32
+          x-data-class: operational
+        expires_at:
+          type: [string, "null"]
+          format: date-time
+          maxLength: 40
+          x-data-class: operational
+        role:
+          type: [string, "null"]
+          enum: [admin, operator, viewer, null]
+          x-data-class: operational
+    SignInRequest:
+      type: object
+      additionalProperties: false
+      required: [username, password]
+      x-data-class: operational
+      description: Request body (not a response). password is credential-class and is never returned, logged or stored.
+      properties:
+        username:
+          type: string
+          minLength: 1
+          maxLength: 64
+          x-data-class: operational
+        password:
+          type: string
+          minLength: 1
+          maxLength: 128
+          x-data-class: credential
+    SubmitOperationRequest:
+      type: object
+      additionalProperties: false
+      required: [type, kind, id, idempotency_key]
+      x-data-class: operational
+      description: Request body (not a response). idempotency_key is credential-class and is never returned.
+      properties:
+        type:
+          type: string
+          enum: [create, start, stop, reboot, force_off, delete, resize, reinstall, snapshot, restore_snapshot, delete_snapshot, backup, restore, network_create, network_start, network_stop, network_autostart, network_delete, compute, reserve_ip, release_ip, volume_create, volume_attach, volume_detach, volume_delete, eject_iso, backup_export, alert_acknowledge, schedule_set, schedule_clear, graphics_enable, iso_attach, rescue, unrescue]
+          x-data-class: operational
+        kind:
+          type: string
+          enum: [VM, Volume, VirtualNetwork, Image, Backup, App, Event]
+          x-data-class: operational
+        id:
+          type: string
+          pattern: "^[A-Za-z0-9][A-Za-z0-9._-]{0,62}$"
+          maxLength: 63
+          x-data-class: operational
+        idempotency_key:
+          type: string
+          pattern: "^[A-Za-z0-9][A-Za-z0-9._-]{0,62}$"
+          maxLength: 63
+          x-data-class: credential
+        create:
+          type: object
+          additionalProperties: false
+          required: [vcpus, memory_mib, image_id, disk_gib]
+          x-data-class: operational
+          description: >-
+            Typed inputs of a VM create (DR-016); ssh_public_key is required for a disk image and refused for installation media (DR-023 D3); the optional network (DR-021) names the configured network or an active Svavyom-managed one; required for type create and forbidden otherwise. No path, URL, XML or script.
+            The server chooses the network, derives every host path from its own configuration and generates the VM identity.
+          properties:
+            vcpus:
+              type: integer
+              minimum: 1
+              maximum: 64
+              x-data-class: operational
+            memory_mib:
+              type: integer
+              minimum: 64
+              maximum: 1048576
+              x-data-class: operational
+            image_id:
+              type: string
+              pattern: "^[a-z0-9][a-z0-9._-]{0,62}$"
+              maxLength: 63
+              x-data-class: operational
+            disk_gib:
+              type: integer
+              minimum: 1
+              maximum: 4096
+              x-data-class: operational
+            ssh_public_key:
+              type: string
+              minLength: 1
+              maxLength: 2048
+              x-data-class: operational
+            network:
+              type: string
+              pattern: "^[A-Za-z0-9][A-Za-z0-9._-]{0,62}$"
+              maxLength: 63
+              x-data-class: operational
+        params:
+          type: object
+          additionalProperties: false
+          x-data-class: operational
+          description: >-
+            Typed inputs of a storage, recovery, network or VM-configuration operation (DR-020, DR-021); allowed only for the types that take them and
+            forbidden otherwise. resize takes disk_gib; reinstall takes image_id and ssh_public_key; restore_snapshot and delete_snapshot take snapshot_id;
+            restore (kind Backup) takes new_name and ssh_public_key; network_create (kind VirtualNetwork) takes subnet, dhcp_start and dhcp_end, or bridge alone for a bridge-mode network on the host bridge svavyom-ctl recorded as active (DR-024 D5);
+            network_autostart takes autostart; compute takes vcpus and memory_mib; reserve_ip takes ip_address; volume_create (kind Volume, the id is the volume name) takes disk_gib;
+            volume_attach takes vm_id (a Stopped Svavyom VM); volume_detach and volume_delete take none (DR-023 D2); backup_export (kind Backup) takes target_id, one of the declared off-host targets (DR-023 D4);
+            schedule_set (kind VM) takes target_id (optional), keep_local, keep_offsite, downtime_acknowledged and either every_hours or at; schedule_clear and alert_acknowledge (kind Event) take none (DR-024); iso_attach takes image_id (a catalog ISO) and boot (cdrom or disk), rescue takes image_id, graphics_enable and unrescue take none (DR-026). No path, URL, volume name, XML or script;
+            the server resolves digests and generates every identifier.
+          properties:
+            disk_gib:
+              type: integer
+              minimum: 1
+              maximum: 4096
+              x-data-class: operational
+            image_id:
+              type: string
+              pattern: "^[a-z0-9][a-z0-9._-]{0,62}$"
+              maxLength: 63
+              x-data-class: operational
+            ssh_public_key:
+              type: string
+              minLength: 1
+              maxLength: 2048
+              x-data-class: operational
+            snapshot_id:
+              type: string
+              pattern: "^snap-[0-9a-f]{12}$"
+              maxLength: 17
+              x-data-class: operational
+            new_name:
+              type: string
+              pattern: "^[a-z]([a-z0-9-]{0,61}[a-z0-9])?$"
+              maxLength: 63
+              x-data-class: operational
+            subnet:
+              type: string
+              pattern: "^(?:[0-9]{1,3}\\.){3}[0-9]{1,3}/[0-9]{1,2}$"
+              maxLength: 18
+              x-data-class: operational
+            dhcp_start:
+              type: string
+              pattern: "^(?:[0-9]{1,3}\\.){3}[0-9]{1,3}$"
+              maxLength: 15
+              x-data-class: operational
+            dhcp_end:
+              type: string
+              pattern: "^(?:[0-9]{1,3}\\.){3}[0-9]{1,3}$"
+              maxLength: 15
+              x-data-class: operational
+            bridge:
+              type: string
+              pattern: "^[a-zA-Z][a-zA-Z0-9_.:-]{0,14}$"
+              maxLength: 15
+              x-data-class: operational
+            autostart:
+              type: string
+              enum: ["on", "off"]
+              x-data-class: operational
+            vcpus:
+              type: integer
+              minimum: 1
+              maximum: 64
+              x-data-class: operational
+            memory_mib:
+              type: integer
+              minimum: 64
+              maximum: 1048576
+              x-data-class: operational
+            ip_address:
+              type: string
+              pattern: "^(?:[0-9]{1,3}\\.){3}[0-9]{1,3}$"
+              maxLength: 15
+              x-data-class: operational
+            vm_id:
+              type: string
+              pattern: "^[a-z]([a-z0-9-]{0,61}[a-z0-9])?$"
+              maxLength: 63
+              x-data-class: operational
+            target_id:
+              type: string
+              pattern: "^[a-z][a-z0-9-]{1,30}[a-z0-9]$"
+              maxLength: 32
+              x-data-class: operational
+            every_hours:
+              type: integer
+              minimum: 1
+              maximum: 168
+              x-data-class: operational
+            at:
+              type: string
+              pattern: "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+              maxLength: 5
+              x-data-class: operational
+            keep_local:
+              type: integer
+              minimum: 1
+              maximum: 30
+              x-data-class: operational
+            keep_offsite:
+              type: integer
+              minimum: 0
+              maximum: 30
+              x-data-class: operational
+            downtime_acknowledged:
+              type: boolean
+              x-data-class: operational
+            boot:
+              type: string
+              enum: [cdrom, disk]
+              x-data-class: operational

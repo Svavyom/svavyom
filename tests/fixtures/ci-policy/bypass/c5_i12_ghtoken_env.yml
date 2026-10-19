@@ -1,0 +1,13 @@
+name: t
+on:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  b:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api /user

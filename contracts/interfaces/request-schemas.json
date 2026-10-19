@@ -1,0 +1,139 @@
+{
+  "schema": 1,
+  "description": "Allowlisted request schemas per category (M0-E01-S01 draft). Pinned by tools/check_interfaces.py. A request is an object with exactly boundary, category and payload (transport only on the host-agent and libvirt boundaries). Payload keys must be exactly those listed (list_resources: `limit` and `cursor` are optional, pinned in tools/check_interfaces.py); each value must match its type: 'id' = safe identifier pattern, 'digest' = sha256 digest, or an explicit enumeration (typed commands, ADR-011).",
+  "categories": {
+    "health": {},
+    "list_resources": {
+      "kind": [
+        "Host",
+        "Project",
+        "VM",
+        "Volume",
+        "VirtualNetwork",
+        "Image",
+        "Backup",
+        "App",
+        "Operation",
+        "Event"
+      ],
+      "limit": "limit",
+      "cursor": "cursor"
+    },
+    "read_resource": {
+      "kind": [
+        "Host",
+        "Project",
+        "VM",
+        "Volume",
+        "VirtualNetwork",
+        "Image",
+        "Backup",
+        "App",
+        "Operation",
+        "Event"
+      ],
+      "id": "id"
+    },
+    "get_operation": {
+      "id": "id"
+    },
+    "cancel_operation": {
+      "id": "id"
+    },
+    "submit_operation": {
+      "type": [
+        "create",
+        "start",
+        "stop",
+        "reboot",
+        "force_off",
+        "delete",
+        "resize",
+        "reinstall",
+        "snapshot",
+        "restore_snapshot",
+        "delete_snapshot",
+        "backup",
+        "restore",
+        "network_create",
+        "network_start",
+        "network_stop",
+        "network_autostart",
+        "network_delete",
+        "compute",
+        "reserve_ip",
+        "release_ip",
+        "volume_create",
+        "volume_attach",
+        "volume_detach",
+        "volume_delete",
+        "eject_iso",
+        "backup_export",
+        "alert_acknowledge",
+        "schedule_set",
+        "schedule_clear",
+        "graphics_enable",
+        "iso_attach",
+        "rescue",
+        "unrescue"
+      ],
+      "kind": [
+        "VM",
+        "Volume",
+        "VirtualNetwork",
+        "Image",
+        "Backup",
+        "App",
+        "Event"
+      ],
+      "id": "id",
+      "idempotency_key": "id"
+    },
+    "typed_host_command": {
+      "action": [
+        "define_vm",
+        "start_vm",
+        "stop_vm",
+        "destroy_vm",
+        "undefine_vm",
+        "get_vm_state"
+      ],
+      "operation_id": "id",
+      "attempt": "id"
+    },
+    "typed_libvirt_call": {
+      "call": [
+        "domain_define_typed",
+        "domain_create",
+        "domain_shutdown",
+        "domain_destroy",
+        "domain_undefine",
+        "domain_get_state",
+        "domain_lookup",
+        "domain_list"
+      ],
+      "resource_id": "id"
+    },
+    "deploy_app": {
+      "app_id": "id",
+      "image_digest": "digest"
+    },
+    "get_app": {
+      "id": "id"
+    },
+    "auth_status": {},
+    "sign_out": {},
+    "sign_in": {
+      "username": "username",
+      "password": "password"
+    }
+  },
+  "value_types": {
+    "id": "^[A-Za-z0-9][A-Za-z0-9._-]{0,62}$",
+    "digest": "^sha256:[0-9a-f]{64}$",
+    "limit": "^(?:[1-9][0-9]?|1[0-9]{2}|200)$",
+    "cursor": "^[A-Za-z0-9_-]{1,128}$",
+    "username": "^.{1,64}$",
+    "password": "^.{1,128}$"
+  }
+}

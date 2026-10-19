@@ -1,0 +1,16 @@
+# Opt-in drop-in for the Development Preview: enables VM create, start, stop, reboot, force off and delete. Install as
+#   /etc/systemd/system/svavyom-api.service.d/experimental-mutation.conf
+# The API refuses to start in this mode unless every trust anchor is root-owned and read-only for the API, agent and mutation
+# identities declared in /etc/svavyom/provision.json ("trust" section).
+[Service]
+ExecStart=
+ExecStart=/usr/libexec/svavyom/api serve \
+    --db /var/lib/svavyom/api/svavyom.db \
+    --listen 0.0.0.0:8443 \
+    --tls-cert /etc/svavyom/tls/cert.pem --tls-key /etc/svavyom/tls/key.pem \
+    --static-dir /usr/share/svavyom/web \
+    --agent-socket /run/svavyom/agent/agent.sock \
+    --mutation-socket /run/svavyom/mutation/mutation.sock \
+    --console-socket /run/svavyom/console/console.sock \
+    --provision-config /etc/svavyom/provision.json \
+    --experimental-mutation

@@ -1,0 +1,16 @@
+{
+  "request": {
+    "boundary": "operation-manager-host-agent",
+    "category": "typed_host_command",
+    "transport": "TCP4",
+    "payload": {
+      "action": "start_vm",
+      "operation_id": "op-1",
+      "attempt": "1"
+    }
+  },
+  "expect": [
+    "AGENT_TCP",
+    "PRIVILEGED_BEFORE_AUTH"
+  ]
+}

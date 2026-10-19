@@ -1,0 +1,57 @@
+{
+  "schema": 1,
+  "description": "Canonical test-evidence taxonomy (M0-E02-S04; DR-006 D2 = A). Authoritative for cloud-platform tools/check_evidence.py, read at the pinned docs commit. In M0 no hosted evidence and no tier above T1 is accepted; accepting them requires a later approved story or decision defining provenance verification (DR-004: deferred, not waived).",
+  "tiers": {
+    "unit": {"cost_class": "T0", "environment_class": "simulated", "accepted_in_m0": true,
+             "description": "In-process; no I/O beyond temp files; includes the S03 in-memory fake and contract/schema checkers"},
+    "container_integration": {"cost_class": "T1", "environment_class": "simulated", "accepted_in_m0": true,
+             "description": "Multi-process tests in the pinned container or on the host (gate-defect, container-safety, API + ephemeral DB, docker compose); no hypervisor beyond the S03 test driver"},
+    "simulated_libvirt": {"cost_class": "T1", "environment_class": "simulated", "accepted_in_m0": true,
+             "description": "libvirt test:///default through the cgo adapter (-tags libvirt_test)"},
+    "browser_e2e": {"cost_class": "T1", "environment_class": "simulated", "accepted_in_m0": true,
+             "description": "UI journeys against a local stack"},
+    "emulated_vm": {"cost_class": "T2", "environment_class": "emulated", "accepted_in_m0": false,
+             "description": "Actual guest boot under QEMU software emulation"},
+    "nested_kvm": {"cost_class": "T2", "environment_class": "nested", "accepted_in_m0": false,
+             "description": "Actual guest boot under nested KVM"},
+    "bare_metal": {"cost_class": "T3", "environment_class": "bare_metal", "accepted_in_m0": false,
+             "description": "Authorized disposable dedicated host"},
+    "hardware_matrix": {"cost_class": "T4", "environment_class": "bare_metal", "accepted_in_m0": false,
+             "description": "Additional CPU/kernel/distribution variants on hardware"}
+  },
+  "real_kvm_tiers": ["nested_kvm", "bare_metal", "hardware_matrix"],
+  "dedicated_hardware_tiers": ["bare_metal", "hardware_matrix"],
+  "kinds": ["functional", "contract", "negative", "property", "mutation", "e2e", "static_analysis", "security_scan"],
+  "ac_tier_map": {
+    "unit": ["unit"],
+    "integration": ["container_integration", "simulated_libvirt", "browser_e2e", "emulated_vm", "nested_kvm", "bare_metal", "hardware_matrix"],
+    "guest-integration": ["emulated_vm", "nested_kvm", "bare_metal", "hardware_matrix"],
+    "bare-metal": ["bare_metal", "hardware_matrix"]
+  },
+  "origins_accepted_in_m0": ["local"],
+  "environment_kinds_accepted_in_m0": ["local_container", "host"],
+  "blockers": {
+    "HOSTED_CI_DEFERRED": "DR-004: hosted CI deferred, not waived",
+    "HARDWARE_UNAVAILABLE": "No authorized dedicated hardware",
+    "T2_UNAVAILABLE": "No emulated or nested-KVM environment",
+    "SECOND_APPROVER": "DR-004: second human approver deferred",
+    "HUMAN_LINKAGE": "DR-004: human-run linkage check deferred"
+  },
+  "gates": {
+    "check": {"tier": "container_integration", "kinds": ["functional", "static_analysis", "security_scan"]},
+    "go-test": {"tier": "unit", "kinds": ["functional"]},
+    "go-test-libvirt": {"tier": "simulated_libvirt", "kinds": ["functional", "contract"]},
+    "go-gosec": {"tier": "unit", "kinds": ["static_analysis", "security_scan"]},
+    "go-vuln": {"tier": "unit", "kinds": ["security_scan"]},
+    "go-staticcheck": {"tier": "unit", "kinds": ["static_analysis"]},
+    "secrets": {"tier": "unit", "kinds": ["security_scan"]},
+    "fe-audit": {"tier": "unit", "kinds": ["security_scan"]},
+    "threats": {"tier": "unit", "kinds": ["contract"]},
+    "interfaces": {"tier": "unit", "kinds": ["contract"]},
+    "openapi": {"tier": "unit", "kinds": ["contract", "negative"]},
+    "ci-policy": {"tier": "unit", "kinds": ["contract"]},
+    "fe-unit": {"tier": "unit", "kinds": ["functional", "contract"]},
+    "fe-negative": {"tier": "unit", "kinds": ["negative"]},
+    "fe-browser": {"tier": "browser_e2e", "kinds": ["functional", "e2e"]}
+  }
+}

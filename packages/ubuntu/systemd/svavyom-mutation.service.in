@@ -1,0 +1,69 @@
+# Svavyom mutation supervisor. Listens on its own Unix socket and starts one short-lived helper per request (the helper is NOT a
+# service of its own). The only libvirt-capable identity of Svavyom. It owns nothing it trusts: helper, configuration, catalog,
+# image store and base images belong to root and are read-only here.
+[Unit]
+Description=Svavyom mutation supervisor (launches the short-lived libvirt helper)
+Documentation=file:///usr/share/doc/svavyom/UBUNTU-DEPLOYMENT.md
+After=libvirtd.service libvirtd.socket
+Wants=libvirtd.socket
+StartLimitIntervalSec=60
+StartLimitBurst=5
+
+[Service]
+Type=exec
+User=svavyom-mut
+Group=svavyom-mut
+# The libvirt group grants the read-write libvirt socket. That group is coarse (see UBUNTU-DEPLOYMENT.md "Libvirt permissions"):
+# the closed protocol and the helper's code, not libvirt, limit this identity to preflight, define a stopped VM, and start.
+SupplementaryGroups=libvirt
+ExecStart=/usr/libexec/svavyom/mutation-supervisor \
+    --socket /run/svavyom/mutation/mutation.sock \
+    --allow-uid @SVAVYOM_API_UID@ \
+    --helper /usr/libexec/svavyom/mutation-helper \
+    --helper-config /etc/svavyom/provision.json
+Restart=on-failure
+RestartSec=2s
+TimeoutStopSec=60s
+
+# --- hardening (applies to the helper too: it is a child process) ---
+NoNewPrivileges=yes
+CapabilityBoundingSet=
+AmbientCapabilities=
+PrivateTmp=yes
+PrivateDevices=yes
+PrivateNetwork=yes
+ProtectSystem=strict
+ProtectHome=yes
+ProtectProc=invisible
+ProcSubset=pid
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+ProtectHostname=yes
+RestrictNamespaces=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+SystemCallErrorNumber=EPERM
+RestrictAddressFamilies=AF_UNIX
+UMask=0077
+# Resource limits (M4): generous for a single-host Development Preview, tight enough that a runaway process cannot take the host with it.
+TasksMax=512
+LimitNOFILE=4096
+MemoryMax=1G
+# Writable: its socket and its own scratch/state. Everything it trusts is explicitly read-only; the API's database is invisible.
+ReadWritePaths=/run/svavyom/mutation /var/lib/svavyom/state
+ReadOnlyPaths=/etc/svavyom /usr/libexec/svavyom /var/lib/svavyom/images
+InaccessiblePaths=/var/lib/svavyom/api /var/lib/svavyom/pool
+# EXCEPTIONS (each to be re-tested on the qualification host):
+#  * MemoryDenyWriteExecute is not set (libvirt client libraries, as for the agent).
+#  * PrivateUsers is not set: libvirt authorises the socket by the caller's real uid/gid (SO_PEERCRED); a user-namespace mapping
+#    would present the unit as "nobody" and lose the libvirt group.
+#  * No device filter beyond PrivateDevices: the helper never opens /dev/kvm; libvirtd (not this unit) runs QEMU.
+
+[Install]
+WantedBy=multi-user.target

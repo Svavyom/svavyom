@@ -1,0 +1,13 @@
+{
+  "request": {
+    "boundary": "browser-api",
+    "category": "read_resource",
+    "payload": {
+      "kind": "VM",
+      "id": "vm-01"
+    }
+  },
+  "expect": [
+    "PRIVILEGED_BEFORE_AUTH"
+  ]
+}

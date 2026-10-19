@@ -1,0 +1,107 @@
+{
+  "schema": 1,
+  "description": "Every design-system primitive with every state it supports (M0-E02-S06 r5 section 2, R-N1). The gallery must render each state at #/state/<Primitive>/<state>; unit and browser tests iterate this list.",
+  "primitives": {
+    "Button": [
+      "default",
+      "primary",
+      "destructive",
+      "disabled",
+      "pending"
+    ],
+    "Link": [
+      "default"
+    ],
+    "TextField": [
+      "empty",
+      "filled",
+      "described",
+      "invalid",
+      "disabled"
+    ],
+    "TextArea": [
+      "empty",
+      "invalid"
+    ],
+    "Select": [
+      "default",
+      "invalid"
+    ],
+    "Checkbox": [
+      "unchecked",
+      "checked",
+      "disabled"
+    ],
+    "RadioGroup": [
+      "default",
+      "invalid"
+    ],
+    "Tabs": [
+      "first",
+      "second"
+    ],
+    "Dialog": [
+      "open"
+    ],
+    "ConfirmDestructive": [
+      "empty",
+      "mismatch",
+      "match",
+      "invisible-characters"
+    ],
+    "Alert": [
+      "default"
+    ],
+    "StatusMessage": [
+      "success",
+      "warning"
+    ],
+    "LoadingRegion": [
+      "loading",
+      "loaded"
+    ],
+    "Progress": [
+      "partial"
+    ],
+    "EmptyState": [
+      "no-action",
+      "with-action"
+    ],
+    "ErrorState": [
+      "conflict",
+      "forbidden",
+      "host_error",
+      "internal",
+      "not_found",
+      "prohibited",
+      "rate_limited",
+      "timeout",
+      "unauthenticated",
+      "unavailable",
+      "validation"
+    ],
+    "ErrorSummary": [
+      "two-errors"
+    ],
+    "DataTable": [
+      "rows",
+      "wide"
+    ],
+    "SkipLink": [
+      "default"
+    ],
+    "AppShell": [
+      "default"
+    ],
+    "StaleNotice": [
+      "default"
+    ],
+    "UnreachableBanner": [
+      "never",
+      "last-known"
+    ],
+    "OutcomeUnknown": [
+      "default"
+    ]
+  }
+}

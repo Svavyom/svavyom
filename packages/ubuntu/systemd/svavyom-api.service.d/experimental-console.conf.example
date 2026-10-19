@@ -1,0 +1,16 @@
+# Opt-in drop-in for the Development Preview: enables the INTERACTIVE serial console (a full-power channel into the guest). Install as
+#   /etc/systemd/system/svavyom-api.service.d/experimental-console.conf
+# Reading the serial boot output does not need it. If you also installed experimental-mutation.conf, put --experimental-console on that
+# ExecStart instead (a drop-in replaces ExecStart, it does not merge).
+[Service]
+ExecStart=
+ExecStart=/usr/libexec/svavyom/api serve \
+    --db /var/lib/svavyom/api/svavyom.db \
+    --listen 0.0.0.0:8443 \
+    --tls-cert /etc/svavyom/tls/cert.pem --tls-key /etc/svavyom/tls/key.pem \
+    --static-dir /usr/share/svavyom/web \
+    --agent-socket /run/svavyom/agent/agent.sock \
+    --mutation-socket /run/svavyom/mutation/mutation.sock \
+    --console-socket /run/svavyom/console/console.sock \
+    --provision-config /etc/svavyom/provision.json \
+    --experimental-console

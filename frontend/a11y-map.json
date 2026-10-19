@@ -1,0 +1,387 @@
+{
+  "schema": 1,
+  "conformance_claim": "none in M0 (DR-010 D3 = A); WCAG 2.2 AA is the target",
+  "criteria": {
+    "1.1.1": {
+      "status": "verified",
+      "tests": [
+        "e2e/gallery.spec.ts::axe finds no violations on every manifest state"
+      ],
+      "axe_rules": [
+        "image-alt",
+        "svg-img-alt",
+        "role-img-alt"
+      ]
+    },
+    "1.2.1": {
+      "status": "not_applicable",
+      "reason": "No audio or video content."
+    },
+    "1.2.2": {
+      "status": "not_applicable",
+      "reason": "No audio or video content."
+    },
+    "1.2.3": {
+      "status": "not_applicable",
+      "reason": "No audio or video content."
+    },
+    "1.3.1": {
+      "status": "verified",
+      "tests": [
+        "src/design-system/primitives.test.tsx::every manifest state renders with an accessible role and name"
+      ],
+      "axe_rules": [
+        "label",
+        "list",
+        "listitem",
+        "th-has-data-cells",
+        "td-headers-attr",
+        "definition-list"
+      ]
+    },
+    "1.3.2": {
+      "status": "verified",
+      "tests": [
+        "e2e/journeys.spec.ts::J1 completes keyboard-only along its catalogue path"
+      ],
+      "axe_rules": []
+    },
+    "1.3.3": {
+      "status": "not_verified_in_M0",
+      "owner": "M2-E03-S01",
+      "reason": "Instructions that rely on shape or position need a manual content review."
+    },
+    "1.4.1": {
+      "status": "verified",
+      "tests": [
+        "src/design-system/primitives.test.tsx::invalid and disabled states are conveyed without colour alone"
+      ],
+      "axe_rules": [
+        "link-in-text-block"
+      ]
+    },
+    "1.4.2": {
+      "status": "not_applicable",
+      "reason": "No audio."
+    },
+    "2.1.1": {
+      "status": "verified",
+      "tests": [
+        "e2e/journeys.spec.ts::J4 completes keyboard-only along its catalogue path",
+        "e2e/journeys.spec.ts::J7 completes keyboard-only along its catalogue path"
+      ],
+      "axe_rules": []
+    },
+    "2.1.2": {
+      "status": "verified",
+      "tests": [
+        "e2e/focus.spec.ts::dialog contains focus and Escape releases it"
+      ],
+      "axe_rules": []
+    },
+    "2.1.4": {
+      "status": "not_applicable",
+      "reason": "No single-character keyboard shortcuts exist."
+    },
+    "2.2.1": {
+      "status": "not_applicable",
+      "reason": "No user time limits exist; REQUEST_DEADLINE_MS is a network deadline that never discards user input."
+    },
+    "2.2.2": {
+      "status": "verified",
+      "tests": [
+        "e2e/journeys.spec.ts::J3 has no automatic refresh and shows a pause control"
+      ],
+      "axe_rules": []
+    },
+    "2.3.1": {
+      "status": "not_applicable",
+      "reason": "No flashing content."
+    },
+    "2.4.1": {
+      "status": "verified",
+      "tests": [
+        "src/design-system/primitives.test.tsx::skip link moves focus to main"
+      ],
+      "axe_rules": [
+        "bypass",
+        "region"
+      ]
+    },
+    "2.4.2": {
+      "status": "verified",
+      "tests": [
+        "src/design-system/primitives.test.tsx::view heading sets the document title and takes focus"
+      ],
+      "axe_rules": [
+        "document-title"
+      ]
+    },
+    "2.4.3": {
+      "status": "verified",
+      "tests": [
+        "e2e/journeys.spec.ts::J4 completes keyboard-only along its catalogue path",
+        "e2e/focus.spec.ts::view change moves focus to the new h1"
+      ],
+      "axe_rules": []
+    },
+    "2.4.4": {
+      "status": "verified",
+      "tests": [
+        "e2e/gallery.spec.ts::axe finds no violations on every manifest state"
+      ],
+      "axe_rules": [
+        "link-name"
+      ]
+    },
+    "2.5.1": {
+      "status": "not_applicable",
+      "reason": "No multipoint or path-based gestures exist."
+    },
+    "2.5.2": {
+      "status": "not_verified_in_M0",
+      "owner": "M2-E03-S01",
+      "reason": "Native buttons activate on the up event; cancellation is not tested automatically in M0."
+    },
+    "2.5.3": {
+      "status": "verified",
+      "tests": [
+        "src/design-system/primitives.test.tsx::accessible names contain the visible labels"
+      ],
+      "axe_rules": [
+        "label-content-name-mismatch"
+      ]
+    },
+    "2.5.4": {
+      "status": "not_applicable",
+      "reason": "No motion actuation."
+    },
+    "3.1.1": {
+      "status": "verified",
+      "tests": [
+        "e2e/gallery.spec.ts::production shell has no axe violations"
+      ],
+      "axe_rules": [
+        "html-has-lang",
+        "html-lang-valid"
+      ]
+    },
+    "3.2.1": {
+      "status": "verified",
+      "tests": [
+        "e2e/focus.spec.ts::focusing and typing never change the context"
+      ],
+      "axe_rules": []
+    },
+    "3.2.2": {
+      "status": "verified",
+      "tests": [
+        "e2e/focus.spec.ts::focusing and typing never change the context"
+      ],
+      "axe_rules": []
+    },
+    "3.2.6": {
+      "status": "not_applicable",
+      "reason": "No help mechanism exists in M0."
+    },
+    "3.3.1": {
+      "status": "verified",
+      "tests": [
+        "src/design-system/primitives.test.tsx::error summary lists errors and links to fields",
+        "e2e/journeys.spec.ts::J4 completes keyboard-only along its catalogue path"
+      ],
+      "axe_rules": []
+    },
+    "3.3.2": {
+      "status": "verified",
+      "tests": [
+        "e2e/gallery.spec.ts::axe finds no violations on every manifest state"
+      ],
+      "axe_rules": [
+        "label",
+        "form-field-multiple-labels"
+      ]
+    },
+    "3.3.7": {
+      "status": "verified",
+      "tests": [
+        "e2e/journeys.spec.ts::J4 back from review keeps the entered values"
+      ],
+      "axe_rules": []
+    },
+    "4.1.2": {
+      "status": "verified",
+      "tests": [
+        "src/design-system/primitives.test.tsx::every manifest state renders with an accessible role and name"
+      ],
+      "axe_rules": [
+        "aria-allowed-attr",
+        "aria-required-attr",
+        "aria-valid-attr-value",
+        "button-name",
+        "aria-dialog-name"
+      ]
+    },
+    "1.2.4": {
+      "status": "not_applicable",
+      "reason": "No live audio or video."
+    },
+    "1.2.5": {
+      "status": "not_applicable",
+      "reason": "No prerecorded video."
+    },
+    "1.3.4": {
+      "status": "verified",
+      "tests": [
+        "e2e/responsive.spec.ts::content works in portrait and landscape"
+      ],
+      "axe_rules": []
+    },
+    "1.3.5": {
+      "status": "verified",
+      "tests": [
+        "src/design-system/primitives.test.tsx::inputs do not collect personal data without an autocomplete purpose"
+      ],
+      "axe_rules": []
+    },
+    "1.4.3": {
+      "status": "verified",
+      "tests": [
+        "src/design-system/tokens.test.ts::every token pair meets its contrast threshold",
+        "e2e/gallery.spec.ts::axe finds no violations on every manifest state"
+      ],
+      "axe_rules": [
+        "color-contrast"
+      ]
+    },
+    "1.4.4": {
+      "status": "verified",
+      "tests": [
+        "e2e/responsive.spec.ts::200 percent text resize keeps content usable"
+      ],
+      "axe_rules": []
+    },
+    "1.4.5": {
+      "status": "not_applicable",
+      "reason": "No images of text."
+    },
+    "1.4.10": {
+      "status": "verified",
+      "tests": [
+        "e2e/responsive.spec.ts::reflows without horizontal scrolling at 320 px"
+      ],
+      "axe_rules": []
+    },
+    "1.4.11": {
+      "status": "verified",
+      "tests": [
+        "src/design-system/tokens.test.ts::every token pair meets its contrast threshold",
+        "e2e/gallery.spec.ts::focus indicator is at least 2 px with 3 to 1 contrast on every focusable element"
+      ],
+      "axe_rules": []
+    },
+    "1.4.12": {
+      "status": "verified",
+      "tests": [
+        "e2e/responsive.spec.ts::text spacing overrides cause no clipping"
+      ],
+      "axe_rules": []
+    },
+    "1.4.13": {
+      "status": "verified",
+      "tests": [
+        "e2e/focus.spec.ts::skip link appears on focus without hiding content"
+      ],
+      "axe_rules": []
+    },
+    "2.4.5": {
+      "status": "not_verified_in_M0",
+      "owner": "M1-E04-S01",
+      "reason": "M0 has a single production view; multiple ways arrive with the M1 views."
+    },
+    "2.4.6": {
+      "status": "verified",
+      "tests": [
+        "e2e/gallery.spec.ts::axe finds no violations on every manifest state"
+      ],
+      "axe_rules": [
+        "empty-heading",
+        "heading-order",
+        "label"
+      ]
+    },
+    "2.4.7": {
+      "status": "verified",
+      "tests": [
+        "e2e/gallery.spec.ts::focus indicator is at least 2 px with 3 to 1 contrast on every focusable element"
+      ],
+      "axe_rules": []
+    },
+    "2.4.11": {
+      "status": "verified",
+      "tests": [
+        "e2e/focus.spec.ts::focused elements are not obscured"
+      ],
+      "axe_rules": []
+    },
+    "2.5.7": {
+      "status": "verified",
+      "tests": [
+        "e2e/gallery.spec.ts::no drag-only interactions exist"
+      ],
+      "axe_rules": []
+    },
+    "2.5.8": {
+      "status": "verified",
+      "tests": [
+        "e2e/responsive.spec.ts::pointer targets are at least 24 by 24 px"
+      ],
+      "axe_rules": [
+        "target-size"
+      ]
+    },
+    "3.1.2": {
+      "status": "not_applicable",
+      "reason": "The UI uses a single language."
+    },
+    "3.2.3": {
+      "status": "not_verified_in_M0",
+      "owner": "M1-E04-S01",
+      "reason": "M0 has one navigation set; consistency across multiple views arrives with M1."
+    },
+    "3.2.4": {
+      "status": "not_verified_in_M0",
+      "owner": "M2-E03-S01",
+      "reason": "Consistent identification across many views needs manual review."
+    },
+    "3.3.3": {
+      "status": "verified",
+      "tests": [
+        "src/design-system/primitives.test.tsx::error summary lists errors and links to fields"
+      ],
+      "axe_rules": []
+    },
+    "3.3.4": {
+      "status": "verified",
+      "tests": [
+        "src/journeys/journeys.negative.test.tsx::confirm destructive requires an exact code-point match",
+        "e2e/journeys.spec.ts::J7 completes keyboard-only along its catalogue path"
+      ],
+      "axe_rules": []
+    },
+    "3.3.8": {
+      "status": "not_verified_in_M0",
+      "owner": "M1-E04-S04",
+      "reason": "Sign-in does not exist yet (J2 future); owner per the J2 implementing story until an authentication story exists (ownership decision pending)."
+    },
+    "4.1.3": {
+      "status": "verified",
+      "tests": [
+        "src/design-system/primitives.test.tsx::status and alert messages use live roles"
+      ],
+      "axe_rules": [
+        "aria-allowed-role"
+      ]
+    }
+  }
+}

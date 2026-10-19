@@ -1,0 +1,109 @@
+{
+  "schema": 1,
+  "description": "The open-core boundary (internal plan: docs/review/OPEN-CORE-PLAN.md). Premium modules, if there are any, live in a SEPARATE repository and run as SEPARATE processes that talk to this product only through the interfaces listed here. Nothing in this repository may import them, depend on them, or gate behaviour on a licence, entitlement, trial or host count. tools/check_open_core.py enforces it. REUSE.toml is generated from the tiers (tier_licence, copyright); the check refuses a REUSE.toml that differs.",
+  "tiers": {
+    "core": [
+      "backend/**",
+      "frontend/**",
+      "agent/**",
+      "packages/**",
+      "toolchain/**",
+      "ci/**",
+      ".github/**",
+      "compose.yaml",
+      "Makefile",
+      "VERSION",
+      "release/**",
+      "docs-lock.json",
+      "AGENTS.md",
+      "README.md",
+      "OPERATOR_ACTIONS_REQUIRED.md",
+      ".gitignore",
+      ".dockerignore",
+      ".gitleaks.toml",
+      ".gitleaks-dir.toml",
+      ".gitleaksignore"
+    ],
+    "interface": [
+      "contracts/**"
+    ],
+    "tools": [
+      "tools/**"
+    ],
+    "docs": [
+      "docs/**",
+      "THIRD-PARTY-NOTICES.md",
+      "NOTICE",
+      "LICENSING.md",
+      "CONTRIBUTING.md",
+      "SECURITY.md",
+      "CLA.md",
+      "REUSE.toml",
+      "BUILDING.md",
+      "INSTALLING.md",
+      "USING.md",
+      "SOURCE-OFFER.md"
+    ],
+    "internal": [
+      "tests/**",
+      "evidence/**",
+      "prompts/**",
+      "research/**",
+      "certification/**"
+    ],
+    "licence_texts": [
+      "LICENSE",
+      "LICENSES/**"
+    ]
+  },
+  "interfaces": [
+    "contracts/openapi.yaml (the HTTP API; a premium service is a client of it)",
+    "contracts/console-channel.json (console channel)",
+    "the read-only agent socket protocol and the mutation protocol are NOT interfaces for premium modules: they stay private to this product",
+    "a future documented extension socket (not built; see the plan)"
+  ],
+  "forbidden_import_prefixes": [
+    "example.invalid/dedicatedcloud/premium",
+    "example.invalid/dedicatedcloud/enterprise",
+    "svavyom-premium",
+    "@svavyom/premium",
+    "@svavyom-premium"
+  ],
+  "forbidden_tokens": [
+    "license_key",
+    "licence_key",
+    "licensekey",
+    "entitlement",
+    "trial_expires",
+    "trial_ends",
+    "activation_code",
+    "phone_home",
+    "phonehome",
+    "max_hosts",
+    "host_limit",
+    "seat_limit"
+  ],
+  "scanned_source": [
+    "backend/**/*.go",
+    "frontend/src/**/*.ts",
+    "frontend/src/**/*.tsx",
+    "agent/**",
+    "packages/**",
+    "contracts/openapi.yaml",
+    "frontend/package.json",
+    "backend/go.mod"
+  ],
+  "token_exceptions": [
+    "backend/**/*_test.go",
+    "frontend/src/**/*.test.*"
+  ],
+  "note": "A numeric limit on hosts, VMs or users, a licence key, a trial, an entitlement check or a call home would have to be written into this open code, where anyone can delete it, and it would break the promise that the product is not limited. If a paid feature ever needs a check, the check belongs in the premium module, not here.",
+  "copyright": "2026 Dhanraj Sheth",
+  "tier_licence": {
+    "core": "AGPL-3.0-or-later",
+    "interface": "Apache-2.0",
+    "tools": "Apache-2.0",
+    "docs": "Apache-2.0",
+    "internal": "AGPL-3.0-or-later"
+  }
+}

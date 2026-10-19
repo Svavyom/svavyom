@@ -1,0 +1,10 @@
+processor	: 0
+vendor_id	: GenuineIntel
+model name	: Fixture CPU
+flags		: fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx lm constant_tsc pni ssse3 sse4_1 sse4_2 x2apic popcnt aes xsave avx
+
+processor	: 1
+vendor_id	: GenuineIntel
+model name	: Fixture CPU
+flags		: fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx lm constant_tsc pni ssse3 sse4_1 sse4_2 x2apic popcnt aes xsave avx
+

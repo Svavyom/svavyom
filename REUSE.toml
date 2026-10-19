@@ -1,0 +1,32 @@
+# Generated from release/open-core.json by tools/check_open_core.py --write; do not edit by hand.
+version = 1
+
+[[annotations]]
+path = ["backend/**", "frontend/**", "agent/**", "packages/**", "toolchain/**", "ci/**", ".github/**", "compose.yaml", "Makefile", "VERSION", "release/**", "docs-lock.json", "AGENTS.md", "README.md", "OPERATOR_ACTIONS_REQUIRED.md", ".gitignore", ".dockerignore", ".gitleaks.toml", ".gitleaks-dir.toml", ".gitleaksignore"]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2026 Dhanraj Sheth"
+SPDX-License-Identifier = "AGPL-3.0-or-later"
+
+[[annotations]]
+path = ["contracts/**"]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2026 Dhanraj Sheth"
+SPDX-License-Identifier = "Apache-2.0"
+
+[[annotations]]
+path = ["tools/**"]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2026 Dhanraj Sheth"
+SPDX-License-Identifier = "Apache-2.0"
+
+[[annotations]]
+path = ["docs/**", "THIRD-PARTY-NOTICES.md", "NOTICE", "LICENSING.md", "CONTRIBUTING.md", "SECURITY.md", "CLA.md", "REUSE.toml", "BUILDING.md", "INSTALLING.md", "USING.md", "SOURCE-OFFER.md"]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2026 Dhanraj Sheth"
+SPDX-License-Identifier = "Apache-2.0"
+
+[[annotations]]
+path = ["tests/**", "evidence/**", "prompts/**", "research/**", "certification/**"]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2026 Dhanraj Sheth"
+SPDX-License-Identifier = "AGPL-3.0-or-later"

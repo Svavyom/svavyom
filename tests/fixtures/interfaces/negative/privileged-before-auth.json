@@ -1,0 +1,15 @@
+{
+  "request": {
+    "boundary": "browser-api",
+    "category": "submit_operation",
+    "payload": {
+      "type": "create",
+      "kind": "VM",
+      "id": "vm-01",
+      "idempotency_key": "k1"
+    }
+  },
+  "expect": [
+    "PRIVILEGED_BEFORE_AUTH"
+  ]
+}

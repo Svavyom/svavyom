@@ -1,0 +1,718 @@
+{
+  "schema": 1,
+  "description": "M0-E01-S02 threat register: every boundary x STRIDE pair plus injection, authz_bypass (IDOR, cross-project), replay and failure-row threats. 'mitigated' only with runtime test evidence on an implemented boundary; otherwise 'planned' with an owner story or 'accepted' with an approved decision record.",
+  "threats": [
+    {
+      "id": "T-API-S",
+      "boundary": "browser-api",
+      "category": "spoofing",
+      "kind": "impersonation",
+      "description": "A caller impersonates a legitimate browser client on browser-api",
+      "likelihood": "medium",
+      "impact": "high",
+      "mitigations": [
+        "M-API-AUTHN"
+      ],
+      "status": "planned",
+      "owner_story": "M1-E04-S04"
+    },
+    {
+      "id": "T-API-T-INJ",
+      "boundary": "browser-api",
+      "category": "tampering",
+      "kind": "injection",
+      "description": "Shell, XML or path content is injected through browser-api request fields",
+      "likelihood": "medium",
+      "impact": "high",
+      "mitigations": [
+        "M-API-SCHEMA"
+      ],
+      "status": "planned",
+      "owner_story": "M1-E04-S04"
+    },
+    {
+      "id": "T-API-R",
+      "boundary": "browser-api",
+      "category": "repudiation",
+      "kind": "repudiation",
+      "description": "An actor denies having performed an action on browser-api",
+      "likelihood": "low",
+      "impact": "medium",
+      "mitigations": [
+        "M-API-AUDIT"
+      ],
+      "status": "planned",
+      "owner_story": "M1-E04-S04"
+    },
+    {
+      "id": "T-API-I",
+      "boundary": "browser-api",
+      "category": "information_disclosure",
+      "kind": "disclosure",
+      "description": "Secrets or another project's data leak through browser-api responses, errors or audit records",
+      "likelihood": "medium",
+      "impact": "high",
+      "mitigations": [
+        "M-API-OWN",
+        "M-REDACT"
+      ],
+      "status": "planned",
+      "owner_story": "M1-E04-S04"
+    },
+    {
+      "id": "T-API-D",
+      "boundary": "browser-api",
+      "category": "denial_of_service",
+      "kind": "exhaustion",
+      "description": "Flooding or resource exhaustion of browser-api",
+      "likelihood": "medium",
+      "impact": "medium",
+      "mitigations": [
+        "M-API-LISTEN"
+      ],
+      "status": "planned",
+      "owner_story": "M1-E04-S03"
+    },
+    {
+      "id": "T-API-E-IDOR",
+      "boundary": "browser-api",
+      "category": "elevation_of_privilege",
+      "kind": "authz_bypass",
+      "description": "A caller reaches unrelated resources or another project's resources via browser-api (IDOR, cross-project access)",
+      "likelihood": "medium",
+      "impact": "high",
+      "mitigations": [
+        "M-API-AUTHZ",
+        "M-API-OWN"
+      ],
+      "status": "planned",
+      "owner_story": "M1-E04-S04"
+    },
+    {
+      "id": "T-API-T-REPLAY",
+      "boundary": "browser-api",
+      "category": "tampering",
+      "kind": "replay",
+      "description": "A captured or duplicated request is replayed on browser-api",
+      "likelihood": "medium",
+      "impact": "high",
+      "mitigations": [
+        "M-API-IDEMP",
+        "M-API-AUTHN"
+      ],
+      "status": "planned",
+      "owner_story": "M0-E02-S07"
+    },
+    {
+      "id": "T-OPM-S",
+      "boundary": "api-operation-manager",
+      "category": "spoofing",
+      "kind": "impersonation",
+      "description": "A caller impersonates a legitimate api client on api-operation-manager",
+      "likelihood": "medium",
+      "impact": "high",
+      "mitigations": [
+        "M-OPM-AUTHN"
+      ],
+      "status": "planned",
+      "owner_story": "M0-E02-S07"
+    },
+    {
+      "id": "T-OPM-T-INJ",
+      "boundary": "api-operation-manager",
+      "category": "tampering",
+      "kind": "injection",
+      "description": "Shell, XML or path content is injected through api-operation-manager request fields",
+      "likelihood": "medium",
+      "impact": "high",
+      "mitigations": [
+        "M-OPM-SCHEMA"
+      ],
+      "status": "planned",
+      "owner_story": "M0-E02-S07"
+    },
+    {
+      "id": "T-OPM-R",
+      "boundary": "api-operation-manager",
+      "category": "repudiation",
+      "kind": "repudiation",
+      "description": "An actor denies having performed an action on api-operation-manager",
+      "likelihood": "low",
+      "impact": "medium",
+      "mitigations": [
+        "M-OPM-AUDIT"
+      ],
+      "status": "planned",
+      "owner_story": "M0-E02-S07"
+    },
+    {
+      "id": "T-OPM-I",
+      "boundary": "api-operation-manager",
+      "category": "information_disclosure",
+      "kind": "disclosure",
+      "description": "Secrets or another project's data leak through api-operation-manager responses, errors or audit records",
+      "likelihood": "medium",
+      "impact": "high",
+      "mitigations": [
+        "M-OPM-OWN",
+        "M-REDACT"
+      ],
+      "status": "planned",
+      "owner_story": "M0-E02-S07"
+    },
+    {
+      "id": "T-OPM-D",
+      "boundary": "api-operation-manager",
+      "category": "denial_of_service",
+      "kind": "exhaustion",
+      "description": "Flooding or resource exhaustion of api-operation-manager",
+      "likelihood": "medium",
+      "impact": "medium",
+      "mitigations": [
+        "M-OPM-LISTEN"
+      ],
+      "status": "planned",
+      "owner_story": "M0-E02-S07"
+    },
+    {
+      "id": "T-OPM-E-IDOR",
+      "boundary": "api-operation-manager",
+      "category": "elevation_of_privilege",
+      "kind": "authz_bypass",
+      "description": "A caller reaches unrelated resources or another project's resources via api-operation-manager (IDOR, cross-project access)",
+      "likelihood": "medium",
+      "impact": "high",
+      "mitigations": [
+        "M-OPM-AUTHZ",
+        "M-OPM-OWN"
+      ],
+      "status": "planned",
+      "owner_story": "M0-E02-S07"
+    },
+    {
+      "id": "T-OPM-T-REPLAY",
+      "boundary": "api-operation-manager",
+      "category": "tampering",
+      "kind": "replay",
+      "description": "A captured or duplicated request is replayed on api-operation-manager",
+      "likelihood": "medium",
+      "impact": "high",
+      "mitigations": [
+        "M-OPM-IDEMP",
+        "M-OPM-AUTHN"
+      ],
+      "status": "planned",
+      "owner_story": "M0-E02-S07"
+    },
+    {
+      "id": "T-AGENT-S",
+      "boundary": "operation-manager-host-agent",
+      "category": "spoofing",
+      "kind": "impersonation",
+      "description": "A caller impersonates a legitimate operation-manager client on operation-manager-host-agent",
+      "likelihood": "medium",
+      "impact": "high",
+      "mitigations": [
+        "M-AGENT-AUTHN"
+      ],
+      "status": "planned",
+      "owner_story": "M1-E02-S01"
+    },
+    {
+      "id": "T-AGENT-T-INJ",
+      "boundary": "operation-manager-host-agent",
+      "category": "tampering",
+      "kind": "injection",
+      "description": "Shell, XML or path content is injected through operation-manager-host-agent request fields",
+      "likelihood": "medium",
+      "impact": "high",
+      "mitigations": [
+        "M-AGENT-SCHEMA"
+      ],
+      "status": "planned",
+      "owner_story": "M1-E02-S01"
+    },
+    {
+      "id": "T-AGENT-R",
+      "boundary": "operation-manager-host-agent",
+      "category": "repudiation",
+      "kind": "repudiation",
+      "description": "An actor denies having performed an action on operation-manager-host-agent",
+      "likelihood": "low",
+      "impact": "medium",
+      "mitigations": [
+        "M-AGENT-AUDIT"
+      ],
+      "status": "planned",
+      "owner_story": "M1-E02-S01"
+    },
+    {
+      "id": "T-AGENT-I",
+      "boundary": "operation-manager-host-agent",
+      "category": "information_disclosure",
+      "kind": "disclosure",
+      "description": "Secrets or another project's data leak through operation-manager-host-agent responses, errors or audit records",
+      "likelihood": "medium",
+      "impact": "high",
+      "mitigations": [
+        "M-AGENT-OWN",
+        "M-REDACT"
+      ],
+      "status": "planned",
+      "owner_story": "M1-E02-S01"
+    },
+    {
+      "id": "T-AGENT-D",
+      "boundary": "operation-manager-host-agent",
+      "category": "denial_of_service",
+      "kind": "exhaustion",
+      "description": "Flooding or resource exhaustion of operation-manager-host-agent",
+      "likelihood": "medium",
+      "impact": "medium",
+      "mitigations": [
+        "M-AGENT-LISTEN"
+      ],
+      "status": "planned",
+      "owner_story": "M1-E02-S01"
+    },
+    {
+      "id": "T-AGENT-E-IDOR",
+      "boundary": "operation-manager-host-agent",
+      "category": "elevation_of_privilege",
+      "kind": "authz_bypass",
+      "description": "A caller reaches unrelated resources or another project's resources via operation-manager-host-agent (IDOR, cross-project access)",
+      "likelihood": "medium",
+      "impact": "high",
+      "mitigations": [
+        "M-AGENT-AUTHZ",
+        "M-AGENT-OWN"
+      ],
+      "status": "planned",
+      "owner_story": "M1-E02-S01"
+    },
+    {
+      "id": "T-AGENT-T-REPLAY",
+      "boundary": "operation-manager-host-agent",
+      "category": "tampering",
+      "kind": "replay",
+      "description": "A captured or duplicated request is replayed on operation-manager-host-agent",
+      "likelihood": "medium",
+      "impact": "high",
+      "mitigations": [
+        "M-AGENT-IDEMP",
+        "M-AGENT-AUTHN"
+      ],
+      "status": "planned",
+      "owner_story": "M1-E02-S01"
+    },
+    {
+      "id": "T-LIBVIRT-S",
+      "boundary": "host-agent-libvirt",
+      "category": "spoofing",
+      "kind": "impersonation",
+      "description": "A caller impersonates a legitimate host-agent client on host-agent-libvirt",
+      "likelihood": "medium",
+      "impact": "high",
+      "mitigations": [
+        "M-LIBVIRT-AUTHN"
+      ],
+      "status": "planned",
+      "owner_story": "M1-E02-S01"
+    },
+    {
+      "id": "T-LIBVIRT-T-INJ",
+      "boundary": "host-agent-libvirt",
+      "category": "tampering",
+      "kind": "injection",
+      "description": "Shell, XML or path content is injected through host-agent-libvirt request fields",
+      "likelihood": "medium",
+      "impact": "high",
+      "mitigations": [
+        "M-LIBVIRT-SCHEMA"
+      ],
+      "status": "planned",
+      "owner_story": "M1-E02-S02"
+    },
+    {
+      "id": "T-LIBVIRT-R",
+      "boundary": "host-agent-libvirt",
+      "category": "repudiation",
+      "kind": "repudiation",
+      "description": "An actor denies having performed an action on host-agent-libvirt",
+      "likelihood": "low",
+      "impact": "medium",
+      "mitigations": [
+        "M-LIBVIRT-AUDIT"
+      ],
+      "status": "planned",
+      "owner_story": "M1-E02-S01"
+    },
+    {
+      "id": "T-LIBVIRT-I",
+      "boundary": "host-agent-libvirt",
+      "category": "information_disclosure",
+      "kind": "disclosure",
+      "description": "Secrets or another project's data leak through host-agent-libvirt responses, errors or audit records",
+      "likelihood": "medium",
+      "impact": "high",
+      "mitigations": [
+        "M-LIBVIRT-OWN",
+        "M-REDACT"
+      ],
+      "status": "planned",
+      "owner_story": "M1-E02-S01"
+    },
+    {
+      "id": "T-LIBVIRT-D",
+      "boundary": "host-agent-libvirt",
+      "category": "denial_of_service",
+      "kind": "exhaustion",
+      "description": "Flooding or resource exhaustion of host-agent-libvirt",
+      "likelihood": "medium",
+      "impact": "medium",
+      "mitigations": [
+        "M-LIBVIRT-LISTEN"
+      ],
+      "status": "planned",
+      "owner_story": "M1-E02-S01"
+    },
+    {
+      "id": "T-LIBVIRT-E-IDOR",
+      "boundary": "host-agent-libvirt",
+      "category": "elevation_of_privilege",
+      "kind": "authz_bypass",
+      "description": "A caller reaches unrelated resources or another project's resources via host-agent-libvirt (IDOR, cross-project access)",
+      "likelihood": "medium",
+      "impact": "high",
+      "mitigations": [
+        "M-LIBVIRT-AUTHZ",
+        "M-LIBVIRT-OWN"
+      ],
+      "status": "planned",
+      "owner_story": "M1-E02-S01"
+    },
+    {
+      "id": "T-LIBVIRT-T-REPLAY",
+      "boundary": "host-agent-libvirt",
+      "category": "tampering",
+      "kind": "replay",
+      "description": "A captured or duplicated request is replayed on host-agent-libvirt",
+      "likelihood": "medium",
+      "impact": "high",
+      "mitigations": [
+        "M-LIBVIRT-IDEMP",
+        "M-LIBVIRT-AUTHN"
+      ],
+      "status": "planned",
+      "owner_story": "M1-E02-S03"
+    },
+    {
+      "id": "T-PAAS-S",
+      "boundary": "paas-controller-workload-vm",
+      "category": "spoofing",
+      "kind": "impersonation",
+      "description": "A caller impersonates a legitimate paas-controller client on paas-controller-workload-vm",
+      "likelihood": "medium",
+      "impact": "high",
+      "mitigations": [
+        "M-PAAS-AUTHN"
+      ],
+      "status": "planned",
+      "owner_story": "M3-E01-S03"
+    },
+    {
+      "id": "T-PAAS-T-INJ",
+      "boundary": "paas-controller-workload-vm",
+      "category": "tampering",
+      "kind": "injection",
+      "description": "Shell, XML or path content is injected through paas-controller-workload-vm request fields",
+      "likelihood": "medium",
+      "impact": "high",
+      "mitigations": [
+        "M-PAAS-SCHEMA"
+      ],
+      "status": "planned",
+      "owner_story": "M3-E01-S01"
+    },
+    {
+      "id": "T-PAAS-R",
+      "boundary": "paas-controller-workload-vm",
+      "category": "repudiation",
+      "kind": "repudiation",
+      "description": "An actor denies having performed an action on paas-controller-workload-vm",
+      "likelihood": "low",
+      "impact": "medium",
+      "mitigations": [
+        "M-PAAS-AUDIT"
+      ],
+      "status": "planned",
+      "owner_story": "M3-E01-S01"
+    },
+    {
+      "id": "T-PAAS-I",
+      "boundary": "paas-controller-workload-vm",
+      "category": "information_disclosure",
+      "kind": "disclosure",
+      "description": "Secrets or another project's data leak through paas-controller-workload-vm responses, errors or audit records",
+      "likelihood": "medium",
+      "impact": "high",
+      "mitigations": [
+        "M-PAAS-OWN",
+        "M-REDACT"
+      ],
+      "status": "planned",
+      "owner_story": "M3-E01-S03"
+    },
+    {
+      "id": "T-PAAS-D",
+      "boundary": "paas-controller-workload-vm",
+      "category": "denial_of_service",
+      "kind": "exhaustion",
+      "description": "Flooding or resource exhaustion of paas-controller-workload-vm",
+      "likelihood": "medium",
+      "impact": "medium",
+      "mitigations": [
+        "M-PAAS-LISTEN"
+      ],
+      "status": "planned",
+      "owner_story": "M3-E01-S01"
+    },
+    {
+      "id": "T-PAAS-E-IDOR",
+      "boundary": "paas-controller-workload-vm",
+      "category": "elevation_of_privilege",
+      "kind": "authz_bypass",
+      "description": "A caller reaches unrelated resources or another project's resources via paas-controller-workload-vm (IDOR, cross-project access)",
+      "likelihood": "medium",
+      "impact": "high",
+      "mitigations": [
+        "M-PAAS-AUTHZ",
+        "M-PAAS-OWN"
+      ],
+      "status": "planned",
+      "owner_story": "M3-E01-S01"
+    },
+    {
+      "id": "T-PAAS-T-REPLAY",
+      "boundary": "paas-controller-workload-vm",
+      "category": "tampering",
+      "kind": "replay",
+      "description": "A captured or duplicated request is replayed on paas-controller-workload-vm",
+      "likelihood": "medium",
+      "impact": "high",
+      "mitigations": [
+        "M-PAAS-IDEMP",
+        "M-PAAS-AUTHN"
+      ],
+      "status": "planned",
+      "owner_story": "M3-E01-S01"
+    },
+    {
+      "id": "T-API-S-REMOTE",
+      "boundary": "browser-api",
+      "category": "spoofing",
+      "kind": "exposure",
+      "description": "A remote network client reaches the scaffold API",
+      "likelihood": "low",
+      "impact": "high",
+      "mitigations": [
+        "M-API-SURFACE-LOOPBACK"
+      ],
+      "status": "mitigated"
+    },
+    {
+      "id": "T-API-E-ENDPOINTS",
+      "boundary": "browser-api",
+      "category": "elevation_of_privilege",
+      "kind": "exposure",
+      "description": "Unimplemented or privileged endpoints are reachable on the scaffold",
+      "likelihood": "low",
+      "impact": "high",
+      "mitigations": [
+        "M-API-SURFACE-ROUTES",
+        "M-API-SURFACE-CLEANPATH"
+      ],
+      "status": "mitigated"
+    },
+    {
+      "id": "T-LIBVIRT-T-XML",
+      "boundary": "host-agent-libvirt",
+      "category": "tampering",
+      "kind": "injection",
+      "description": "Unescaped or attacker-shaped values alter generated domain XML (extra devices, qemu:commandline)",
+      "likelihood": "medium",
+      "impact": "high",
+      "mitigations": [
+        "M-LIBVIRT-SCHEMA",
+        "M-LIBVIRT-NOXML"
+      ],
+      "status": "planned",
+      "owner_story": "M1-E02-S02"
+    },
+    {
+      "id": "T-LIBVIRT-E-REMOTE",
+      "boundary": "host-agent-libvirt",
+      "category": "elevation_of_privilege",
+      "kind": "local_privilege",
+      "description": "The agent is pointed at a remote or alternate hypervisor URI",
+      "likelihood": "medium",
+      "impact": "high",
+      "mitigations": [
+        "M-LIBVIRT-LOCAL",
+        "M-LIBVIRT-AUTHN"
+      ],
+      "status": "planned",
+      "owner_story": "M1-E02-S01"
+    },
+    {
+      "id": "T-AGENT-E-SOCKET",
+      "boundary": "operation-manager-host-agent",
+      "category": "elevation_of_privilege",
+      "kind": "local_privilege",
+      "description": "A local process connects to the agent socket via loose permissions or a path race (TOCTOU) and issues commands",
+      "likelihood": "medium",
+      "impact": "high",
+      "mitigations": [
+        "M-AGENT-UNIXONLY",
+        "M-AGENT-AUTHN"
+      ],
+      "status": "planned",
+      "owner_story": "M1-E02-S01"
+    },
+    {
+      "id": "T-AGENT-T-SHELL",
+      "boundary": "operation-manager-host-agent",
+      "category": "tampering",
+      "kind": "injection",
+      "description": "A host command smuggles a shell command or arguments",
+      "likelihood": "medium",
+      "impact": "high",
+      "mitigations": [
+        "M-AGENT-SCHEMA",
+        "M-AGENT-NOSHELL"
+      ],
+      "status": "planned",
+      "owner_story": "M1-E02-S01"
+    },
+    {
+      "id": "T-PAAS-T-IMAGE",
+      "boundary": "paas-controller-workload-vm",
+      "category": "tampering",
+      "kind": "supply_chain",
+      "description": "A mutable or substituted workload image is deployed (registry or tag tampering)",
+      "likelihood": "medium",
+      "impact": "high",
+      "mitigations": [
+        "M-PAAS-DIGEST"
+      ],
+      "status": "planned",
+      "owner_story": "M3-E01-S02"
+    },
+    {
+      "id": "T-PAAS-I-CREDS",
+      "boundary": "paas-controller-workload-vm",
+      "category": "information_disclosure",
+      "kind": "disclosure",
+      "description": "PaaS workload or provider credentials are stored or transmitted in recoverable form",
+      "likelihood": "medium",
+      "impact": "high",
+      "mitigations": [
+        "M-PAAS-OWN",
+        "M-REDACT",
+        "M-PAAS-NOCREDS"
+      ],
+      "status": "planned",
+      "owner_story": "M3-E01-S03"
+    },
+    {
+      "id": "T-ROW-API-RESTART",
+      "boundary": "browser-api",
+      "category": "denial_of_service",
+      "kind": "failure_row",
+      "description": "Failure api-restart interrupts operations and invites duplicate destructive retries",
+      "likelihood": "medium",
+      "impact": "high",
+      "mitigations": [
+        "M-ROW-API-RESTART"
+      ],
+      "status": "planned",
+      "failure_row": "api-restart",
+      "owner_story": "M0-E02-S07"
+    },
+    {
+      "id": "T-ROW-OPERATION-MANAGER-RESTART",
+      "boundary": "api-operation-manager",
+      "category": "denial_of_service",
+      "kind": "failure_row",
+      "description": "Failure operation-manager-restart interrupts operations and invites duplicate destructive retries",
+      "likelihood": "medium",
+      "impact": "high",
+      "mitigations": [
+        "M-ROW-OPERATION-MANAGER-RESTART"
+      ],
+      "status": "planned",
+      "failure_row": "operation-manager-restart",
+      "owner_story": "M0-E02-S07"
+    },
+    {
+      "id": "T-ROW-AGENT-TIMEOUT",
+      "boundary": "operation-manager-host-agent",
+      "category": "denial_of_service",
+      "kind": "failure_row",
+      "description": "Failure agent-timeout interrupts operations and invites duplicate destructive retries",
+      "likelihood": "medium",
+      "impact": "high",
+      "mitigations": [
+        "M-ROW-AGENT-TIMEOUT"
+      ],
+      "status": "planned",
+      "failure_row": "agent-timeout",
+      "owner_story": "M0-E02-S07"
+    },
+    {
+      "id": "T-ROW-AGENT-UNAVAILABLE",
+      "boundary": "operation-manager-host-agent",
+      "category": "denial_of_service",
+      "kind": "failure_row",
+      "description": "Failure agent-unavailable interrupts operations and invites duplicate destructive retries",
+      "likelihood": "medium",
+      "impact": "high",
+      "mitigations": [
+        "M-ROW-AGENT-UNAVAILABLE"
+      ],
+      "status": "planned",
+      "failure_row": "agent-unavailable",
+      "owner_story": "M0-E02-S07"
+    },
+    {
+      "id": "T-ROW-HOST-AGENT-CRASH",
+      "boundary": "operation-manager-host-agent",
+      "category": "denial_of_service",
+      "kind": "failure_row",
+      "description": "Failure host-agent-crash interrupts operations and invites duplicate destructive retries",
+      "likelihood": "medium",
+      "impact": "high",
+      "mitigations": [
+        "M-ROW-HOST-AGENT-CRASH"
+      ],
+      "status": "planned",
+      "failure_row": "host-agent-crash",
+      "owner_story": "M0-E02-S07"
+    },
+    {
+      "id": "T-ROW-LIBVIRT-UNAVAILABLE",
+      "boundary": "host-agent-libvirt",
+      "category": "denial_of_service",
+      "kind": "failure_row",
+      "description": "Failure libvirt-unavailable interrupts operations and invites duplicate destructive retries",
+      "likelihood": "medium",
+      "impact": "high",
+      "mitigations": [
+        "M-ROW-LIBVIRT-UNAVAILABLE"
+      ],
+      "status": "planned",
+      "failure_row": "libvirt-unavailable",
+      "owner_story": "M0-E02-S07"
+    }
+  ]
+}

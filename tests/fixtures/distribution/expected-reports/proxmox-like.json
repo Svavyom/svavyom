@@ -1,0 +1,96 @@
+{
+  "schema": 1,
+  "checker_version": "1",
+  "matrix_sha256": "95a244835db2d8e11c254cc72b7a376fa56433bd68070ce99d000ae450534256",
+  "qualification": "none",
+  "meaning": "matrix conformance only; not host qualification",
+  "distribution": {
+    "id": "debian",
+    "version_id": "13"
+  },
+  "verdict": "supported",
+  "reasons": [],
+  "probes": [
+    {
+      "id": "os_release",
+      "required": true,
+      "result": "pass",
+      "reason": "PARSED",
+      "detail": "debian 13"
+    },
+    {
+      "id": "arch",
+      "required": true,
+      "result": "pass",
+      "reason": "ARCH_OK",
+      "detail": "x86_64"
+    },
+    {
+      "id": "cpu_virt",
+      "required": true,
+      "result": "pass",
+      "reason": "HW_VIRT"
+    },
+    {
+      "id": "kernel_floor",
+      "required": true,
+      "result": "pass",
+      "reason": "KERNEL_OK",
+      "detail": "6.8"
+    },
+    {
+      "id": "cgroup_v2",
+      "required": true,
+      "result": "pass",
+      "reason": "CGROUP_V2"
+    },
+    {
+      "id": "systemd",
+      "required": true,
+      "result": "pass",
+      "reason": "SYSTEMD"
+    },
+    {
+      "id": "nftables_kernel",
+      "required": true,
+      "result": "pass",
+      "reason": "NF_TABLES_LOADED"
+    },
+    {
+      "id": "lsm",
+      "required": true,
+      "result": "pass",
+      "reason": "APPARMOR_ENABLED"
+    },
+    {
+      "id": "containment",
+      "required": true,
+      "result": "pass",
+      "reason": "BARE_HOST"
+    },
+    {
+      "id": "dev_kvm",
+      "required": false,
+      "result": "info",
+      "reason": "ABSENT_OR_UNREADABLE"
+    },
+    {
+      "id": "nftables_userspace",
+      "required": false,
+      "result": "info",
+      "reason": "PRESENT"
+    },
+    {
+      "id": "libvirt_packages",
+      "required": false,
+      "result": "info",
+      "reason": "NOT_INSTALLED"
+    },
+    {
+      "id": "qemu_packages",
+      "required": false,
+      "result": "info",
+      "reason": "NOT_INSTALLED"
+    }
+  ]
+}

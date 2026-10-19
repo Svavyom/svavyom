@@ -1,0 +1,638 @@
+{
+  "schema": 1,
+  "description": "M0-E01-S02 mitigations: control, typed error category returned by the cited boundary, exactly one evidence (test_id, fixture or contract_field) and the threats it addresses (must mirror the register).",
+  "mitigations": [
+    {
+      "id": "M-REDACT",
+      "control": "redaction",
+      "description": "Values of secret-bearing keys are replaced with [REDACTED] in audit and error output",
+      "error_category": "internal",
+      "evidence": {
+        "contract_field": "prohibited.redaction.key_substrings"
+      },
+      "threats": [
+        "T-API-I",
+        "T-OPM-I",
+        "T-AGENT-I",
+        "T-LIBVIRT-I",
+        "T-PAAS-I",
+        "T-PAAS-I-CREDS"
+      ]
+    },
+    {
+      "id": "M-API-AUTHN",
+      "control": "authn",
+      "description": "Peer authentication (session_cookie_csrf) on browser-api",
+      "error_category": "unauthenticated",
+      "evidence": {
+        "contract_field": "inventory.boundaries.browser-api.security.peer_auth"
+      },
+      "threats": [
+        "T-API-S",
+        "T-API-T-REPLAY"
+      ]
+    },
+    {
+      "id": "M-API-AUTHZ",
+      "control": "authz",
+      "description": "Deny-by-default authorization (deny_by_default) on browser-api",
+      "error_category": "forbidden",
+      "evidence": {
+        "contract_field": "inventory.boundaries.browser-api.security.authz_model"
+      },
+      "threats": [
+        "T-API-E-IDOR"
+      ]
+    },
+    {
+      "id": "M-API-OWN",
+      "control": "ownership",
+      "description": "Every request is checked against the caller's project; cross-project ids are denied on browser-api",
+      "error_category": "forbidden",
+      "evidence": {
+        "contract_field": "inventory.boundaries.browser-api.security.ownership_check"
+      },
+      "threats": [
+        "T-API-I",
+        "T-API-E-IDOR"
+      ]
+    },
+    {
+      "id": "M-API-SCHEMA",
+      "control": "schema",
+      "description": "Allowlisted typed request schema (read_resource) on browser-api; unknown keys and unsafe strings rejected, no client XML, no command execution",
+      "error_category": "validation",
+      "evidence": {
+        "contract_field": "request-schemas.categories.read_resource"
+      },
+      "threats": [
+        "T-API-T-INJ"
+      ]
+    },
+    {
+      "id": "M-API-AUDIT",
+      "control": "audit",
+      "description": "Actor, action, resource and outcome audited with redaction on browser-api",
+      "error_category": "internal",
+      "evidence": {
+        "contract_field": "inventory.boundaries.browser-api.audit"
+      },
+      "threats": [
+        "T-API-R"
+      ]
+    },
+    {
+      "id": "M-API-LISTEN",
+      "control": "listener",
+      "description": "Listener restriction (loopback_scaffold) on browser-api",
+      "error_category": "unavailable",
+      "evidence": {
+        "contract_field": "inventory.boundaries.browser-api.security.listener"
+      },
+      "threats": [
+        "T-API-D"
+      ]
+    },
+    {
+      "id": "M-API-IDEMP",
+      "control": "idempotency",
+      "description": "Replays are keyed (api-restart idempotency responsibility) and return the existing result on browser-api",
+      "error_category": "conflict",
+      "evidence": {
+        "contract_field": "failure-matrix.rows.api-restart.idempotency"
+      },
+      "threats": [
+        "T-API-T-REPLAY"
+      ]
+    },
+    {
+      "id": "M-OPM-AUTHN",
+      "control": "authn",
+      "description": "Peer authentication (in_process_actor_propagation) on api-operation-manager",
+      "error_category": "forbidden",
+      "evidence": {
+        "contract_field": "inventory.boundaries.api-operation-manager.security.peer_auth"
+      },
+      "threats": [
+        "T-OPM-S",
+        "T-OPM-T-REPLAY"
+      ]
+    },
+    {
+      "id": "M-OPM-AUTHZ",
+      "control": "authz",
+      "description": "Deny-by-default authorization (deny_by_default) on api-operation-manager",
+      "error_category": "forbidden",
+      "evidence": {
+        "contract_field": "inventory.boundaries.api-operation-manager.security.authz_model"
+      },
+      "threats": [
+        "T-OPM-E-IDOR"
+      ]
+    },
+    {
+      "id": "M-OPM-OWN",
+      "control": "ownership",
+      "description": "Every request is checked against the caller's project; cross-project ids are denied on api-operation-manager",
+      "error_category": "forbidden",
+      "evidence": {
+        "contract_field": "inventory.boundaries.api-operation-manager.security.ownership_check"
+      },
+      "threats": [
+        "T-OPM-I",
+        "T-OPM-E-IDOR"
+      ]
+    },
+    {
+      "id": "M-OPM-SCHEMA",
+      "control": "schema",
+      "description": "Allowlisted typed request schema (submit_operation) on api-operation-manager; unknown keys and unsafe strings rejected, no client XML, no command execution",
+      "error_category": "validation",
+      "evidence": {
+        "contract_field": "request-schemas.categories.submit_operation"
+      },
+      "threats": [
+        "T-OPM-T-INJ"
+      ]
+    },
+    {
+      "id": "M-OPM-AUDIT",
+      "control": "audit",
+      "description": "Actor, action, resource and outcome audited with redaction on api-operation-manager",
+      "error_category": "internal",
+      "evidence": {
+        "contract_field": "inventory.boundaries.api-operation-manager.audit"
+      },
+      "threats": [
+        "T-OPM-R"
+      ]
+    },
+    {
+      "id": "M-OPM-LISTEN",
+      "control": "listener",
+      "description": "Listener restriction (none) on api-operation-manager",
+      "error_category": "unavailable",
+      "evidence": {
+        "contract_field": "inventory.boundaries.api-operation-manager.security.listener"
+      },
+      "threats": [
+        "T-OPM-D"
+      ]
+    },
+    {
+      "id": "M-OPM-IDEMP",
+      "control": "idempotency",
+      "description": "Replays are keyed (operation-manager-restart idempotency responsibility) and return the existing result on api-operation-manager",
+      "error_category": "conflict",
+      "evidence": {
+        "contract_field": "failure-matrix.rows.operation-manager-restart.idempotency"
+      },
+      "threats": [
+        "T-OPM-T-REPLAY"
+      ]
+    },
+    {
+      "id": "M-AGENT-AUTHN",
+      "control": "authn",
+      "description": "Peer authentication (so_peercred_allowlist) on operation-manager-host-agent",
+      "error_category": "unauthenticated",
+      "evidence": {
+        "contract_field": "inventory.boundaries.operation-manager-host-agent.security.peer_auth"
+      },
+      "threats": [
+        "T-AGENT-S",
+        "T-AGENT-T-REPLAY",
+        "T-AGENT-E-SOCKET"
+      ]
+    },
+    {
+      "id": "M-AGENT-AUTHZ",
+      "control": "authz",
+      "description": "Deny-by-default authorization (enumerated_typed_commands) on operation-manager-host-agent",
+      "error_category": "forbidden",
+      "evidence": {
+        "contract_field": "inventory.boundaries.operation-manager-host-agent.security.authz_model"
+      },
+      "threats": [
+        "T-AGENT-E-IDOR"
+      ]
+    },
+    {
+      "id": "M-AGENT-OWN",
+      "control": "ownership",
+      "description": "Every request is checked against the caller's project; cross-project ids are denied on operation-manager-host-agent",
+      "error_category": "forbidden",
+      "evidence": {
+        "contract_field": "inventory.boundaries.operation-manager-host-agent.security.ownership_check"
+      },
+      "threats": [
+        "T-AGENT-I",
+        "T-AGENT-E-IDOR"
+      ]
+    },
+    {
+      "id": "M-AGENT-SCHEMA",
+      "control": "schema",
+      "description": "Allowlisted typed request schema (typed_host_command) on operation-manager-host-agent; unknown keys and unsafe strings rejected, no client XML, no command execution",
+      "error_category": "validation",
+      "evidence": {
+        "contract_field": "request-schemas.categories.typed_host_command"
+      },
+      "threats": [
+        "T-AGENT-T-INJ",
+        "T-AGENT-T-SHELL"
+      ]
+    },
+    {
+      "id": "M-AGENT-AUDIT",
+      "control": "audit",
+      "description": "Actor, action, resource and outcome audited with redaction on operation-manager-host-agent",
+      "error_category": "internal",
+      "evidence": {
+        "contract_field": "inventory.boundaries.operation-manager-host-agent.audit"
+      },
+      "threats": [
+        "T-AGENT-R"
+      ]
+    },
+    {
+      "id": "M-AGENT-LISTEN",
+      "control": "listener",
+      "description": "Listener restriction (unix_socket) on operation-manager-host-agent",
+      "error_category": "unavailable",
+      "evidence": {
+        "contract_field": "inventory.boundaries.operation-manager-host-agent.security.listener"
+      },
+      "threats": [
+        "T-AGENT-D"
+      ]
+    },
+    {
+      "id": "M-AGENT-IDEMP",
+      "control": "idempotency",
+      "description": "Replays are keyed (agent-timeout idempotency responsibility) and return the existing result on operation-manager-host-agent",
+      "error_category": "validation",
+      "evidence": {
+        "contract_field": "failure-matrix.rows.agent-timeout.idempotency"
+      },
+      "threats": [
+        "T-AGENT-T-REPLAY"
+      ]
+    },
+    {
+      "id": "M-LIBVIRT-AUTHN",
+      "control": "authn",
+      "description": "Peer authentication (libvirt_socket_permissions) on host-agent-libvirt",
+      "error_category": "unavailable",
+      "evidence": {
+        "contract_field": "inventory.boundaries.host-agent-libvirt.security.peer_auth"
+      },
+      "threats": [
+        "T-LIBVIRT-S",
+        "T-LIBVIRT-T-REPLAY",
+        "T-LIBVIRT-E-REMOTE"
+      ]
+    },
+    {
+      "id": "M-LIBVIRT-AUTHZ",
+      "control": "authz",
+      "description": "Deny-by-default authorization (enumerated_typed_calls) on host-agent-libvirt",
+      "error_category": "host_error",
+      "evidence": {
+        "contract_field": "inventory.boundaries.host-agent-libvirt.security.authz_model"
+      },
+      "threats": [
+        "T-LIBVIRT-E-IDOR"
+      ]
+    },
+    {
+      "id": "M-LIBVIRT-OWN",
+      "control": "ownership",
+      "description": "Every request is checked against the caller's project; cross-project ids are denied on host-agent-libvirt",
+      "error_category": "host_error",
+      "evidence": {
+        "contract_field": "inventory.boundaries.host-agent-libvirt.security.ownership_check"
+      },
+      "threats": [
+        "T-LIBVIRT-I",
+        "T-LIBVIRT-E-IDOR"
+      ]
+    },
+    {
+      "id": "M-LIBVIRT-SCHEMA",
+      "control": "schema",
+      "description": "Allowlisted typed request schema (typed_libvirt_call) on host-agent-libvirt; unknown keys and unsafe strings rejected, no client XML, no command execution",
+      "error_category": "host_error",
+      "evidence": {
+        "contract_field": "request-schemas.categories.typed_libvirt_call"
+      },
+      "threats": [
+        "T-LIBVIRT-T-INJ",
+        "T-LIBVIRT-T-XML"
+      ]
+    },
+    {
+      "id": "M-LIBVIRT-AUDIT",
+      "control": "audit",
+      "description": "Actor, action, resource and outcome audited with redaction on host-agent-libvirt",
+      "error_category": "internal",
+      "evidence": {
+        "contract_field": "inventory.boundaries.host-agent-libvirt.audit"
+      },
+      "threats": [
+        "T-LIBVIRT-R"
+      ]
+    },
+    {
+      "id": "M-LIBVIRT-LISTEN",
+      "control": "listener",
+      "description": "Listener restriction (none) on host-agent-libvirt",
+      "error_category": "unavailable",
+      "evidence": {
+        "contract_field": "inventory.boundaries.host-agent-libvirt.security.listener"
+      },
+      "threats": [
+        "T-LIBVIRT-D"
+      ]
+    },
+    {
+      "id": "M-LIBVIRT-IDEMP",
+      "control": "idempotency",
+      "description": "Replays are keyed (libvirt-unavailable idempotency responsibility) and return the existing result on host-agent-libvirt",
+      "error_category": "host_error",
+      "evidence": {
+        "contract_field": "failure-matrix.rows.libvirt-unavailable.idempotency"
+      },
+      "threats": [
+        "T-LIBVIRT-T-REPLAY"
+      ]
+    },
+    {
+      "id": "M-PAAS-AUTHN",
+      "control": "authn",
+      "description": "Peer authentication (per_vm_credential) on paas-controller-workload-vm",
+      "error_category": "forbidden",
+      "evidence": {
+        "contract_field": "inventory.boundaries.paas-controller-workload-vm.security.peer_auth"
+      },
+      "threats": [
+        "T-PAAS-S",
+        "T-PAAS-T-REPLAY"
+      ]
+    },
+    {
+      "id": "M-PAAS-AUTHZ",
+      "control": "authz",
+      "description": "Deny-by-default authorization (deny_by_default) on paas-controller-workload-vm",
+      "error_category": "forbidden",
+      "evidence": {
+        "contract_field": "inventory.boundaries.paas-controller-workload-vm.security.authz_model"
+      },
+      "threats": [
+        "T-PAAS-E-IDOR"
+      ]
+    },
+    {
+      "id": "M-PAAS-OWN",
+      "control": "ownership",
+      "description": "Every request is checked against the caller's project; cross-project ids are denied on paas-controller-workload-vm",
+      "error_category": "forbidden",
+      "evidence": {
+        "contract_field": "inventory.boundaries.paas-controller-workload-vm.security.ownership_check"
+      },
+      "threats": [
+        "T-PAAS-I",
+        "T-PAAS-E-IDOR",
+        "T-PAAS-I-CREDS"
+      ]
+    },
+    {
+      "id": "M-PAAS-SCHEMA",
+      "control": "schema",
+      "description": "Allowlisted typed request schema (deploy_app) on paas-controller-workload-vm; unknown keys and unsafe strings rejected, no client XML, no command execution",
+      "error_category": "validation",
+      "evidence": {
+        "contract_field": "request-schemas.categories.deploy_app"
+      },
+      "threats": [
+        "T-PAAS-T-INJ"
+      ]
+    },
+    {
+      "id": "M-PAAS-AUDIT",
+      "control": "audit",
+      "description": "Actor, action, resource and outcome audited with redaction on paas-controller-workload-vm",
+      "error_category": "internal",
+      "evidence": {
+        "contract_field": "inventory.boundaries.paas-controller-workload-vm.audit"
+      },
+      "threats": [
+        "T-PAAS-R"
+      ]
+    },
+    {
+      "id": "M-PAAS-LISTEN",
+      "control": "listener",
+      "description": "Listener restriction (none) on paas-controller-workload-vm",
+      "error_category": "unavailable",
+      "evidence": {
+        "contract_field": "inventory.boundaries.paas-controller-workload-vm.security.listener"
+      },
+      "threats": [
+        "T-PAAS-D"
+      ]
+    },
+    {
+      "id": "M-PAAS-IDEMP",
+      "control": "idempotency",
+      "description": "App deployments carry a generation; stale or replayed deployments are rejected on paas-controller-workload-vm",
+      "error_category": "validation",
+      "evidence": {
+        "contract_field": "resources.resources.App.generation_tracking"
+      },
+      "threats": [
+        "T-PAAS-T-REPLAY"
+      ]
+    },
+    {
+      "id": "M-ROW-API-RESTART",
+      "control": "row_idempotency",
+      "description": "Idempotency responsibility for failure row api-restart: Operations are keyed by (project_id, idempotency_key); a replay returns the existing operation.",
+      "error_category": "unavailable",
+      "evidence": {
+        "contract_field": "failure-matrix.rows.api-restart.idempotency"
+      },
+      "threats": [
+        "T-ROW-API-RESTART"
+      ]
+    },
+    {
+      "id": "M-ROW-OPERATION-MANAGER-RESTART",
+      "control": "row_idempotency",
+      "description": "Idempotency responsibility for failure row operation-manager-restart: Operations resume by operation id and recorded attempt number; a replayed submission with the same (project_id, idempotency_key) returns the existing operation.",
+      "error_category": "unavailable",
+      "evidence": {
+        "contract_field": "failure-matrix.rows.operation-manager-restart.idempotency"
+      },
+      "threats": [
+        "T-ROW-OPERATION-MANAGER-RESTART"
+      ]
+    },
+    {
+      "id": "M-ROW-AGENT-TIMEOUT",
+      "control": "row_idempotency",
+      "description": "Idempotency responsibility for failure row agent-timeout: Each typed host command carries operation id and attempt number recorded by the operation manager (single store writer); commands are idempotent per (operation id, attempt) and the agent keeps no durable state.",
+      "error_category": "timeout",
+      "evidence": {
+        "contract_field": "failure-matrix.rows.agent-timeout.idempotency"
+      },
+      "threats": [
+        "T-ROW-AGENT-TIMEOUT"
+      ]
+    },
+    {
+      "id": "M-ROW-AGENT-UNAVAILABLE",
+      "control": "row_idempotency",
+      "description": "Idempotency responsibility for failure row agent-unavailable: No command was delivered; resubmission uses the same operation id.",
+      "error_category": "unavailable",
+      "evidence": {
+        "contract_field": "failure-matrix.rows.agent-unavailable.idempotency"
+      },
+      "threats": [
+        "T-ROW-AGENT-UNAVAILABLE"
+      ]
+    },
+    {
+      "id": "M-ROW-HOST-AGENT-CRASH",
+      "control": "row_idempotency",
+      "description": "Idempotency responsibility for failure row host-agent-crash: The agent keeps no durable state; each command is idempotent per (operation id, attempt) recorded by the operation manager.",
+      "error_category": "unavailable",
+      "evidence": {
+        "contract_field": "failure-matrix.rows.host-agent-crash.idempotency"
+      },
+      "threats": [
+        "T-ROW-HOST-AGENT-CRASH"
+      ]
+    },
+    {
+      "id": "M-ROW-LIBVIRT-UNAVAILABLE",
+      "control": "row_idempotency",
+      "description": "Idempotency responsibility for failure row libvirt-unavailable: Agent performs no partial libvirt mutation when the connection cannot be established.",
+      "error_category": "unavailable",
+      "evidence": {
+        "contract_field": "failure-matrix.rows.libvirt-unavailable.idempotency"
+      },
+      "threats": [
+        "T-ROW-LIBVIRT-UNAVAILABLE"
+      ]
+    },
+    {
+      "id": "M-API-SURFACE-LOOPBACK",
+      "control": "surface",
+      "description": "Scaffold API binds only to 127.0.0.1:8081 with a read-header timeout",
+      "error_category": "unavailable",
+      "evidence": {
+        "test_id": "backend/cmd/api/main_test.go::TestServerIsLoopbackOnlyWithHeaderTimeout"
+      },
+      "threats": [
+        "T-API-S-REMOTE"
+      ]
+    },
+    {
+      "id": "M-API-SURFACE-ROUTES",
+      "control": "surface",
+      "description": "Scaffold API serves only GET /healthz; declared but not-implemented routes get a typed unauthenticated error, and every undeclared path or method gets a typed not_found error (404) that echoes nothing from the request",
+      "error_category": "not_found",
+      "evidence": {
+        "test_id": "backend/cmd/api/main_test.go::TestUnsupportedRequestsAreRejected"
+      },
+      "threats": [
+        "T-API-E-ENDPOINTS"
+      ]
+    },
+    {
+      "id": "M-API-SURFACE-CLEANPATH",
+      "control": "surface",
+      "description": "Unclean paths are never served as another route and are not redirected: they get the typed not_found error",
+      "error_category": "not_found",
+      "evidence": {
+        "test_id": "backend/cmd/api/main_test.go::TestUncleanPathIsNeverServedDirectly"
+      },
+      "threats": [
+        "T-API-E-ENDPOINTS"
+      ]
+    },
+    {
+      "id": "M-LIBVIRT-NOXML",
+      "control": "schema",
+      "description": "Domain XML is generated only from typed fields; client-supplied XML markup is a prohibited category",
+      "error_category": "host_error",
+      "evidence": {
+        "contract_field": "prohibited.categories.HYPERVISOR_XML"
+      },
+      "threats": [
+        "T-LIBVIRT-T-XML"
+      ]
+    },
+    {
+      "id": "M-LIBVIRT-LOCAL",
+      "control": "listener",
+      "description": "Only the local qemu:///system URI is allowed; remote hypervisor URIs are prohibited",
+      "error_category": "unavailable",
+      "evidence": {
+        "contract_field": "prohibited.categories.REMOTE_HYPERVISOR.allowed_transports"
+      },
+      "threats": [
+        "T-LIBVIRT-E-REMOTE"
+      ]
+    },
+    {
+      "id": "M-AGENT-UNIXONLY",
+      "control": "listener",
+      "description": "Agent transport is a Unix socket only; TCP is a prohibited category",
+      "error_category": "unavailable",
+      "evidence": {
+        "contract_field": "prohibited.categories.AGENT_TCP.allowed_transports"
+      },
+      "threats": [
+        "T-AGENT-E-SOCKET"
+      ]
+    },
+    {
+      "id": "M-PAAS-DIGEST",
+      "control": "digest",
+      "description": "Workload images are referenced only by sha256 digest, never by mutable tag",
+      "error_category": "validation",
+      "evidence": {
+        "contract_field": "request-schemas.value_types.digest"
+      },
+      "threats": [
+        "T-PAAS-T-IMAGE"
+      ]
+    },
+    {
+      "id": "M-PAAS-NOCREDS",
+      "control": "credential_block",
+      "description": "Provider credential keys are a prohibited request category; credentials never transit requests",
+      "error_category": "forbidden",
+      "evidence": {
+        "contract_field": "prohibited.categories.PROVIDER_CREDENTIALS.tokens"
+      },
+      "threats": [
+        "T-PAAS-I-CREDS"
+      ]
+    },
+    {
+      "id": "M-AGENT-NOSHELL",
+      "control": "schema",
+      "description": "Shell, command and exec keys are a prohibited category; typed commands only",
+      "error_category": "prohibited",
+      "evidence": {
+        "contract_field": "prohibited.categories.ARBITRARY_SHELL.tokens"
+      },
+      "threats": [
+        "T-AGENT-T-SHELL"
+      ]
+    }
+  ]
+}

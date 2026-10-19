@@ -1,0 +1,8 @@
+<!-- Directory storage pool for Svavyom VM volumes. Define as root:  virsh pool-define pool-svavyom.xml && virsh pool-start svavyom && virsh pool-autostart svavyom -->
+<pool type='dir'>
+  <name>svavyom</name>
+  <target>
+    <path>/var/lib/svavyom/pool</path>
+    <permissions><mode>0711</mode><owner>0</owner><group>0</group></permissions>
+  </target>
+</pool>

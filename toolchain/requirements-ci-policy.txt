@@ -1,0 +1,8 @@
+# Python dependencies of the CI policy checker (story M0-E02-S02).
+# Installed in the dev image with --require-hashes --only-binary=:all:.
+# Hashes from https://pypi.org/pypi/PyYAML/6.0.3/json (2026-10-04):
+# CPython 3.14 manylinux x86_64 and aarch64 wheels, plus the sdist.
+pyyaml==6.0.3 \
+    --hash=sha256:c458b6d084f9b935061bc36216e8a69a7e293a2f1e68bf956dcd9e6cbcd143f5 \
+    --hash=sha256:501a031947e3a9025ed4405a168e6ef5ae3126c59f90ce0cd6f2bfc477be31b7 \
+    --hash=sha256:d76623373421df22fb4cf8817020cbb7ef15c725b9d5e45f17e189bfc384190f

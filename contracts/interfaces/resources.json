@@ -1,0 +1,108 @@
+{
+  "schema": 1,
+  "description": "Resource ownership and desired/observed state (M0-E01-S01 draft). IDs are globally unique. ADR-003: the operation manager is the single store writer. Desired state originates only from authorized API requests; observed state is reported by the measuring component (host agent, PaaS controller) and persisted by the operation manager. Generation increments on every desired-state change.",
+  "resources": {
+    "Host": {
+      "ownership_scope": "system",
+      "generation_tracking": true,
+      "desired_state_source": "api",
+      "observed_state_reporter": "host-agent"
+    },
+    "Project": {
+      "ownership_scope": "system",
+      "generation_tracking": true,
+      "desired_state_source": "api",
+      "observed_state_reporter": "api"
+    },
+    "VM": {
+      "ownership_scope": "project",
+      "generation_tracking": true,
+      "desired_state_source": "api",
+      "observed_state_reporter": "host-agent"
+    },
+    "Volume": {
+      "ownership_scope": "project",
+      "generation_tracking": true,
+      "desired_state_source": "api",
+      "observed_state_reporter": "host-agent"
+    },
+    "VirtualNetwork": {
+      "ownership_scope": "project",
+      "generation_tracking": true,
+      "desired_state_source": "api",
+      "observed_state_reporter": "host-agent"
+    },
+    "Image": {
+      "ownership_scope": "project",
+      "generation_tracking": true,
+      "desired_state_source": "api",
+      "observed_state_reporter": "host-agent"
+    },
+    "Backup": {
+      "ownership_scope": "project",
+      "generation_tracking": true,
+      "desired_state_source": "api",
+      "observed_state_reporter": "operation-manager"
+    },
+    "App": {
+      "ownership_scope": "project",
+      "generation_tracking": true,
+      "desired_state_source": "api",
+      "observed_state_reporter": "paas-controller"
+    },
+    "Operation": {
+      "ownership_scope": "project",
+      "generation_tracking": true,
+      "desired_state_source": "api",
+      "observed_state_reporter": "operation-manager"
+    },
+    "Event": {
+      "ownership_scope": "project",
+      "generation_tracking": false,
+      "desired_state_source": "operation-manager",
+      "observed_state_reporter": "operation-manager"
+    }
+  },
+  "operation_status": {
+    "pending": {
+      "terminal": false,
+      "retryable": true
+    },
+    "running": {
+      "terminal": false,
+      "retryable": true
+    },
+    "succeeded": {
+      "terminal": true,
+      "retryable": false
+    },
+    "failed": {
+      "terminal": true,
+      "retryable": false
+    },
+    "retryable_failure": {
+      "terminal": false,
+      "retryable": true
+    },
+    "cancelled": {
+      "terminal": true,
+      "retryable": false
+    }
+  },
+  "operation_persisted_fields": [
+    "id",
+    "project_id",
+    "resource_kind",
+    "resource_id",
+    "type",
+    "status",
+    "idempotency_key",
+    "requested_by",
+    "generation",
+    "attempts",
+    "error_category",
+    "created_at",
+    "updated_at"
+  ],
+  "store_writer": "operation-manager"
+}

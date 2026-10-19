@@ -1,0 +1,15 @@
+{
+  "request": {
+    "boundary": "host-agent-libvirt",
+    "category": "typed_libvirt_call",
+    "transport": "qemu+tcp://h/system",
+    "payload": {
+      "call": "domain_create",
+      "resource_id": "vm-01"
+    }
+  },
+  "expect": [
+    "PRIVILEGED_BEFORE_AUTH",
+    "REMOTE_HYPERVISOR"
+  ]
+}

@@ -1,0 +1,65 @@
+# Svavyom off-host backup service (M2-E01-S01). It copies verified local backups to the targets the operator declared in
+# /etc/svavyom/provision.json and nowhere else, and it is the only Svavyom service that makes outbound network connections for that purpose:
+# the mutation unit has no network by design. It reads the local backup store, never libvirt, and answers a closed one-request protocol
+# on its own Unix socket whose peer must be the API identity.
+[Unit]
+Description=Svavyom off-host backup copy service
+Documentation=file:///usr/share/doc/svavyom/UBUNTU-DEPLOYMENT.md
+After=network-online.target
+Wants=network-online.target
+StartLimitIntervalSec=60
+StartLimitBurst=5
+
+[Service]
+Type=exec
+User=svavyom-mut
+Group=svavyom-mut
+# No libvirt group, no other supplementary group.
+SupplementaryGroups=
+ExecStart=/usr/libexec/svavyom/offsite serve \
+    --config /etc/svavyom/provision.json \
+    --socket /run/svavyom/offsite/offsite.sock \
+    --allow-uid @SVAVYOM_API_UID@ \
+    --state-dir /var/lib/svavyom/offsite
+Restart=on-failure
+RestartSec=2s
+TimeoutStopSec=30s
+
+# --- hardening ---
+NoNewPrivileges=yes
+CapabilityBoundingSet=
+AmbientCapabilities=
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectSystem=strict
+ProtectHome=yes
+ProtectProc=invisible
+ProcSubset=pid
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+ProtectHostname=yes
+RestrictNamespaces=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+SystemCallErrorNumber=EPERM
+# Outbound TCP is the reason this service exists; nothing else is opened.
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+UMask=0077
+TasksMax=64
+LimitNOFILE=1024
+MemoryMax=512M
+# Writable: its socket and its own record of copies. The configuration and the program are read-only here. The local backup store is added
+# READ-ONLY by the drop-in svavyom-ctl install writes (backup.conf); a "path" target is added read-write by targets.conf.
+ReadWritePaths=/run/svavyom/offsite /var/lib/svavyom/offsite
+ReadOnlyPaths=/etc/svavyom /usr/libexec/svavyom
+InaccessiblePaths=/var/lib/svavyom/api /var/lib/svavyom/pool /var/lib/svavyom/state /var/lib/svavyom/images
+
+[Install]
+WantedBy=multi-user.target

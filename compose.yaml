@@ -1,0 +1,53 @@
+# Unprivileged development/CI container (story M0-E02-S02).
+# Run via `make docker-check`; requires HOST_UID/HOST_GID and toolchain/versions.env.
+name: dedicatedcloud
+x-dev: &dev
+    build:
+      context: .
+      dockerfile: toolchain/Dockerfile
+      args:
+        GO_IMAGE: ${GO_IMAGE:?set via --env-file toolchain/versions.env}
+        NODE_IMAGE: ${NODE_IMAGE:?set via --env-file toolchain/versions.env}
+        PYTHON_IMAGE: ${PYTHON_IMAGE:?set via --env-file toolchain/versions.env}
+    image: dedicatedcloud-dev:local
+    user: "${HOST_UID:?}:${HOST_GID:?}"
+    working_dir: /workspace/cloud-platform
+    environment:
+      DOCS_REPO: /workspace/cloud-product-docs
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    read_only: true
+    tmpfs:
+      - /tmp:exec,mode=1777,size=4g
+    volumes:
+      # Whole checkout read-only (review cycle 2, N4): container code cannot
+      # rewrite compose.yaml, the Makefile or tests that the host later runs.
+      # Gates that write run on a copy (toolchain/run-in-copy.sh).
+      - type: bind
+        source: .
+        target: /workspace/cloud-platform
+        read_only: true
+        bind:
+          create_host_path: false
+      # .git is read-only inside the container so untrusted build/test code
+      # cannot plant hooks or config that later run on the host (S02 review F6).
+      - type: bind
+        source: ./.git
+        target: /workspace/cloud-platform/.git
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${DOCS_REPO_HOST:-../cloud-product-docs}
+        target: /workspace/cloud-product-docs
+        read_only: true
+        bind:
+          create_host_path: false
+
+services:
+  dev: *dev
+  # M0-E02-S06 (DR-010 D4 = A, review R2-M1): same image and hardening as `dev`, with no network at all.
+  # Runs only `make fe-browser` (npm cache and browser come from the image; see toolchain/Dockerfile).
+  dev-offline:
+    <<: *dev
+    network_mode: none

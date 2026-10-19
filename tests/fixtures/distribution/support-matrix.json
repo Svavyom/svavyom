@@ -1,0 +1,169 @@
+{
+  "schema": 1,
+  "description": "M0 distribution support matrix (M0-E02-S05; DR-007 D2 = A, D3 = A). Authoritative for cloud-platform's capability checker, read at the pinned docs commit. A 'supported' verdict means matrix conformance only, never host qualification (qualification: none). Matching is an exact string match on os-release ID and VERSION_ID plus arch; ID_LIKE never confers support. support_ends is informative; the verdict never reads the clock. Erratum r2a (2026-10-06): evaluation order and positively established containment.",
+  "kernel_floor": "6.8",
+  "entries": [
+    {
+      "id": "ubuntu",
+      "version_id": "24.04",
+      "arch": "x86_64",
+      "status": "supported",
+      "required_lsm": "apparmor",
+      "support_ends": "2029-05-31"
+    },
+    {
+      "id": "ubuntu",
+      "version_id": "26.04",
+      "arch": "x86_64",
+      "status": "supported",
+      "required_lsm": "apparmor",
+      "support_ends": "2031-05-31"
+    },
+    {
+      "id": "debian",
+      "version_id": "13",
+      "arch": "x86_64",
+      "status": "supported",
+      "required_lsm": "apparmor",
+      "support_ends": "2028-08-09"
+    },
+    {
+      "id": "almalinux",
+      "version_id": null,
+      "arch": null,
+      "status": "planned",
+      "required_lsm": "selinux",
+      "support_ends": null
+    },
+    {
+      "id": "rocky",
+      "version_id": null,
+      "arch": null,
+      "status": "planned",
+      "required_lsm": "selinux",
+      "support_ends": null
+    }
+  ],
+  "required_probes": [
+    "os_release",
+    "arch",
+    "cpu_virt",
+    "kernel_floor",
+    "cgroup_v2",
+    "systemd",
+    "nftables_kernel",
+    "lsm",
+    "containment"
+  ],
+  "informational_probes": [
+    "dev_kvm",
+    "nftables_userspace",
+    "libvirt_packages",
+    "qemu_packages"
+  ],
+  "probes": {
+    "os_release": {
+      "sources": [
+        "etc/os-release",
+        "usr/lib/os-release"
+      ],
+      "rule": "os-release(5) strict parse; duplicate keys, invalid escapes, NUL/control characters, lines over 4096 bytes or non-UTF-8 -> unknown OSRELEASE_MALFORMED"
+    },
+    "arch": {
+      "sources": [
+        "proc/sys/kernel/arch"
+      ],
+      "rule": "pass iff equal to the entry arch (x86_64); other value -> fail; missing/unreadable -> unknown"
+    },
+    "cpu_virt": {
+      "sources": [
+        "proc/cpuinfo"
+      ],
+      "rule": "pass iff a flags line contains vmx or svm; flags present without either -> fail; no flags line -> unknown"
+    },
+    "kernel_floor": {
+      "sources": [
+        "proc/sys/kernel/osrelease"
+      ],
+      "rule": "leading MAJOR.MINOR compared numerically with kernel_floor; unparseable -> unknown"
+    },
+    "cgroup_v2": {
+      "sources": [
+        "sys/fs/cgroup/cgroup.controllers",
+        "proc/self/mountinfo"
+      ],
+      "rule": "pass iff cgroup.controllers is a regular file and mountinfo has a cgroup2 mount at /sys/fs/cgroup; a non-cgroup2 mount there -> fail; unreadable -> unknown"
+    },
+    "systemd": {
+      "sources": [
+        "run/systemd/system"
+      ],
+      "rule": "pass iff a directory; absent -> fail; unreadable -> unknown"
+    },
+    "nftables_kernel": {
+      "sources": [
+        "sys/module/nf_tables",
+        "proc/modules",
+        "lib/modules/<osrelease>/modules.builtin",
+        "lib/modules/<osrelease>/modules.dep"
+      ],
+      "rule": "pass iff loaded (sys/module/nf_tables or proc/modules) or listed in modules.builtin or modules.dep for the root's kernel; otherwise unknown, never fail"
+    },
+    "lsm": {
+      "sources": [
+        "sys/module/apparmor/parameters/enabled",
+        "sys/kernel/security/lsm",
+        "sys/fs/selinux/enforce"
+      ],
+      "rule": "apparmor: pass iff enabled is Y and sys/kernel/security/lsm lists apparmor; N, or module absent -> fail; either unreadable -> unknown. selinux (planned entries only): pass iff enforce is 1, else fail. Never remediated by disabling, permissive or complain mode"
+    },
+    "containment": {
+      "sources": [
+        ".dockerenv",
+        "run/.containerenv",
+        "run/systemd/container",
+        "proc/1/environ",
+        "proc/self/uid_map",
+        "proc/1/cgroup",
+        "proc/self/mountinfo",
+        "proc/cpuinfo",
+        "sys/hypervisor/type",
+        "sys/class/dmi/id/sys_vendor"
+      ],
+      "rule": "evaluated first. Any container marker -> unknown CONTAINERIZED (verdict unknown). Hypervisor guest marker -> fail VIRTUALIZED_HOST (verdict unsupported). pass only when every container source is readable (or a marker file provably absent) and shows no marker and no guest marker; otherwise unknown CONTAINMENT_UNDETERMINED (non-root --root / on a real host is therefore unknown)"
+    },
+    "dev_kvm": {
+      "sources": [
+        "dev/kvm"
+      ],
+      "rule": "informational; lstat only, never opened"
+    },
+    "nftables_userspace": {
+      "sources": [
+        "usr/sbin/nft"
+      ],
+      "rule": "informational; lstat only"
+    },
+    "libvirt_packages": {
+      "sources": [
+        "var/lib/dpkg/status"
+      ],
+      "rule": "informational; installed version of libvirt-daemon-system"
+    },
+    "qemu_packages": {
+      "sources": [
+        "var/lib/dpkg/status"
+      ],
+      "rule": "informational; installed version of qemu-system-x86"
+    }
+  },
+  "read_limits": {
+    "default": 1048576,
+    "proc/cpuinfo": 4194304,
+    "var/lib/dpkg/status": 33554432
+  },
+  "deadlines_ms": {
+    "probe": 2000,
+    "run": 10000
+  }
+}

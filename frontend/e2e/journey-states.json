@@ -1,0 +1,2474 @@
+{
+  "schema": 1,
+  "description": "Browser-tier scenario for every catalogue state of every journey (M0-E02-S06 AC03, review M1). tests/unit_ux_catalogue.py checks this covers the pinned catalogue; e2e/journey-states.spec.ts runs each with axe and the first-party check. Every reply body is validated against contracts/openapi.yaml by src/api/conformance.test.ts (M0-E01-S04, DR-012).",
+  "journeys": {
+    "J1": {
+      "loading": {
+        "hash": "#/journey/J1",
+        "api": {
+          "/api/v1/hosts/local": [
+            {
+              "hang": true
+            }
+          ]
+        },
+        "expect": "Loading host status"
+      },
+      "success": {
+        "hash": "#/journey/J1",
+        "api": {
+          "/api/v1/hosts/local": [
+            {
+              "status": 200,
+              "body": {
+                "id": "local",
+                "generation": 1,
+                "name": "local-host",
+                "desired": {
+                  "maintenance": false
+                },
+                "observed": {
+                  "reachable": true,
+                  "agent_version": "0.0.0-dev",
+                  "cpu_count": 8,
+                  "memory_mib": 16384,
+                  "capability_verdict": "supported",
+                  "virtualization": {
+                    "hardware": "available",
+                    "kvm_device": "available",
+                    "libvirt_packages": "available",
+                    "qemu_packages": "available"
+                  },
+                  "distribution": {
+                    "id": "debian",
+                    "version_id": "13"
+                  },
+                  "capability_findings": [],
+                  "creation": {
+                    "enabled": false,
+                    "network": "unknown",
+                    "storage": "unknown",
+                    "vcpu_options": [],
+                    "memory_mib_options": [],
+                    "disk_gib_options": [],
+                    "ready": false,
+                    "reasons": [
+                      "mutation_disabled"
+                    ]
+                  },
+                  "storage": {
+                    "state": "unknown",
+                    "pool_total_gib": null,
+                    "pool_free_gib": null,
+                    "images_gib": null,
+                    "backups_configured": false,
+                    "backups_gib": null,
+                    "backups_free_gib": null,
+                    "snapshots": "unknown",
+                    "backup_targets": [],
+                    "allocation_note": "Disk sizes shown for a VM are virtual sizes. Real usage is lower while the disk is thinly allocated; the pool free figure is what counts."
+                  },
+                  "usage": {
+                    "state": "unavailable",
+                    "interval_seconds": 30,
+                    "cpu_percent": null,
+                    "memory_used_mib": null,
+                    "disk_kib_s": null,
+                    "net_kib_s": null,
+                    "history": []
+                  },
+                  "alerts": {
+                    "open": 0,
+                    "webhook": "none"
+                  },
+                  "nightly_boot": null,
+                  "bridge": null
+                },
+                "allowed_actions": []
+              }
+            }
+          ]
+        },
+        "expect": "local-host"
+      },
+      "stale": {
+        "hash": "#/journey/J1",
+        "api": {
+          "/api/v1/hosts/local": [
+            {
+              "status": 200,
+              "body": {
+                "id": "local",
+                "generation": 1,
+                "name": "local-host",
+                "desired": {
+                  "maintenance": false
+                },
+                "observed": {
+                  "reachable": true,
+                  "agent_version": "0.0.0-dev",
+                  "cpu_count": 8,
+                  "memory_mib": 16384,
+                  "capability_verdict": "supported",
+                  "virtualization": {
+                    "hardware": "available",
+                    "kvm_device": "available",
+                    "libvirt_packages": "available",
+                    "qemu_packages": "available"
+                  },
+                  "distribution": {
+                    "id": "debian",
+                    "version_id": "13"
+                  },
+                  "capability_findings": [],
+                  "creation": {
+                    "enabled": false,
+                    "network": "unknown",
+                    "storage": "unknown",
+                    "vcpu_options": [],
+                    "memory_mib_options": [],
+                    "disk_gib_options": [],
+                    "ready": false,
+                    "reasons": [
+                      "mutation_disabled"
+                    ]
+                  },
+                  "storage": {
+                    "state": "unknown",
+                    "pool_total_gib": null,
+                    "pool_free_gib": null,
+                    "images_gib": null,
+                    "backups_configured": false,
+                    "backups_gib": null,
+                    "backups_free_gib": null,
+                    "snapshots": "unknown",
+                    "backup_targets": [],
+                    "allocation_note": "Disk sizes shown for a VM are virtual sizes. Real usage is lower while the disk is thinly allocated; the pool free figure is what counts."
+                  },
+                  "usage": {
+                    "state": "unavailable",
+                    "interval_seconds": 30,
+                    "cpu_percent": null,
+                    "memory_used_mib": null,
+                    "disk_kib_s": null,
+                    "net_kib_s": null,
+                    "history": []
+                  },
+                  "alerts": {
+                    "open": 0,
+                    "webhook": "none"
+                  },
+                  "nightly_boot": null,
+                  "bridge": null
+                },
+                "allowed_actions": []
+              }
+            },
+            {
+              "abort": true
+            }
+          ]
+        },
+        "actions": [
+          {
+            "press": "Refresh"
+          }
+        ],
+        "expect": "may be out of date"
+      },
+      "unreachable": {
+        "hash": "#/journey/J1",
+        "api": {
+          "/api/v1/hosts/local": [
+            {
+              "abort": true
+            }
+          ]
+        },
+        "expect": "Control plane unreachable"
+      },
+      "error:unauthenticated": {
+        "hash": "#/journey/J1",
+        "api": {
+          "/api/v1/hosts/local": [
+            {
+              "status": 401,
+              "body": {
+                "category": "unauthenticated",
+                "retryable": false,
+                "correlation_id": "0123456789abcdef0123456789abcdef"
+              }
+            }
+          ]
+        },
+        "expect": "Authentication not configured"
+      },
+      "error:forbidden": {
+        "hash": "#/journey/J1",
+        "api": {
+          "/api/v1/hosts/local": [
+            {
+              "status": 403,
+              "body": {
+                "category": "forbidden",
+                "retryable": false,
+                "correlation_id": "0123456789abcdef0123456789abcdef"
+              }
+            }
+          ]
+        },
+        "expect": "You are not allowed to do this"
+      },
+      "error:unavailable": {
+        "hash": "#/journey/J1",
+        "api": {
+          "/api/v1/hosts/local": [
+            {
+              "status": 503,
+              "body": {
+                "category": "unavailable",
+                "retryable": true,
+                "correlation_id": "0123456789abcdef0123456789abcdef"
+              }
+            }
+          ]
+        },
+        "expect": "Service temporarily unavailable"
+      },
+      "error:internal": {
+        "hash": "#/journey/J1",
+        "api": {
+          "/api/v1/hosts/local": [
+            {
+              "status": 500,
+              "body": {
+                "category": "internal",
+                "retryable": false,
+                "correlation_id": "0123456789abcdef0123456789abcdef"
+              }
+            }
+          ]
+        },
+        "expect": "Something went wrong"
+      }
+    },
+    "J2": {
+      "loading": {
+        "hash": "#/journey/J2",
+        "api": {
+          "/api/v1/projects": [
+            {
+              "hang": true
+            }
+          ]
+        },
+        "expect": "Loading account"
+      },
+      "success": {
+        "hash": "#/journey/J2",
+        "api": {
+          "/api/v1/projects": [
+            {
+              "status": 401,
+              "body": {
+                "category": "unauthenticated",
+                "retryable": false,
+                "correlation_id": "0123456789abcdef0123456789abcdef"
+              }
+            }
+          ]
+        },
+        "expect": "Authentication not configured"
+      },
+      "unreachable": {
+        "hash": "#/journey/J2",
+        "api": {
+          "/api/v1/projects": [
+            {
+              "abort": true
+            }
+          ]
+        },
+        "expect": "Control plane unreachable"
+      },
+      "error:unauthenticated": {
+        "hash": "#/journey/J2",
+        "api": {
+          "/api/v1/projects": [
+            {
+              "status": 401,
+              "body": {
+                "category": "unauthenticated",
+                "retryable": false,
+                "correlation_id": "0123456789abcdef0123456789abcdef"
+              }
+            }
+          ]
+        },
+        "expect": "Authentication not configured"
+      },
+      "error:rate_limited": {
+        "hash": "#/journey/J2",
+        "api": {
+          "/api/v1/projects": [
+            {
+              "status": 429,
+              "body": {
+                "category": "rate_limited",
+                "retryable": true,
+                "correlation_id": "0123456789abcdef0123456789abcdef"
+              }
+            }
+          ]
+        },
+        "expect": "Too many requests"
+      },
+      "error:internal": {
+        "hash": "#/journey/J2",
+        "api": {
+          "/api/v1/projects": [
+            {
+              "status": 500,
+              "body": {
+                "category": "internal",
+                "retryable": false,
+                "correlation_id": "0123456789abcdef0123456789abcdef"
+              }
+            }
+          ]
+        },
+        "expect": "Something went wrong"
+      }
+    },
+    "J3": {
+      "loading": {
+        "hash": "#/journey/J3",
+        "api": {
+          "/api/v1/vms": [
+            {
+              "hang": true
+            }
+          ]
+        },
+        "expect": "Loading vms"
+      },
+      "empty": {
+        "hash": "#/journey/J3",
+        "api": {
+          "/api/v1/vms": [
+            {
+              "status": 200,
+              "body": {
+                "items": [],
+                "allowed_actions": [
+                  "create"
+                ],
+                "next_cursor": null
+              }
+            }
+          ]
+        },
+        "expect": "No VMs"
+      },
+      "success": {
+        "hash": "#/journey/J3",
+        "api": {
+          "/api/v1/vms": [
+            {
+              "status": 200,
+              "body": {
+                "items": [
+                  {
+                    "id": "vm-a",
+                    "project_id": "default",
+                    "generation": 3,
+                    "name": "web-1",
+                    "desired": {
+                      "power": "running",
+                      "backup_schedule": null
+                    },
+                    "observed": {
+                      "power": "running",
+                      "last_seen_at": "2026-10-08T10:00:00Z",
+                      "managed": false,
+                      "ip_address": null,
+                      "login_user": null,
+                      "iso": null,
+                      "disk_gib": null,
+                      "snapshots": [],
+                      "network": null,
+                      "vcpus": null,
+                      "memory_mib": null,
+                      "usage": {
+                        "state": "unavailable",
+                        "cpu_percent": null,
+                        "memory_used_mib": null,
+                        "disk_kib_s": null,
+                        "net_kib_s": null,
+                        "history": []
+                      },
+                      "backup": {
+                        "next_run_at": null,
+                        "last_run": null
+                      },
+                      "graphical_console": "absent",
+                      "rescue": false
+                    },
+                    "allowed_actions": [
+                      "start",
+                      "stop",
+                      "delete"
+                    ]
+                  }
+                ],
+                "allowed_actions": [],
+                "next_cursor": null
+              }
+            }
+          ]
+        },
+        "expect": "web-1"
+      },
+      "stale": {
+        "hash": "#/journey/J3",
+        "api": {
+          "/api/v1/vms": [
+            {
+              "status": 200,
+              "body": {
+                "items": [
+                  {
+                    "id": "vm-a",
+                    "project_id": "default",
+                    "generation": 3,
+                    "name": "web-1",
+                    "desired": {
+                      "power": "running",
+                      "backup_schedule": null
+                    },
+                    "observed": {
+                      "power": "running",
+                      "last_seen_at": "2026-10-08T10:00:00Z",
+                      "managed": false,
+                      "ip_address": null,
+                      "login_user": null,
+                      "iso": null,
+                      "disk_gib": null,
+                      "snapshots": [],
+                      "network": null,
+                      "vcpus": null,
+                      "memory_mib": null,
+                      "usage": {
+                        "state": "unavailable",
+                        "cpu_percent": null,
+                        "memory_used_mib": null,
+                        "disk_kib_s": null,
+                        "net_kib_s": null,
+                        "history": []
+                      },
+                      "backup": {
+                        "next_run_at": null,
+                        "last_run": null
+                      },
+                      "graphical_console": "absent",
+                      "rescue": false
+                    },
+                    "allowed_actions": [
+                      "start",
+                      "stop",
+                      "delete"
+                    ]
+                  }
+                ],
+                "allowed_actions": [],
+                "next_cursor": null
+              }
+            },
+            {
+              "abort": true
+            }
+          ]
+        },
+        "actions": [
+          {
+            "press": "Refresh"
+          }
+        ],
+        "expect": "may be out of date"
+      },
+      "unreachable": {
+        "hash": "#/journey/J3",
+        "api": {
+          "/api/v1/vms": [
+            {
+              "abort": true
+            }
+          ]
+        },
+        "expect": "Control plane unreachable"
+      },
+      "error:unauthenticated": {
+        "hash": "#/journey/J3",
+        "api": {
+          "/api/v1/vms": [
+            {
+              "status": 401,
+              "body": {
+                "category": "unauthenticated",
+                "retryable": false,
+                "correlation_id": "0123456789abcdef0123456789abcdef"
+              }
+            }
+          ]
+        },
+        "expect": "Authentication not configured"
+      },
+      "error:forbidden": {
+        "hash": "#/journey/J3",
+        "api": {
+          "/api/v1/vms": [
+            {
+              "status": 403,
+              "body": {
+                "category": "forbidden",
+                "retryable": false,
+                "correlation_id": "0123456789abcdef0123456789abcdef"
+              }
+            }
+          ]
+        },
+        "expect": "You are not allowed to do this"
+      },
+      "error:rate_limited": {
+        "hash": "#/journey/J3",
+        "api": {
+          "/api/v1/vms": [
+            {
+              "status": 429,
+              "body": {
+                "category": "rate_limited",
+                "retryable": true,
+                "correlation_id": "0123456789abcdef0123456789abcdef"
+              }
+            }
+          ]
+        },
+        "expect": "Too many requests"
+      },
+      "error:unavailable": {
+        "hash": "#/journey/J3",
+        "api": {
+          "/api/v1/vms": [
+            {
+              "status": 503,
+              "body": {
+                "category": "unavailable",
+                "retryable": true,
+                "correlation_id": "0123456789abcdef0123456789abcdef"
+              }
+            }
+          ]
+        },
+        "expect": "Service temporarily unavailable"
+      },
+      "error:internal": {
+        "hash": "#/journey/J3",
+        "api": {
+          "/api/v1/vms": [
+            {
+              "status": 500,
+              "body": {
+                "category": "internal",
+                "retryable": false,
+                "correlation_id": "0123456789abcdef0123456789abcdef"
+              }
+            }
+          ]
+        },
+        "expect": "Something went wrong"
+      }
+    },
+    "J4": {
+      "success": {
+        "hash": "#/journey/J4",
+        "api": {
+          "/api/v1/operations": [
+            {
+              "status": 202,
+              "body": {
+                "id": "op-5",
+                "project_id": "default",
+                "resource_kind": "VM",
+                "resource_id": "vm-a",
+                "type": "start",
+                "status": "pending",
+                "requested_by": "owner",
+                "generation": 1,
+                "attempts": 0,
+                "error_category": null,
+                "created_at": "2026-10-08T10:00:00Z",
+                "updated_at": "2026-10-08T10:00:00Z",
+                "allowed_actions": [
+                  "cancel"
+                ]
+              }
+            }
+          ]
+        },
+        "actions": [
+          {
+            "fill": [
+              "VM name",
+              "web-1"
+            ]
+          },
+          {
+            "check": "Debian 13"
+          },
+          {
+            "press": "Continue to review"
+          },
+          {
+            "press": "Create VM"
+          }
+        ],
+        "expect": "Request accepted"
+      },
+      "outcome_unknown": {
+        "hash": "#/journey/J4",
+        "api": {
+          "/api/v1/operations": [
+            {
+              "hang": true
+            }
+          ]
+        },
+        "actions": [
+          {
+            "fill": [
+              "VM name",
+              "web-1"
+            ]
+          },
+          {
+            "check": "Debian 13"
+          },
+          {
+            "press": "Continue to review"
+          },
+          {
+            "press": "Create VM"
+          }
+        ],
+        "expect": "The outcome is unknown"
+      },
+      "error:validation": {
+        "hash": "#/journey/J4",
+        "api": {
+          "/api/v1/operations": [
+            {
+              "status": 400,
+              "body": {
+                "category": "validation",
+                "retryable": false,
+                "correlation_id": "0123456789abcdef0123456789abcdef"
+              }
+            }
+          ]
+        },
+        "actions": [
+          {
+            "fill": [
+              "VM name",
+              "web-1"
+            ]
+          },
+          {
+            "check": "Debian 13"
+          },
+          {
+            "press": "Continue to review"
+          },
+          {
+            "press": "Create VM"
+          }
+        ],
+        "expect": "Some details need attention"
+      },
+      "error:conflict": {
+        "hash": "#/journey/J4",
+        "api": {
+          "/api/v1/operations": [
+            {
+              "status": 409,
+              "body": {
+                "category": "conflict",
+                "retryable": false,
+                "correlation_id": "0123456789abcdef0123456789abcdef"
+              }
+            }
+          ]
+        },
+        "actions": [
+          {
+            "fill": [
+              "VM name",
+              "web-1"
+            ]
+          },
+          {
+            "check": "Debian 13"
+          },
+          {
+            "press": "Continue to review"
+          },
+          {
+            "press": "Create VM"
+          }
+        ],
+        "expect": "Changed by someone else"
+      },
+      "error:forbidden": {
+        "hash": "#/journey/J4",
+        "api": {
+          "/api/v1/operations": [
+            {
+              "status": 403,
+              "body": {
+                "category": "forbidden",
+                "retryable": false,
+                "correlation_id": "0123456789abcdef0123456789abcdef"
+              }
+            }
+          ]
+        },
+        "actions": [
+          {
+            "fill": [
+              "VM name",
+              "web-1"
+            ]
+          },
+          {
+            "check": "Debian 13"
+          },
+          {
+            "press": "Continue to review"
+          },
+          {
+            "press": "Create VM"
+          }
+        ],
+        "expect": "You are not allowed to do this"
+      },
+      "error:prohibited": {
+        "hash": "#/journey/J4",
+        "api": {
+          "/api/v1/operations": [
+            {
+              "status": 422,
+              "body": {
+                "category": "prohibited",
+                "retryable": false,
+                "correlation_id": "0123456789abcdef0123456789abcdef"
+              }
+            }
+          ]
+        },
+        "actions": [
+          {
+            "fill": [
+              "VM name",
+              "web-1"
+            ]
+          },
+          {
+            "check": "Debian 13"
+          },
+          {
+            "press": "Continue to review"
+          },
+          {
+            "press": "Create VM"
+          }
+        ],
+        "expect": "This request is not allowed"
+      },
+      "error:unavailable": {
+        "hash": "#/journey/J4",
+        "api": {
+          "/api/v1/operations": [
+            {
+              "status": 503,
+              "body": {
+                "category": "unavailable",
+                "retryable": true,
+                "correlation_id": "0123456789abcdef0123456789abcdef"
+              }
+            }
+          ]
+        },
+        "actions": [
+          {
+            "fill": [
+              "VM name",
+              "web-1"
+            ]
+          },
+          {
+            "check": "Debian 13"
+          },
+          {
+            "press": "Continue to review"
+          },
+          {
+            "press": "Create VM"
+          }
+        ],
+        "expect": "Service temporarily unavailable"
+      },
+      "error:internal": {
+        "hash": "#/journey/J4",
+        "api": {
+          "/api/v1/operations": [
+            {
+              "status": 500,
+              "body": {
+                "category": "internal",
+                "retryable": false,
+                "correlation_id": "0123456789abcdef0123456789abcdef"
+              }
+            }
+          ]
+        },
+        "actions": [
+          {
+            "fill": [
+              "VM name",
+              "web-1"
+            ]
+          },
+          {
+            "check": "Debian 13"
+          },
+          {
+            "press": "Continue to review"
+          },
+          {
+            "press": "Create VM"
+          }
+        ],
+        "expect": "Something went wrong"
+      }
+    },
+    "J5": {
+      "loading": {
+        "hash": "#/journey/J5/operations/op-1",
+        "api": {
+          "/api/v1/operations/op-1": [
+            {
+              "hang": true
+            }
+          ]
+        },
+        "expect": "Loading operation"
+      },
+      "success": {
+        "hash": "#/journey/J5/operations/op-1",
+        "api": {
+          "/api/v1/operations/op-1": [
+            {
+              "status": 200,
+              "body": {
+                "id": "op-1",
+                "project_id": "default",
+                "resource_kind": "VM",
+                "resource_id": "vm-a",
+                "type": "start",
+                "status": "running",
+                "requested_by": "owner",
+                "generation": 1,
+                "attempts": 0,
+                "error_category": null,
+                "created_at": "2026-10-08T10:00:00Z",
+                "updated_at": "2026-10-08T10:00:00Z",
+                "allowed_actions": [
+                  "cancel"
+                ]
+              }
+            }
+          ]
+        },
+        "expect": "Running"
+      },
+      "stale": {
+        "hash": "#/journey/J5/operations/op-1",
+        "api": {
+          "/api/v1/operations/op-1": [
+            {
+              "status": 200,
+              "body": {
+                "id": "op-1",
+                "project_id": "default",
+                "resource_kind": "VM",
+                "resource_id": "vm-a",
+                "type": "start",
+                "status": "running",
+                "requested_by": "owner",
+                "generation": 1,
+                "attempts": 0,
+                "error_category": null,
+                "created_at": "2026-10-08T10:00:00Z",
+                "updated_at": "2026-10-08T10:00:00Z",
+                "allowed_actions": [
+                  "cancel"
+                ]
+              }
+            },
+            {
+              "abort": true
+            }
+          ]
+        },
+        "actions": [
+          {
+            "press": "Refresh status"
+          }
+        ],
+        "expect": "may be out of date"
+      },
+      "unreachable": {
+        "hash": "#/journey/J5/operations/op-1",
+        "api": {
+          "/api/v1/operations/op-1": [
+            {
+              "abort": true
+            }
+          ]
+        },
+        "expect": "Control plane unreachable"
+      },
+      "error:not_found": {
+        "hash": "#/journey/J5/operations/op-1",
+        "api": {
+          "/api/v1/operations/op-1": [
+            {
+              "status": 404,
+              "body": {
+                "category": "not_found",
+                "retryable": false,
+                "correlation_id": "0123456789abcdef0123456789abcdef"
+              }
+            }
+          ]
+        },
+        "expect": "Not found"
+      },
+      "error:unauthenticated": {
+        "hash": "#/journey/J5/operations/op-1",
+        "api": {
+          "/api/v1/operations/op-1": [
+            {
+              "status": 401,
+              "body": {
+                "category": "unauthenticated",
+                "retryable": false,
+                "correlation_id": "0123456789abcdef0123456789abcdef"
+              }
+            }
+          ]
+        },
+        "expect": "Authentication not configured"
+      },
+      "error:unavailable": {
+        "hash": "#/journey/J5/operations/op-1",
+        "api": {
+          "/api/v1/operations/op-1": [
+            {
+              "status": 503,
+              "body": {
+                "category": "unavailable",
+                "retryable": true,
+                "correlation_id": "0123456789abcdef0123456789abcdef"
+              }
+            }
+          ]
+        },
+        "expect": "Service temporarily unavailable"
+      },
+      "error:internal": {
+        "hash": "#/journey/J5/operations/op-1",
+        "api": {
+          "/api/v1/operations/op-1": [
+            {
+              "status": 500,
+              "body": {
+                "category": "internal",
+                "retryable": false,
+                "correlation_id": "0123456789abcdef0123456789abcdef"
+              }
+            }
+          ]
+        },
+        "expect": "Something went wrong"
+      }
+    },
+    "J6": {
+      "error:validation": {
+        "hash": "#/journey/J6",
+        "api": {
+          "/api/v1/vms/vm-x": [
+            {
+              "status": 400,
+              "body": {
+                "category": "validation",
+                "retryable": false,
+                "correlation_id": "0123456789abcdef0123456789abcdef"
+              }
+            }
+          ]
+        },
+        "expect": "Some details need attention"
+      },
+      "error:unauthenticated": {
+        "hash": "#/journey/J6",
+        "api": {
+          "/api/v1/vms/vm-x": [
+            {
+              "status": 401,
+              "body": {
+                "category": "unauthenticated",
+                "retryable": false,
+                "correlation_id": "0123456789abcdef0123456789abcdef"
+              }
+            }
+          ]
+        },
+        "expect": "Authentication not configured"
+      },
+      "error:forbidden": {
+        "hash": "#/journey/J6",
+        "api": {
+          "/api/v1/vms/vm-x": [
+            {
+              "status": 403,
+              "body": {
+                "category": "forbidden",
+                "retryable": false,
+                "correlation_id": "0123456789abcdef0123456789abcdef"
+              }
+            }
+          ]
+        },
+        "expect": "You are not allowed to do this"
+      },
+      "error:not_found": {
+        "hash": "#/journey/J6",
+        "api": {
+          "/api/v1/vms/vm-x": [
+            {
+              "status": 404,
+              "body": {
+                "category": "not_found",
+                "retryable": false,
+                "correlation_id": "0123456789abcdef0123456789abcdef"
+              }
+            }
+          ]
+        },
+        "expect": "Not found"
+      },
+      "error:conflict": {
+        "hash": "#/journey/J6",
+        "api": {
+          "/api/v1/vms/vm-x": [
+            {
+              "status": 409,
+              "body": {
+                "category": "conflict",
+                "retryable": false,
+                "correlation_id": "0123456789abcdef0123456789abcdef"
+              }
+            }
+          ]
+        },
+        "expect": "Changed by someone else"
+      },
+      "error:rate_limited": {
+        "hash": "#/journey/J6",
+        "api": {
+          "/api/v1/vms/vm-x": [
+            {
+              "status": 429,
+              "body": {
+                "category": "rate_limited",
+                "retryable": true,
+                "correlation_id": "0123456789abcdef0123456789abcdef"
+              }
+            }
+          ]
+        },
+        "expect": "Too many requests"
+      },
+      "error:prohibited": {
+        "hash": "#/journey/J6",
+        "api": {
+          "/api/v1/vms/vm-x": [
+            {
+              "status": 422,
+              "body": {
+                "category": "prohibited",
+                "retryable": false,
+                "correlation_id": "0123456789abcdef0123456789abcdef"
+              }
+            }
+          ]
+        },
+        "expect": "This request is not allowed"
+      },
+      "error:unavailable": {
+        "hash": "#/journey/J6",
+        "api": {
+          "/api/v1/vms/vm-x": [
+            {
+              "status": 503,
+              "body": {
+                "category": "unavailable",
+                "retryable": true,
+                "correlation_id": "0123456789abcdef0123456789abcdef"
+              }
+            }
+          ]
+        },
+        "expect": "Service temporarily unavailable"
+      },
+      "error:internal": {
+        "hash": "#/journey/J6",
+        "api": {
+          "/api/v1/vms/vm-x": [
+            {
+              "status": 500,
+              "body": {
+                "category": "internal",
+                "retryable": false,
+                "correlation_id": "0123456789abcdef0123456789abcdef"
+              }
+            }
+          ]
+        },
+        "expect": "Something went wrong"
+      }
+    },
+    "J7": {
+      "success": {
+        "hash": "#/journey/J7?vm=vm-a",
+        "api": {
+          "/api/v1/vms/vm-a": [
+            {
+              "status": 200,
+              "body": {
+                "id": "vm-a",
+                "project_id": "default",
+                "generation": 3,
+                "name": "web-1",
+                "desired": {
+                  "power": "running",
+                  "backup_schedule": null
+                },
+                "observed": {
+                  "power": "running",
+                  "last_seen_at": "2026-10-08T10:00:00Z",
+                  "managed": false,
+                  "ip_address": null,
+                  "login_user": null,
+                  "iso": null,
+                  "disk_gib": null,
+                  "snapshots": [],
+                  "network": null,
+                  "vcpus": null,
+                  "memory_mib": null,
+                  "usage": {
+                    "state": "unavailable",
+                    "cpu_percent": null,
+                    "memory_used_mib": null,
+                    "disk_kib_s": null,
+                    "net_kib_s": null,
+                    "history": []
+                  },
+                  "backup": {
+                    "next_run_at": null,
+                    "last_run": null
+                  },
+                  "graphical_console": "absent",
+                  "rescue": false
+                },
+                "allowed_actions": [
+                  "start",
+                  "stop",
+                  "delete"
+                ]
+              }
+            }
+          ],
+          "/api/v1/operations": [
+            {
+              "status": 202,
+              "body": {
+                "id": "op-5",
+                "project_id": "default",
+                "resource_kind": "VM",
+                "resource_id": "vm-a",
+                "type": "start",
+                "status": "pending",
+                "requested_by": "owner",
+                "generation": 1,
+                "attempts": 0,
+                "error_category": null,
+                "created_at": "2026-10-08T10:00:00Z",
+                "updated_at": "2026-10-08T10:00:00Z",
+                "allowed_actions": [
+                  "cancel"
+                ]
+              }
+            }
+          ]
+        },
+        "actions": [
+          {
+            "press": "Delete VM"
+          },
+          {
+            "fill": [
+              "Name to confirm",
+              "web-1"
+            ]
+          },
+          {
+            "press": "Delete permanently"
+          }
+        ],
+        "expect": "Deletion requested"
+      },
+      "outcome_unknown": {
+        "hash": "#/journey/J7?vm=vm-a",
+        "api": {
+          "/api/v1/vms/vm-a": [
+            {
+              "status": 200,
+              "body": {
+                "id": "vm-a",
+                "project_id": "default",
+                "generation": 3,
+                "name": "web-1",
+                "desired": {
+                  "power": "running",
+                  "backup_schedule": null
+                },
+                "observed": {
+                  "power": "running",
+                  "last_seen_at": "2026-10-08T10:00:00Z",
+                  "managed": false,
+                  "ip_address": null,
+                  "login_user": null,
+                  "iso": null,
+                  "disk_gib": null,
+                  "snapshots": [],
+                  "network": null,
+                  "vcpus": null,
+                  "memory_mib": null,
+                  "usage": {
+                    "state": "unavailable",
+                    "cpu_percent": null,
+                    "memory_used_mib": null,
+                    "disk_kib_s": null,
+                    "net_kib_s": null,
+                    "history": []
+                  },
+                  "backup": {
+                    "next_run_at": null,
+                    "last_run": null
+                  },
+                  "graphical_console": "absent",
+                  "rescue": false
+                },
+                "allowed_actions": [
+                  "start",
+                  "stop",
+                  "delete"
+                ]
+              }
+            }
+          ],
+          "/api/v1/operations": [
+            {
+              "hang": true
+            }
+          ]
+        },
+        "actions": [
+          {
+            "press": "Delete VM"
+          },
+          {
+            "fill": [
+              "Name to confirm",
+              "web-1"
+            ]
+          },
+          {
+            "press": "Delete permanently"
+          }
+        ],
+        "expect": "The outcome is unknown"
+      },
+      "error:forbidden": {
+        "hash": "#/journey/J7?vm=vm-a",
+        "api": {
+          "/api/v1/vms/vm-a": [
+            {
+              "status": 200,
+              "body": {
+                "id": "vm-a",
+                "project_id": "default",
+                "generation": 3,
+                "name": "web-1",
+                "desired": {
+                  "power": "running",
+                  "backup_schedule": null
+                },
+                "observed": {
+                  "power": "running",
+                  "last_seen_at": "2026-10-08T10:00:00Z",
+                  "managed": false,
+                  "ip_address": null,
+                  "login_user": null,
+                  "iso": null,
+                  "disk_gib": null,
+                  "snapshots": [],
+                  "network": null,
+                  "vcpus": null,
+                  "memory_mib": null,
+                  "usage": {
+                    "state": "unavailable",
+                    "cpu_percent": null,
+                    "memory_used_mib": null,
+                    "disk_kib_s": null,
+                    "net_kib_s": null,
+                    "history": []
+                  },
+                  "backup": {
+                    "next_run_at": null,
+                    "last_run": null
+                  },
+                  "graphical_console": "absent",
+                  "rescue": false
+                },
+                "allowed_actions": [
+                  "start",
+                  "stop",
+                  "delete"
+                ]
+              }
+            }
+          ],
+          "/api/v1/operations": [
+            {
+              "status": 403,
+              "body": {
+                "category": "forbidden",
+                "retryable": false,
+                "correlation_id": "0123456789abcdef0123456789abcdef"
+              }
+            }
+          ]
+        },
+        "actions": [
+          {
+            "press": "Delete VM"
+          },
+          {
+            "fill": [
+              "Name to confirm",
+              "web-1"
+            ]
+          },
+          {
+            "press": "Delete permanently"
+          }
+        ],
+        "expect": "You are not allowed to do this"
+      },
+      "error:not_found": {
+        "hash": "#/journey/J7?vm=vm-a",
+        "api": {
+          "/api/v1/vms/vm-a": [
+            {
+              "status": 200,
+              "body": {
+                "id": "vm-a",
+                "project_id": "default",
+                "generation": 3,
+                "name": "web-1",
+                "desired": {
+                  "power": "running",
+                  "backup_schedule": null
+                },
+                "observed": {
+                  "power": "running",
+                  "last_seen_at": "2026-10-08T10:00:00Z",
+                  "managed": false,
+                  "ip_address": null,
+                  "login_user": null,
+                  "iso": null,
+                  "disk_gib": null,
+                  "snapshots": [],
+                  "network": null,
+                  "vcpus": null,
+                  "memory_mib": null,
+                  "usage": {
+                    "state": "unavailable",
+                    "cpu_percent": null,
+                    "memory_used_mib": null,
+                    "disk_kib_s": null,
+                    "net_kib_s": null,
+                    "history": []
+                  },
+                  "backup": {
+                    "next_run_at": null,
+                    "last_run": null
+                  },
+                  "graphical_console": "absent",
+                  "rescue": false
+                },
+                "allowed_actions": [
+                  "start",
+                  "stop",
+                  "delete"
+                ]
+              }
+            }
+          ],
+          "/api/v1/operations": [
+            {
+              "status": 404,
+              "body": {
+                "category": "not_found",
+                "retryable": false,
+                "correlation_id": "0123456789abcdef0123456789abcdef"
+              }
+            }
+          ]
+        },
+        "actions": [
+          {
+            "press": "Delete VM"
+          },
+          {
+            "fill": [
+              "Name to confirm",
+              "web-1"
+            ]
+          },
+          {
+            "press": "Delete permanently"
+          }
+        ],
+        "expect": "Not found"
+      },
+      "error:conflict": {
+        "hash": "#/journey/J7?vm=vm-a",
+        "api": {
+          "/api/v1/vms/vm-a": [
+            {
+              "status": 200,
+              "body": {
+                "id": "vm-a",
+                "project_id": "default",
+                "generation": 3,
+                "name": "web-1",
+                "desired": {
+                  "power": "running",
+                  "backup_schedule": null
+                },
+                "observed": {
+                  "power": "running",
+                  "last_seen_at": "2026-10-08T10:00:00Z",
+                  "managed": false,
+                  "ip_address": null,
+                  "login_user": null,
+                  "iso": null,
+                  "disk_gib": null,
+                  "snapshots": [],
+                  "network": null,
+                  "vcpus": null,
+                  "memory_mib": null,
+                  "usage": {
+                    "state": "unavailable",
+                    "cpu_percent": null,
+                    "memory_used_mib": null,
+                    "disk_kib_s": null,
+                    "net_kib_s": null,
+                    "history": []
+                  },
+                  "backup": {
+                    "next_run_at": null,
+                    "last_run": null
+                  },
+                  "graphical_console": "absent",
+                  "rescue": false
+                },
+                "allowed_actions": [
+                  "start",
+                  "stop",
+                  "delete"
+                ]
+              }
+            }
+          ],
+          "/api/v1/operations": [
+            {
+              "status": 409,
+              "body": {
+                "category": "conflict",
+                "retryable": false,
+                "correlation_id": "0123456789abcdef0123456789abcdef"
+              }
+            }
+          ]
+        },
+        "actions": [
+          {
+            "press": "Delete VM"
+          },
+          {
+            "fill": [
+              "Name to confirm",
+              "web-1"
+            ]
+          },
+          {
+            "press": "Delete permanently"
+          }
+        ],
+        "expect": "Changed by someone else"
+      },
+      "error:unavailable": {
+        "hash": "#/journey/J7?vm=vm-a",
+        "api": {
+          "/api/v1/vms/vm-a": [
+            {
+              "status": 200,
+              "body": {
+                "id": "vm-a",
+                "project_id": "default",
+                "generation": 3,
+                "name": "web-1",
+                "desired": {
+                  "power": "running",
+                  "backup_schedule": null
+                },
+                "observed": {
+                  "power": "running",
+                  "last_seen_at": "2026-10-08T10:00:00Z",
+                  "managed": false,
+                  "ip_address": null,
+                  "login_user": null,
+                  "iso": null,
+                  "disk_gib": null,
+                  "snapshots": [],
+                  "network": null,
+                  "vcpus": null,
+                  "memory_mib": null,
+                  "usage": {
+                    "state": "unavailable",
+                    "cpu_percent": null,
+                    "memory_used_mib": null,
+                    "disk_kib_s": null,
+                    "net_kib_s": null,
+                    "history": []
+                  },
+                  "backup": {
+                    "next_run_at": null,
+                    "last_run": null
+                  },
+                  "graphical_console": "absent",
+                  "rescue": false
+                },
+                "allowed_actions": [
+                  "start",
+                  "stop",
+                  "delete"
+                ]
+              }
+            }
+          ],
+          "/api/v1/operations": [
+            {
+              "status": 503,
+              "body": {
+                "category": "unavailable",
+                "retryable": true,
+                "correlation_id": "0123456789abcdef0123456789abcdef"
+              }
+            }
+          ]
+        },
+        "actions": [
+          {
+            "press": "Delete VM"
+          },
+          {
+            "fill": [
+              "Name to confirm",
+              "web-1"
+            ]
+          },
+          {
+            "press": "Delete permanently"
+          }
+        ],
+        "expect": "Service temporarily unavailable"
+      },
+      "error:internal": {
+        "hash": "#/journey/J7?vm=vm-a",
+        "api": {
+          "/api/v1/vms/vm-a": [
+            {
+              "status": 200,
+              "body": {
+                "id": "vm-a",
+                "project_id": "default",
+                "generation": 3,
+                "name": "web-1",
+                "desired": {
+                  "power": "running",
+                  "backup_schedule": null
+                },
+                "observed": {
+                  "power": "running",
+                  "last_seen_at": "2026-10-08T10:00:00Z",
+                  "managed": false,
+                  "ip_address": null,
+                  "login_user": null,
+                  "iso": null,
+                  "disk_gib": null,
+                  "snapshots": [],
+                  "network": null,
+                  "vcpus": null,
+                  "memory_mib": null,
+                  "usage": {
+                    "state": "unavailable",
+                    "cpu_percent": null,
+                    "memory_used_mib": null,
+                    "disk_kib_s": null,
+                    "net_kib_s": null,
+                    "history": []
+                  },
+                  "backup": {
+                    "next_run_at": null,
+                    "last_run": null
+                  },
+                  "graphical_console": "absent",
+                  "rescue": false
+                },
+                "allowed_actions": [
+                  "start",
+                  "stop",
+                  "delete"
+                ]
+              }
+            }
+          ],
+          "/api/v1/operations": [
+            {
+              "status": 500,
+              "body": {
+                "category": "internal",
+                "retryable": false,
+                "correlation_id": "0123456789abcdef0123456789abcdef"
+              }
+            }
+          ]
+        },
+        "actions": [
+          {
+            "press": "Delete VM"
+          },
+          {
+            "fill": [
+              "Name to confirm",
+              "web-1"
+            ]
+          },
+          {
+            "press": "Delete permanently"
+          }
+        ],
+        "expect": "Something went wrong"
+      }
+    },
+    "J8": {
+      "unreachable": {
+        "hash": "#/journey/J8",
+        "api": {
+          "/api/v1/hosts/local": [
+            {
+              "abort": true
+            }
+          ]
+        },
+        "expect": "Control plane unreachable"
+      },
+      "stale": {
+        "hash": "#/journey/J8",
+        "api": {
+          "/api/v1/hosts/local": [
+            {
+              "status": 200,
+              "body": {
+                "id": "local",
+                "generation": 1,
+                "name": "local-host",
+                "desired": {
+                  "maintenance": false
+                },
+                "observed": {
+                  "reachable": true,
+                  "agent_version": "0.0.0-dev",
+                  "cpu_count": 8,
+                  "memory_mib": 16384,
+                  "capability_verdict": "supported",
+                  "virtualization": {
+                    "hardware": "available",
+                    "kvm_device": "available",
+                    "libvirt_packages": "available",
+                    "qemu_packages": "available"
+                  },
+                  "distribution": {
+                    "id": "debian",
+                    "version_id": "13"
+                  },
+                  "capability_findings": [],
+                  "creation": {
+                    "enabled": false,
+                    "network": "unknown",
+                    "storage": "unknown",
+                    "vcpu_options": [],
+                    "memory_mib_options": [],
+                    "disk_gib_options": [],
+                    "ready": false,
+                    "reasons": [
+                      "mutation_disabled"
+                    ]
+                  },
+                  "storage": {
+                    "state": "unknown",
+                    "pool_total_gib": null,
+                    "pool_free_gib": null,
+                    "images_gib": null,
+                    "backups_configured": false,
+                    "backups_gib": null,
+                    "backups_free_gib": null,
+                    "snapshots": "unknown",
+                    "backup_targets": [],
+                    "allocation_note": "Disk sizes shown for a VM are virtual sizes. Real usage is lower while the disk is thinly allocated; the pool free figure is what counts."
+                  },
+                  "usage": {
+                    "state": "unavailable",
+                    "interval_seconds": 30,
+                    "cpu_percent": null,
+                    "memory_used_mib": null,
+                    "disk_kib_s": null,
+                    "net_kib_s": null,
+                    "history": []
+                  },
+                  "alerts": {
+                    "open": 0,
+                    "webhook": "none"
+                  },
+                  "nightly_boot": null,
+                  "bridge": null
+                },
+                "allowed_actions": []
+              }
+            },
+            {
+              "abort": true
+            }
+          ]
+        },
+        "actions": [
+          {
+            "press": "Refresh"
+          }
+        ],
+        "expect": "may be out of date"
+      },
+      "success": {
+        "hash": "#/journey/J8",
+        "api": {
+          "/api/v1/hosts/local": [
+            {
+              "status": 200,
+              "body": {
+                "id": "local",
+                "generation": 1,
+                "name": "local-host",
+                "desired": {
+                  "maintenance": false
+                },
+                "observed": {
+                  "reachable": true,
+                  "agent_version": "0.0.0-dev",
+                  "cpu_count": 8,
+                  "memory_mib": 16384,
+                  "capability_verdict": "supported",
+                  "virtualization": {
+                    "hardware": "available",
+                    "kvm_device": "available",
+                    "libvirt_packages": "available",
+                    "qemu_packages": "available"
+                  },
+                  "distribution": {
+                    "id": "debian",
+                    "version_id": "13"
+                  },
+                  "capability_findings": [],
+                  "creation": {
+                    "enabled": false,
+                    "network": "unknown",
+                    "storage": "unknown",
+                    "vcpu_options": [],
+                    "memory_mib_options": [],
+                    "disk_gib_options": [],
+                    "ready": false,
+                    "reasons": [
+                      "mutation_disabled"
+                    ]
+                  },
+                  "storage": {
+                    "state": "unknown",
+                    "pool_total_gib": null,
+                    "pool_free_gib": null,
+                    "images_gib": null,
+                    "backups_configured": false,
+                    "backups_gib": null,
+                    "backups_free_gib": null,
+                    "snapshots": "unknown",
+                    "backup_targets": [],
+                    "allocation_note": "Disk sizes shown for a VM are virtual sizes. Real usage is lower while the disk is thinly allocated; the pool free figure is what counts."
+                  },
+                  "usage": {
+                    "state": "unavailable",
+                    "interval_seconds": 30,
+                    "cpu_percent": null,
+                    "memory_used_mib": null,
+                    "disk_kib_s": null,
+                    "net_kib_s": null,
+                    "history": []
+                  },
+                  "alerts": {
+                    "open": 0,
+                    "webhook": "none"
+                  },
+                  "nightly_boot": null,
+                  "bridge": null
+                },
+                "allowed_actions": []
+              }
+            }
+          ]
+        },
+        "expect": "local-host"
+      }
+    },
+    "J9": {
+      "success": {
+        "hash": "#/journey/J9?vm=vm-a",
+        "api": {
+          "/api/v1/vms/vm-a": [
+            {
+              "status": 200,
+              "body": {
+                "id": "vm-a",
+                "project_id": "default",
+                "generation": 3,
+                "name": "web-1",
+                "desired": {
+                  "power": "running",
+                  "backup_schedule": null
+                },
+                "observed": {
+                  "power": "running",
+                  "last_seen_at": "2026-10-08T10:00:00Z",
+                  "managed": false,
+                  "ip_address": null,
+                  "login_user": null,
+                  "iso": null,
+                  "disk_gib": null,
+                  "snapshots": [],
+                  "network": null,
+                  "vcpus": null,
+                  "memory_mib": null,
+                  "usage": {
+                    "state": "unavailable",
+                    "cpu_percent": null,
+                    "memory_used_mib": null,
+                    "disk_kib_s": null,
+                    "net_kib_s": null,
+                    "history": []
+                  },
+                  "backup": {
+                    "next_run_at": null,
+                    "last_run": null
+                  },
+                  "graphical_console": "absent",
+                  "rescue": false
+                },
+                "allowed_actions": [
+                  "start",
+                  "stop",
+                  "delete"
+                ]
+              }
+            }
+          ],
+          "/api/v1/operations": [
+            {
+              "status": 202,
+              "body": {
+                "id": "op-5",
+                "project_id": "default",
+                "resource_kind": "VM",
+                "resource_id": "vm-a",
+                "type": "start",
+                "status": "pending",
+                "requested_by": "owner",
+                "generation": 1,
+                "attempts": 0,
+                "error_category": null,
+                "created_at": "2026-10-08T10:00:00Z",
+                "updated_at": "2026-10-08T10:00:00Z",
+                "allowed_actions": [
+                  "cancel"
+                ]
+              }
+            }
+          ]
+        },
+        "actions": [
+          {
+            "press": "Stop"
+          }
+        ],
+        "expect": "Request accepted"
+      },
+      "outcome_unknown": {
+        "hash": "#/journey/J9?vm=vm-a",
+        "api": {
+          "/api/v1/vms/vm-a": [
+            {
+              "status": 200,
+              "body": {
+                "id": "vm-a",
+                "project_id": "default",
+                "generation": 3,
+                "name": "web-1",
+                "desired": {
+                  "power": "running",
+                  "backup_schedule": null
+                },
+                "observed": {
+                  "power": "running",
+                  "last_seen_at": "2026-10-08T10:00:00Z",
+                  "managed": false,
+                  "ip_address": null,
+                  "login_user": null,
+                  "iso": null,
+                  "disk_gib": null,
+                  "snapshots": [],
+                  "network": null,
+                  "vcpus": null,
+                  "memory_mib": null,
+                  "usage": {
+                    "state": "unavailable",
+                    "cpu_percent": null,
+                    "memory_used_mib": null,
+                    "disk_kib_s": null,
+                    "net_kib_s": null,
+                    "history": []
+                  },
+                  "backup": {
+                    "next_run_at": null,
+                    "last_run": null
+                  },
+                  "graphical_console": "absent",
+                  "rescue": false
+                },
+                "allowed_actions": [
+                  "start",
+                  "stop",
+                  "delete"
+                ]
+              }
+            }
+          ],
+          "/api/v1/operations": [
+            {
+              "hang": true
+            }
+          ]
+        },
+        "actions": [
+          {
+            "press": "Stop"
+          }
+        ],
+        "expect": "The outcome is unknown"
+      },
+      "error:conflict": {
+        "hash": "#/journey/J9?vm=vm-a",
+        "api": {
+          "/api/v1/vms/vm-a": [
+            {
+              "status": 200,
+              "body": {
+                "id": "vm-a",
+                "project_id": "default",
+                "generation": 3,
+                "name": "web-1",
+                "desired": {
+                  "power": "running",
+                  "backup_schedule": null
+                },
+                "observed": {
+                  "power": "running",
+                  "last_seen_at": "2026-10-08T10:00:00Z",
+                  "managed": false,
+                  "ip_address": null,
+                  "login_user": null,
+                  "iso": null,
+                  "disk_gib": null,
+                  "snapshots": [],
+                  "network": null,
+                  "vcpus": null,
+                  "memory_mib": null,
+                  "usage": {
+                    "state": "unavailable",
+                    "cpu_percent": null,
+                    "memory_used_mib": null,
+                    "disk_kib_s": null,
+                    "net_kib_s": null,
+                    "history": []
+                  },
+                  "backup": {
+                    "next_run_at": null,
+                    "last_run": null
+                  },
+                  "graphical_console": "absent",
+                  "rescue": false
+                },
+                "allowed_actions": [
+                  "start",
+                  "stop",
+                  "delete"
+                ]
+              }
+            }
+          ],
+          "/api/v1/operations": [
+            {
+              "status": 409,
+              "body": {
+                "category": "conflict",
+                "retryable": false,
+                "correlation_id": "0123456789abcdef0123456789abcdef"
+              }
+            }
+          ]
+        },
+        "actions": [
+          {
+            "press": "Stop"
+          }
+        ],
+        "expect": "Changed by someone else"
+      },
+      "error:forbidden": {
+        "hash": "#/journey/J9?vm=vm-a",
+        "api": {
+          "/api/v1/vms/vm-a": [
+            {
+              "status": 200,
+              "body": {
+                "id": "vm-a",
+                "project_id": "default",
+                "generation": 3,
+                "name": "web-1",
+                "desired": {
+                  "power": "running",
+                  "backup_schedule": null
+                },
+                "observed": {
+                  "power": "running",
+                  "last_seen_at": "2026-10-08T10:00:00Z",
+                  "managed": false,
+                  "ip_address": null,
+                  "login_user": null,
+                  "iso": null,
+                  "disk_gib": null,
+                  "snapshots": [],
+                  "network": null,
+                  "vcpus": null,
+                  "memory_mib": null,
+                  "usage": {
+                    "state": "unavailable",
+                    "cpu_percent": null,
+                    "memory_used_mib": null,
+                    "disk_kib_s": null,
+                    "net_kib_s": null,
+                    "history": []
+                  },
+                  "backup": {
+                    "next_run_at": null,
+                    "last_run": null
+                  },
+                  "graphical_console": "absent",
+                  "rescue": false
+                },
+                "allowed_actions": [
+                  "start",
+                  "stop",
+                  "delete"
+                ]
+              }
+            }
+          ],
+          "/api/v1/operations": [
+            {
+              "status": 403,
+              "body": {
+                "category": "forbidden",
+                "retryable": false,
+                "correlation_id": "0123456789abcdef0123456789abcdef"
+              }
+            }
+          ]
+        },
+        "actions": [
+          {
+            "press": "Stop"
+          }
+        ],
+        "expect": "You are not allowed to do this"
+      },
+      "error:rate_limited": {
+        "hash": "#/journey/J9?vm=vm-a",
+        "api": {
+          "/api/v1/vms/vm-a": [
+            {
+              "status": 200,
+              "body": {
+                "id": "vm-a",
+                "project_id": "default",
+                "generation": 3,
+                "name": "web-1",
+                "desired": {
+                  "power": "running",
+                  "backup_schedule": null
+                },
+                "observed": {
+                  "power": "running",
+                  "last_seen_at": "2026-10-08T10:00:00Z",
+                  "managed": false,
+                  "ip_address": null,
+                  "login_user": null,
+                  "iso": null,
+                  "disk_gib": null,
+                  "snapshots": [],
+                  "network": null,
+                  "vcpus": null,
+                  "memory_mib": null,
+                  "usage": {
+                    "state": "unavailable",
+                    "cpu_percent": null,
+                    "memory_used_mib": null,
+                    "disk_kib_s": null,
+                    "net_kib_s": null,
+                    "history": []
+                  },
+                  "backup": {
+                    "next_run_at": null,
+                    "last_run": null
+                  },
+                  "graphical_console": "absent",
+                  "rescue": false
+                },
+                "allowed_actions": [
+                  "start",
+                  "stop",
+                  "delete"
+                ]
+              }
+            }
+          ],
+          "/api/v1/operations": [
+            {
+              "status": 429,
+              "body": {
+                "category": "rate_limited",
+                "retryable": true,
+                "correlation_id": "0123456789abcdef0123456789abcdef"
+              }
+            }
+          ]
+        },
+        "actions": [
+          {
+            "press": "Stop"
+          }
+        ],
+        "expect": "Too many requests"
+      },
+      "error:unavailable": {
+        "hash": "#/journey/J9?vm=vm-a",
+        "api": {
+          "/api/v1/vms/vm-a": [
+            {
+              "status": 200,
+              "body": {
+                "id": "vm-a",
+                "project_id": "default",
+                "generation": 3,
+                "name": "web-1",
+                "desired": {
+                  "power": "running",
+                  "backup_schedule": null
+                },
+                "observed": {
+                  "power": "running",
+                  "last_seen_at": "2026-10-08T10:00:00Z",
+                  "managed": false,
+                  "ip_address": null,
+                  "login_user": null,
+                  "iso": null,
+                  "disk_gib": null,
+                  "snapshots": [],
+                  "network": null,
+                  "vcpus": null,
+                  "memory_mib": null,
+                  "usage": {
+                    "state": "unavailable",
+                    "cpu_percent": null,
+                    "memory_used_mib": null,
+                    "disk_kib_s": null,
+                    "net_kib_s": null,
+                    "history": []
+                  },
+                  "backup": {
+                    "next_run_at": null,
+                    "last_run": null
+                  },
+                  "graphical_console": "absent",
+                  "rescue": false
+                },
+                "allowed_actions": [
+                  "start",
+                  "stop",
+                  "delete"
+                ]
+              }
+            }
+          ],
+          "/api/v1/operations": [
+            {
+              "status": 503,
+              "body": {
+                "category": "unavailable",
+                "retryable": true,
+                "correlation_id": "0123456789abcdef0123456789abcdef"
+              }
+            }
+          ]
+        },
+        "actions": [
+          {
+            "press": "Stop"
+          }
+        ],
+        "expect": "Service temporarily unavailable"
+      },
+      "error:internal": {
+        "hash": "#/journey/J9?vm=vm-a",
+        "api": {
+          "/api/v1/vms/vm-a": [
+            {
+              "status": 200,
+              "body": {
+                "id": "vm-a",
+                "project_id": "default",
+                "generation": 3,
+                "name": "web-1",
+                "desired": {
+                  "power": "running",
+                  "backup_schedule": null
+                },
+                "observed": {
+                  "power": "running",
+                  "last_seen_at": "2026-10-08T10:00:00Z",
+                  "managed": false,
+                  "ip_address": null,
+                  "login_user": null,
+                  "iso": null,
+                  "disk_gib": null,
+                  "snapshots": [],
+                  "network": null,
+                  "vcpus": null,
+                  "memory_mib": null,
+                  "usage": {
+                    "state": "unavailable",
+                    "cpu_percent": null,
+                    "memory_used_mib": null,
+                    "disk_kib_s": null,
+                    "net_kib_s": null,
+                    "history": []
+                  },
+                  "backup": {
+                    "next_run_at": null,
+                    "last_run": null
+                  },
+                  "graphical_console": "absent",
+                  "rescue": false
+                },
+                "allowed_actions": [
+                  "start",
+                  "stop",
+                  "delete"
+                ]
+              }
+            }
+          ],
+          "/api/v1/operations": [
+            {
+              "status": 500,
+              "body": {
+                "category": "internal",
+                "retryable": false,
+                "correlation_id": "0123456789abcdef0123456789abcdef"
+              }
+            }
+          ]
+        },
+        "actions": [
+          {
+            "press": "Stop"
+          }
+        ],
+        "expect": "Something went wrong"
+      }
+    },
+    "J10": {
+      "success": {
+        "hash": "#/journey/J10?vm=vm-a",
+        "api": {
+          "/api/v1/vms/vm-a": [
+            {
+              "status": 200,
+              "body": {
+                "id": "vm-a",
+                "project_id": "default",
+                "generation": 3,
+                "name": "web-1",
+                "desired": {
+                  "power": "running",
+                  "backup_schedule": null
+                },
+                "observed": {
+                  "power": "running",
+                  "last_seen_at": "2026-10-08T10:00:00Z",
+                  "managed": false,
+                  "ip_address": null,
+                  "login_user": null,
+                  "iso": null,
+                  "disk_gib": null,
+                  "snapshots": [],
+                  "network": null,
+                  "vcpus": null,
+                  "memory_mib": null,
+                  "usage": {
+                    "state": "unavailable",
+                    "cpu_percent": null,
+                    "memory_used_mib": null,
+                    "disk_kib_s": null,
+                    "net_kib_s": null,
+                    "history": []
+                  },
+                  "backup": {
+                    "next_run_at": null,
+                    "last_run": null
+                  },
+                  "graphical_console": "absent",
+                  "rescue": false
+                },
+                "allowed_actions": [
+                  "start",
+                  "stop",
+                  "delete"
+                ]
+              }
+            }
+          ]
+        },
+        "expect": "Open console"
+      },
+      "error:forbidden": {
+        "hash": "#/journey/J10?vm=vm-a",
+        "api": {
+          "/api/v1/vms/vm-a": [
+            {
+              "status": 403,
+              "body": {
+                "category": "forbidden",
+                "retryable": false,
+                "correlation_id": "0123456789abcdef0123456789abcdef"
+              }
+            }
+          ]
+        },
+        "expect": "You are not allowed to do this"
+      },
+      "error:unavailable": {
+        "hash": "#/journey/J10?vm=vm-a",
+        "api": {
+          "/api/v1/vms/vm-a": [
+            {
+              "status": 503,
+              "body": {
+                "category": "unavailable",
+                "retryable": true,
+                "correlation_id": "0123456789abcdef0123456789abcdef"
+              }
+            }
+          ]
+        },
+        "expect": "Service temporarily unavailable"
+      },
+      "error:internal": {
+        "hash": "#/journey/J10?vm=vm-a",
+        "api": {
+          "/api/v1/vms/vm-a": [
+            {
+              "status": 500,
+              "body": {
+                "category": "internal",
+                "retryable": false,
+                "correlation_id": "0123456789abcdef0123456789abcdef"
+              }
+            }
+          ]
+        },
+        "expect": "Something went wrong"
+      }
+    }
+  }
+}

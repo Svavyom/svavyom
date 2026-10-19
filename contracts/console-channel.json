@@ -1,0 +1,54 @@
+{
+  "schema": 1,
+  "description": "The console route family: the serial console (M1-D) and the graphical console (DR-026 D1). Separate from contracts/openapi.yaml because a WebSocket upgrade cannot be expressed in its JSON-only subset. Same session, CSRF, same-origin and typed Error-envelope rules as /api/v1. Pinned to the implementation by backend/internal/api/console_contract_test.go.",
+  "routes": {
+    "serial": {
+      "method": "GET", "path": "/console/v1/vms/{id}/serial",
+      "auth": "session cookie", "query": "none",
+      "response": {"state": ["unavailable", "not_configured", "no_output", "available"], "text": "string, at most 32768 bytes of the most recent output, UTF-8, no escape sequences", "truncated": "boolean", "running": "boolean"},
+      "errors": ["unauthenticated", "validation", "not_found"]
+    },
+    "ticket": {
+      "method": "POST", "path": "/console/v1/vms/{id}/tickets",
+      "auth": "session cookie + X-CSRF-Token + same origin + the interactive-console switch", "body": "none",
+      "response": {"ticket": "43 characters of base64url (256 random bits)", "expires_at": "RFC 3339, 30 seconds after issue"},
+      "binding": ["the minting session", "exactly one VM", "console kind serial"],
+      "errors": ["unauthenticated", "forbidden", "prohibited", "not_found", "conflict", "unavailable"]
+    },
+    "socket": {
+      "method": "GET", "path": "/console/v1/vms/{id}/socket",
+      "auth": "session cookie + same origin (Origin header required) + a ticket in the WebSocket subprotocol list",
+      "subprotocols": ["svavyom.console.v1", "t.<ticket>"],
+      "frames": "binary only in both directions: console bytes out, keystrokes in (at most 4096 bytes per message)",
+      "close_codes": {"1000": "normal / client closed / VM ended", "1001": "going away: broker ended it, time limit, VM stopped", "1008": "session ended", "1009": "message too big", "1002": "protocol error", "1011": "internal"},
+      "limits": {"connection_lifetime": "1 hour", "idle": "10 minutes", "input_rate": "16 KiB per second", "consoles_per_vm": 1, "session_recheck": "5 seconds"},
+      "errors_before_upgrade": ["unauthenticated", "forbidden", "prohibited", "validation", "not_found", "conflict", "unavailable"]
+    }
+  },
+  "graphics_routes": {
+    "ticket": {
+      "method": "POST", "path": "/console/v1/vms/{id}/graphics-tickets",
+      "auth": "session cookie + X-CSRF-Token + same origin + the interactive-console switch + operator role", "body": "none",
+      "response": {"ticket": "43 characters of base64url (256 random bits)", "expires_at": "RFC 3339, 30 seconds after issue"},
+      "binding": ["the minting session", "exactly one VM", "console kind graphics"],
+      "errors": ["unauthenticated", "forbidden", "prohibited", "not_found", "conflict", "unavailable"]
+    },
+    "socket": {
+      "method": "GET", "path": "/console/v1/vms/{id}/graphics-socket",
+      "auth": "session cookie + same origin (Origin header required) + a ticket in the WebSocket subprotocol list",
+      "subprotocols": ["svavyom.graphics.v1", "t.<ticket>"],
+      "frames": "binary only in both directions: the RFB (VNC) protocol between the browser's VNC client and the VM's VNC server (at most 65536 bytes per message from the browser)",
+      "close_codes": {"1000": "normal / client closed", "1001": "going away: broker ended it, time limit, VM stopped", "1008": "session ended", "1009": "message too big", "1002": "protocol error", "1011": "internal"},
+      "limits": {"connection_lifetime": "1 hour", "idle": "10 minutes", "input_rate": "256 KiB per second", "viewers_per_vm": 1, "session_recheck": "5 seconds"},
+      "errors_before_upgrade": ["unauthenticated", "forbidden", "prohibited", "validation", "not_found", "conflict", "unavailable"]
+    }
+  },
+  "broker_protocol": {
+    "transport": "Unix socket, mode 0660, peer-uid allowlist, frames of a 4-byte big-endian length and strict JSON",
+    "requests": ["snapshot", "attach", "graphics"],
+    "stream_frames": ["out", "in", "end"],
+    "end_reasons": ["closed", "vm_ended", "idle", "lifetime", "error"],
+    "graphics_stream": "after an OK reply to graphics the connection is a raw byte stream (RFB), no longer framed; the VM's VNC server has no TCP port or file: the hypervisor hands the broker a private socket pair",
+    "never_carried": ["cookie", "ticket", "path", "xml", "libvirt method name"]
+  }
+}

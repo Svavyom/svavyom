@@ -1,0 +1,10 @@
+{
+  "request": {
+    "boundary": "browser-api",
+    "category": "health",
+    "payload": "{\"command\":\"id\"}"
+  },
+  "expect": [
+    "SCHEMA_VIOLATION"
+  ]
+}

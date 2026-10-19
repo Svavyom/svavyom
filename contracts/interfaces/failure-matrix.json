@@ -1,0 +1,54 @@
+{
+  "schema": 1,
+  "description": "Boundary-failure matrix (M0-E01-S01 draft). Defines responsibilities only; no recovery is implemented in this story. Runtime fault injection and reconciliation are verified by M0-E02-S07.",
+  "rows": {
+    "api-restart": {
+      "durable_state_owner": "operation-manager",
+      "caller_visible_error": "unavailable",
+      "retry_responsibility": "Browser retries idempotent reads; state-changing requests are retried only with the same idempotency key.",
+      "idempotency": "Operations are keyed by (project_id, idempotency_key); a replay returns the existing operation.",
+      "recovery_story": "M0-E02-S07",
+      "recovery_implemented": false
+    },
+    "operation-manager-restart": {
+      "durable_state_owner": "operation-manager",
+      "caller_visible_error": "unavailable",
+      "retry_responsibility": "On restart the operation manager reloads persisted operations; non-terminal operations are re-observed before any further action, never blindly re-executed.",
+      "idempotency": "Operations resume by operation id and recorded attempt number; a replayed submission with the same (project_id, idempotency_key) returns the existing operation.",
+      "recovery_story": "M0-E02-S07",
+      "recovery_implemented": false
+    },
+    "agent-timeout": {
+      "durable_state_owner": "operation-manager",
+      "caller_visible_error": "timeout",
+      "retry_responsibility": "Operation manager marks the attempt outcome unknown and must observe host state before any retry; never blind-retries destructive commands.",
+      "idempotency": "Each typed host command carries operation id and attempt number recorded by the operation manager (single store writer); commands are idempotent per (operation id, attempt) and the agent keeps no durable state.",
+      "recovery_story": "M0-E02-S07",
+      "recovery_implemented": false
+    },
+    "agent-unavailable": {
+      "durable_state_owner": "operation-manager",
+      "caller_visible_error": "unavailable",
+      "retry_responsibility": "Operation stays pending with bounded backoff and a finite attempt limit, then retryable_failure.",
+      "idempotency": "No command was delivered; resubmission uses the same operation id.",
+      "recovery_story": "M0-E02-S07",
+      "recovery_implemented": false
+    },
+    "host-agent-crash": {
+      "durable_state_owner": "operation-manager",
+      "caller_visible_error": "unavailable",
+      "retry_responsibility": "The operation manager treats in-flight commands as outcome-unknown, waits for the agent to return, observes host state, then retries with bounded backoff or marks retryable_failure.",
+      "idempotency": "The agent keeps no durable state; each command is idempotent per (operation id, attempt) recorded by the operation manager.",
+      "recovery_story": "M0-E02-S07",
+      "recovery_implemented": false
+    },
+    "libvirt-unavailable": {
+      "durable_state_owner": "operation-manager",
+      "caller_visible_error": "unavailable",
+      "retry_responsibility": "Agent reports unavailable without side effects; operation manager applies bounded retry; observed state is marked stale, never guessed.",
+      "idempotency": "Agent performs no partial libvirt mutation when the connection cannot be established.",
+      "recovery_story": "M0-E02-S07",
+      "recovery_implemented": false
+    }
+  }
+}

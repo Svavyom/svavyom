@@ -1,0 +1,7 @@
+{
+  "request": {
+    "boundary": "browser-api",
+    "category": "health"
+  },
+  "expect": []
+}

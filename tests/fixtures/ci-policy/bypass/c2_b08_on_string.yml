@@ -1,0 +1,10 @@
+name: t
+on: workflow_run
+permissions:
+  contents: read
+jobs:
+  b:
+    runs-on: x
+    timeout-minutes: 1
+    steps:
+      - run: echo

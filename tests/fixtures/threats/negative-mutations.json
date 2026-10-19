@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "description": "M0-E01-S02 AC02 negative fixtures: each mutation (a list of ops) is applied to a copy of the committed threat contracts and must produce exactly the expected finding code. Paired removals keep the bidirectional threat<->mitigation references consistent so that only the targeted rule fires.",
+  "mutations": [
+    {"expect": "THREAT_MISSING", "ops": [{"op": "remove_threat", "id": "T-PAAS-R"}, {"op": "remove_mitigation", "id": "M-PAAS-AUDIT"}]},
+    {"expect": "THREAT_UNOWNED", "ops": [{"op": "set_threat", "id": "T-API-S", "key": "owner_story", "value": "M9-E99-S99"}]},
+    {"expect": "ACCEPTANCE_UNOWNED", "ops": [{"op": "set_threat", "id": "T-API-R", "key": "status", "value": "accepted"}, {"op": "delete_threat_key", "id": "T-API-R", "key": "owner_story"}]},
+    {"expect": "MITIGATION_DANGLING", "ops": [{"op": "set_threat", "id": "T-API-S", "key": "mitigations", "value": ["M-API-AUTHN", "M-NOPE"]}]},
+    {"expect": "EVIDENCE_MISSING", "ops": [{"op": "set_mitigation", "id": "M-API-AUTHN", "key": "evidence", "value": {"contract_field": "inventory.boundaries.browser-api.security.no_such_field"}}]},
+    {"expect": "RUNTIME_CLAIM", "ops": [{"op": "set_threat", "id": "T-AGENT-S", "key": "status", "value": "mitigated"}, {"op": "delete_threat_key", "id": "T-AGENT-S", "key": "owner_story"}]},
+    {"expect": "FIELD_UNCLASSIFIED", "ops": [{"op": "delete_field", "field": "operation.id"}]},
+    {"expect": "CREDENTIAL_LOGGABLE", "ops": [{"op": "set_class_rule", "class": "credential", "key": "loggable", "value": true}]},
+    {"expect": "SECRET_UNREDACTED", "ops": [{"op": "set_field", "field": "operation.status", "value": "secret"}]},
+    {"expect": "ROW_UNREFERENCED", "ops": [{"op": "remove_threat", "id": "T-ROW-API-RESTART"}, {"op": "remove_mitigation", "id": "M-ROW-API-RESTART"}]}
+  ]
+}

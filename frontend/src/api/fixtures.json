@@ -1,0 +1,7503 @@
+{
+ "schema": 1,
+ "description": "Conformance fixtures for contracts/openapi.yaml (M0-E01-S04 AC03). Every positive value must validate against its schema; every negative value must fail with exactly the named JSON-Schema keyword at the named path. src/api/conformance.test.ts runs them through the same strict validator the client uses.",
+ "positive": [
+  {
+   "name": "Health",
+   "schema": "Health",
+   "value": {
+    "status": "scaffold"
+   }
+  },
+  {
+   "name": "Host",
+   "schema": "Host",
+   "value": {
+    "id": "local",
+    "generation": 1,
+    "name": "local-host",
+    "desired": {
+     "maintenance": false
+    },
+    "observed": {
+     "reachable": true,
+     "agent_version": "0.0.0-dev",
+     "cpu_count": 8,
+     "memory_mib": 16384,
+     "capability_verdict": "unknown",
+     "virtualization": {
+      "hardware": "available",
+      "kvm_device": "unavailable",
+      "libvirt_packages": "unknown",
+      "qemu_packages": "available"
+     },
+     "distribution": {
+      "id": "debian",
+      "version_id": "13"
+     },
+     "capability_findings": [],
+     "creation": {
+      "enabled": false,
+      "network": "unknown",
+      "storage": "unknown",
+      "vcpu_options": [],
+      "memory_mib_options": [],
+      "disk_gib_options": [],
+      "ready": false,
+      "reasons": [
+       "mutation_disabled"
+      ]
+     },
+     "storage": {
+      "state": "unknown",
+      "pool_total_gib": null,
+      "pool_free_gib": null,
+      "images_gib": null,
+      "backups_configured": false,
+      "backups_gib": null,
+      "backups_free_gib": null,
+      "snapshots": "unknown",
+      "backup_targets": [],
+      "allocation_note": "Disk sizes shown for a VM are virtual sizes. Real usage is lower while the disk is thinly allocated; the pool free figure is what counts."
+     },
+     "usage": {
+      "state": "unavailable",
+      "interval_seconds": 30,
+      "cpu_percent": null,
+      "memory_used_mib": null,
+      "disk_kib_s": null,
+      "net_kib_s": null,
+      "history": []
+     },
+     "alerts": {
+      "open": 0,
+      "webhook": "none"
+     },
+     "nightly_boot": null,
+     "bridge": null
+    },
+    "allowed_actions": []
+   }
+  },
+  {
+   "name": "Project",
+   "schema": "Project",
+   "value": {
+    "id": "default",
+    "generation": 1,
+    "name": "default",
+    "desired": {},
+    "observed": {},
+    "allowed_actions": []
+   }
+  },
+  {
+   "name": "VM",
+   "schema": "VM",
+   "value": {
+    "id": "vm-1",
+    "project_id": "default",
+    "generation": 1,
+    "name": "VM-1",
+    "allowed_actions": [
+     "start",
+     "stop",
+     "delete"
+    ],
+    "desired": {
+     "power": "running",
+     "backup_schedule": null
+    },
+    "observed": {
+     "power": "crashed",
+     "last_seen_at": "2026-10-08T10:00:00.123+05:30",
+     "managed": false,
+     "ip_address": null,
+     "login_user": null,
+     "iso": null,
+     "disk_gib": null,
+     "snapshots": [],
+     "network": null,
+     "vcpus": null,
+     "memory_mib": null,
+     "usage": {
+      "state": "unavailable",
+      "cpu_percent": null,
+      "memory_used_mib": null,
+      "disk_kib_s": null,
+      "net_kib_s": null,
+      "history": []
+     },
+     "backup": {
+      "next_run_at": null,
+      "last_run": null
+     },
+     "graphical_console": "absent",
+     "rescue": false
+    }
+   }
+  },
+  {
+   "name": "Volume (unattached)",
+   "schema": "Volume",
+   "value": {
+    "id": "volume-1",
+    "project_id": "default",
+    "generation": 1,
+    "name": "Volume-1",
+    "allowed_actions": [
+     "delete"
+    ],
+    "desired": {
+     "size_gib": 10,
+     "attached_to": null
+    },
+    "observed": {
+     "state": "available"
+    }
+   }
+  },
+  {
+   "name": "Volume (attached)",
+   "schema": "Volume",
+   "value": {
+    "id": "volume-1",
+    "project_id": "default",
+    "generation": 1,
+    "name": "Volume-1",
+    "allowed_actions": [
+     "delete"
+    ],
+    "desired": {
+     "size_gib": 10,
+     "attached_to": "vm-1"
+    },
+    "observed": {
+     "state": "attached"
+    }
+   }
+  },
+  {
+   "name": "VirtualNetwork",
+   "schema": "VirtualNetwork",
+   "value": {
+    "id": "lab-net",
+    "project_id": "default",
+    "generation": 1,
+    "name": "lab-net",
+    "allowed_actions": [
+     "stop",
+     "delete",
+     "disable_autostart"
+    ],
+    "desired": {
+     "mode": "nat",
+     "autostart": true
+    },
+    "observed": {
+     "state": "active",
+     "managed": true,
+     "bridge": "svbr7a7a7a7a",
+     "subnet": "10.77.0.0/24",
+     "gateway": "10.77.0.1",
+     "dhcp_start": "10.77.0.10",
+     "dhcp_end": "10.77.0.200",
+     "attached_vms": 0,
+     "reservations": [
+      {
+       "mac": "52:54:00:aa:bb:cc",
+       "ip": "10.77.0.50"
+      }
+     ]
+    }
+   }
+  },
+  {
+   "name": "Image",
+   "schema": "Image",
+   "value": {
+    "id": "image-1",
+    "project_id": "default",
+    "generation": 1,
+    "name": "Image-1",
+    "allowed_actions": [
+     "delete"
+    ],
+    "desired": {
+     "source_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    "observed": {
+     "state": "verifying",
+     "distribution": "Debian",
+     "version": "13",
+     "architecture": "x86_64",
+     "login_user": "debian",
+     "media": "disk",
+     "min_disk_gib": 3,
+     "qualification": "verified",
+     "qualification_evidence": null
+    }
+   }
+  },
+  {
+   "name": "Backup",
+   "schema": "Backup",
+   "value": {
+    "id": "backup-1",
+    "project_id": "default",
+    "generation": 1,
+    "name": "Backup-1",
+    "allowed_actions": [
+     "delete"
+    ],
+    "desired": {
+     "source_volume_id": "volume-1"
+    },
+    "observed": {
+     "state": "complete",
+     "copies": []
+    }
+   }
+  },
+  {
+   "name": "App",
+   "schema": "App",
+   "value": {
+    "id": "app-1",
+    "project_id": "default",
+    "generation": 1,
+    "name": "App-1",
+    "allowed_actions": [
+     "start",
+     "stop",
+     "delete"
+    ],
+    "desired": {
+     "image_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    "observed": {
+     "state": "failed"
+    }
+   }
+  },
+  {
+   "name": "Operation (timeout)",
+   "schema": "Operation",
+   "value": {
+    "id": "op-1",
+    "project_id": "default",
+    "resource_kind": "VM",
+    "resource_id": "vm-1",
+    "type": "delete",
+    "status": "retryable_failure",
+    "requested_by": "owner",
+    "generation": 2,
+    "attempts": 3,
+    "error_category": "timeout",
+    "created_at": "2026-10-08T10:00:00Z",
+    "updated_at": "2026-10-08T10:00:00Z",
+    "allowed_actions": [
+     "cancel"
+    ]
+   }
+  },
+  {
+   "name": "Operation (no error)",
+   "schema": "Operation",
+   "value": {
+    "id": "op-1",
+    "project_id": "default",
+    "resource_kind": "VM",
+    "resource_id": "vm-1",
+    "type": "delete",
+    "status": "pending",
+    "requested_by": "owner",
+    "generation": 2,
+    "attempts": 0,
+    "error_category": null,
+    "created_at": "2026-10-08T10:00:00Z",
+    "updated_at": "2026-10-08T10:00:00Z",
+    "allowed_actions": [
+     "cancel"
+    ]
+   }
+  },
+  {
+   "name": "Event",
+   "schema": "Event",
+   "value": {
+    "id": "ev-1",
+    "project_id": "default",
+    "type": "vm.started",
+    "resource_kind": "VM",
+    "resource_id": "vm-1",
+    "created_at": "2026-10-08T10:00:00Z",
+    "allowed_actions": [],
+    "severity": "warning",
+    "state": "open",
+    "value": null,
+    "updated_at": "2026-10-08T10:00:00Z"
+   }
+  },
+  {
+   "name": "HostList",
+   "schema": "HostList",
+   "value": {
+    "items": [
+     {
+      "id": "local",
+      "generation": 1,
+      "name": "local-host",
+      "desired": {
+       "maintenance": false
+      },
+      "observed": {
+       "reachable": true,
+       "agent_version": "0.0.0-dev",
+       "cpu_count": 8,
+       "memory_mib": 16384,
+       "capability_verdict": "unknown",
+       "virtualization": {
+        "hardware": "available",
+        "kvm_device": "unavailable",
+        "libvirt_packages": "unknown",
+        "qemu_packages": "available"
+       },
+       "distribution": {
+        "id": "debian",
+        "version_id": "13"
+       },
+       "capability_findings": [],
+       "creation": {
+        "enabled": false,
+        "network": "unknown",
+        "storage": "unknown",
+        "vcpu_options": [],
+        "memory_mib_options": [],
+        "disk_gib_options": [],
+        "ready": false,
+        "reasons": [
+         "mutation_disabled"
+        ]
+       },
+       "storage": {
+        "state": "unknown",
+        "pool_total_gib": null,
+        "pool_free_gib": null,
+        "images_gib": null,
+        "backups_configured": false,
+        "backups_gib": null,
+        "backups_free_gib": null,
+        "snapshots": "unknown",
+        "backup_targets": [],
+        "allocation_note": "Disk sizes shown for a VM are virtual sizes. Real usage is lower while the disk is thinly allocated; the pool free figure is what counts."
+       },
+       "usage": {
+        "state": "unavailable",
+        "interval_seconds": 30,
+        "cpu_percent": null,
+        "memory_used_mib": null,
+        "disk_kib_s": null,
+        "net_kib_s": null,
+        "history": []
+       },
+       "alerts": {
+        "open": 0,
+        "webhook": "none"
+       },
+       "nightly_boot": null,
+       "bridge": null
+      },
+      "allowed_actions": []
+     }
+    ],
+    "allowed_actions": [],
+    "next_cursor": null
+   }
+  },
+  {
+   "name": "ProjectList",
+   "schema": "ProjectList",
+   "value": {
+    "items": [
+     {
+      "id": "default",
+      "generation": 1,
+      "name": "default",
+      "desired": {},
+      "observed": {},
+      "allowed_actions": []
+     }
+    ],
+    "allowed_actions": [],
+    "next_cursor": null
+   }
+  },
+  {
+   "name": "VMList (create allowed, cursor)",
+   "schema": "VMList",
+   "value": {
+    "items": [
+     {
+      "id": "vm-1",
+      "project_id": "default",
+      "generation": 1,
+      "name": "VM-1",
+      "allowed_actions": [
+       "start",
+       "stop",
+       "delete"
+      ],
+      "desired": {
+       "power": "running",
+       "backup_schedule": null
+      },
+      "observed": {
+       "power": "crashed",
+       "last_seen_at": "2026-10-08T10:00:00.123+05:30",
+       "managed": false,
+       "ip_address": null,
+       "login_user": null,
+       "iso": null,
+       "disk_gib": null,
+       "snapshots": [],
+       "network": null,
+       "vcpus": null,
+       "memory_mib": null,
+       "usage": {
+        "state": "unavailable",
+        "cpu_percent": null,
+        "memory_used_mib": null,
+        "disk_kib_s": null,
+        "net_kib_s": null,
+        "history": []
+       },
+       "backup": {
+        "next_run_at": null,
+        "last_run": null
+       },
+       "graphical_console": "absent",
+       "rescue": false
+      }
+     }
+    ],
+    "allowed_actions": [
+     "create"
+    ],
+    "next_cursor": "abc_-123"
+   }
+  },
+  {
+   "name": "VMList (empty)",
+   "schema": "VMList",
+   "value": {
+    "items": [],
+    "allowed_actions": [],
+    "next_cursor": null
+   }
+  },
+  {
+   "name": "VolumeList",
+   "schema": "VolumeList",
+   "value": {
+    "items": [
+     {
+      "id": "volume-1",
+      "project_id": "default",
+      "generation": 1,
+      "name": "Volume-1",
+      "allowed_actions": [
+       "delete"
+      ],
+      "desired": {
+       "size_gib": 10,
+       "attached_to": null
+      },
+      "observed": {
+       "state": "available"
+      }
+     }
+    ],
+    "allowed_actions": [
+     "create"
+    ],
+    "next_cursor": null
+   }
+  },
+  {
+   "name": "VirtualNetworkList",
+   "schema": "VirtualNetworkList",
+   "value": {
+    "items": [
+     {
+      "id": "lab-net",
+      "project_id": "default",
+      "generation": 1,
+      "name": "lab-net",
+      "allowed_actions": [
+       "stop",
+       "delete",
+       "disable_autostart"
+      ],
+      "desired": {
+       "mode": "nat",
+       "autostart": true
+      },
+      "observed": {
+       "state": "active",
+       "managed": true,
+       "bridge": "svbr7a7a7a7a",
+       "subnet": "10.77.0.0/24",
+       "gateway": "10.77.0.1",
+       "dhcp_start": "10.77.0.10",
+       "dhcp_end": "10.77.0.200",
+       "attached_vms": 0,
+       "reservations": [
+        {
+         "mac": "52:54:00:aa:bb:cc",
+         "ip": "10.77.0.50"
+        }
+       ]
+      }
+     }
+    ],
+    "allowed_actions": [
+     "create"
+    ],
+    "next_cursor": null
+   }
+  },
+  {
+   "name": "ImageList",
+   "schema": "ImageList",
+   "value": {
+    "items": [
+     {
+      "id": "image-1",
+      "project_id": "default",
+      "generation": 1,
+      "name": "Image-1",
+      "allowed_actions": [
+       "delete"
+      ],
+      "desired": {
+       "source_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "observed": {
+       "state": "verifying",
+       "distribution": "Debian",
+       "version": "13",
+       "architecture": "x86_64",
+       "login_user": "debian",
+       "media": "disk",
+       "min_disk_gib": 3,
+       "qualification": "verified",
+       "qualification_evidence": null
+      }
+     }
+    ],
+    "allowed_actions": [
+     "create"
+    ],
+    "next_cursor": null
+   }
+  },
+  {
+   "name": "BackupList",
+   "schema": "BackupList",
+   "value": {
+    "items": [
+     {
+      "id": "backup-1",
+      "project_id": "default",
+      "generation": 1,
+      "name": "Backup-1",
+      "allowed_actions": [
+       "delete"
+      ],
+      "desired": {
+       "source_volume_id": "volume-1"
+      },
+      "observed": {
+       "state": "complete",
+       "copies": []
+      }
+     }
+    ],
+    "allowed_actions": [
+     "create"
+    ],
+    "next_cursor": null
+   }
+  },
+  {
+   "name": "AppList",
+   "schema": "AppList",
+   "value": {
+    "items": [
+     {
+      "id": "app-1",
+      "project_id": "default",
+      "generation": 1,
+      "name": "App-1",
+      "allowed_actions": [
+       "start",
+       "stop",
+       "delete"
+      ],
+      "desired": {
+       "image_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "observed": {
+       "state": "failed"
+      }
+     }
+    ],
+    "allowed_actions": [
+     "create"
+    ],
+    "next_cursor": null
+   }
+  },
+  {
+   "name": "OperationList",
+   "schema": "OperationList",
+   "value": {
+    "items": [
+     {
+      "id": "op-1",
+      "project_id": "default",
+      "resource_kind": "VM",
+      "resource_id": "vm-1",
+      "type": "delete",
+      "status": "retryable_failure",
+      "requested_by": "owner",
+      "generation": 2,
+      "attempts": 3,
+      "error_category": "timeout",
+      "created_at": "2026-10-08T10:00:00Z",
+      "updated_at": "2026-10-08T10:00:00Z",
+      "allowed_actions": [
+       "cancel"
+      ]
+     }
+    ],
+    "allowed_actions": [],
+    "next_cursor": null
+   }
+  },
+  {
+   "name": "EventList",
+   "schema": "EventList",
+   "value": {
+    "items": [
+     {
+      "id": "ev-1",
+      "project_id": "default",
+      "type": "vm.started",
+      "resource_kind": "VM",
+      "resource_id": "vm-1",
+      "created_at": "2026-10-08T10:00:00Z",
+      "allowed_actions": [],
+      "severity": "warning",
+      "state": "open",
+      "value": null,
+      "updated_at": "2026-10-08T10:00:00Z"
+     }
+    ],
+    "allowed_actions": [],
+    "next_cursor": null
+   }
+  },
+  {
+   "name": "SubmitOperationRequest",
+   "schema": "SubmitOperationRequest",
+   "value": {
+    "type": "create",
+    "kind": "VM",
+    "id": "web-1",
+    "idempotency_key": "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk"
+   }
+  },
+  {
+   "name": "ApiError validation",
+   "schema": "ApiError",
+   "value": {
+    "category": "validation",
+    "retryable": false,
+    "correlation_id": "0123456789abcdef0123456789abcdef"
+   }
+  },
+  {
+   "name": "ApiError unauthenticated",
+   "schema": "ApiError",
+   "value": {
+    "category": "unauthenticated",
+    "retryable": false,
+    "correlation_id": "0123456789abcdef0123456789abcdef"
+   }
+  },
+  {
+   "name": "ApiError forbidden",
+   "schema": "ApiError",
+   "value": {
+    "category": "forbidden",
+    "retryable": false,
+    "correlation_id": "0123456789abcdef0123456789abcdef"
+   }
+  },
+  {
+   "name": "ApiError not_found",
+   "schema": "ApiError",
+   "value": {
+    "category": "not_found",
+    "retryable": false,
+    "correlation_id": "0123456789abcdef0123456789abcdef"
+   }
+  },
+  {
+   "name": "ApiError conflict",
+   "schema": "ApiError",
+   "value": {
+    "category": "conflict",
+    "retryable": false,
+    "correlation_id": "0123456789abcdef0123456789abcdef"
+   }
+  },
+  {
+   "name": "ApiError rate_limited",
+   "schema": "ApiError",
+   "value": {
+    "category": "rate_limited",
+    "retryable": true,
+    "correlation_id": "0123456789abcdef0123456789abcdef"
+   }
+  },
+  {
+   "name": "ApiError prohibited",
+   "schema": "ApiError",
+   "value": {
+    "category": "prohibited",
+    "retryable": false,
+    "correlation_id": "0123456789abcdef0123456789abcdef"
+   }
+  },
+  {
+   "name": "ApiError unavailable",
+   "schema": "ApiError",
+   "value": {
+    "category": "unavailable",
+    "retryable": true,
+    "correlation_id": "0123456789abcdef0123456789abcdef"
+   }
+  },
+  {
+   "name": "ApiError timeout",
+   "schema": "ApiError",
+   "value": {
+    "category": "timeout",
+    "retryable": true,
+    "correlation_id": "0123456789abcdef0123456789abcdef"
+   }
+  },
+  {
+   "name": "ApiError host_error",
+   "schema": "ApiError",
+   "value": {
+    "category": "host_error",
+    "retryable": false,
+    "correlation_id": "0123456789abcdef0123456789abcdef"
+   }
+  },
+  {
+   "name": "ApiError internal",
+   "schema": "ApiError",
+   "value": {
+    "category": "internal",
+    "retryable": false,
+    "correlation_id": "0123456789abcdef0123456789abcdef"
+   }
+  },
+  {
+   "name": "ApiError with field errors",
+   "schema": "ApiError",
+   "value": {
+    "category": "validation",
+    "retryable": false,
+    "correlation_id": "0123456789abcdef0123456789abcdef",
+    "field_errors": [
+     {
+      "field": "name",
+      "code": "too_long"
+     },
+     {
+      "field": "image",
+      "code": "unknown_field"
+     }
+    ]
+   }
+  },
+  {
+   "name": "AuthSession: anonymous",
+   "schema": "AuthSession",
+   "value": {
+    "authenticated": false,
+    "username": null,
+    "expires_at": null,
+    "role": null
+   }
+  },
+  {
+   "name": "AuthSession: signed in",
+   "schema": "AuthSession",
+   "value": {
+    "authenticated": true,
+    "username": "admin",
+    "expires_at": "2026-10-09T08:30:00Z",
+    "role": "admin"
+   }
+  },
+  {
+   "name": "SignInRequest",
+   "schema": "SignInRequest",
+   "value": {
+    "username": "admin",
+    "password": "correct horse battery"
+   }
+  },
+  {
+   "name": "Host: findings",
+   "schema": "Host",
+   "value": {
+    "id": "local",
+    "generation": 1,
+    "name": "local-host",
+    "desired": {
+     "maintenance": false
+    },
+    "observed": {
+     "reachable": true,
+     "agent_version": "0.0.0-dev",
+     "cpu_count": 8,
+     "memory_mib": 16384,
+     "capability_verdict": "unsupported",
+     "virtualization": {
+      "hardware": "unavailable",
+      "kvm_device": "unavailable",
+      "libvirt_packages": "unavailable",
+      "qemu_packages": "unknown"
+     },
+     "distribution": {
+      "id": "debian",
+      "version_id": "13"
+     },
+     "capability_findings": [
+      {
+       "code": "NO_HW_VIRT",
+       "remediation": "Enable hardware virtualization (Intel VT-x / AMD-V) in the system firmware."
+      }
+     ],
+     "creation": {
+      "enabled": false,
+      "network": "unknown",
+      "storage": "unknown",
+      "vcpu_options": [],
+      "memory_mib_options": [],
+      "disk_gib_options": [],
+      "ready": false,
+      "reasons": [
+       "mutation_disabled"
+      ]
+     },
+     "storage": {
+      "state": "unknown",
+      "pool_total_gib": null,
+      "pool_free_gib": null,
+      "images_gib": null,
+      "backups_configured": false,
+      "backups_gib": null,
+      "backups_free_gib": null,
+      "snapshots": "unknown",
+      "backup_targets": [],
+      "allocation_note": "Disk sizes shown for a VM are virtual sizes. Real usage is lower while the disk is thinly allocated; the pool free figure is what counts."
+     },
+     "usage": {
+      "state": "unavailable",
+      "interval_seconds": 30,
+      "cpu_percent": null,
+      "memory_used_mib": null,
+      "disk_kib_s": null,
+      "net_kib_s": null,
+      "history": []
+     },
+     "alerts": {
+      "open": 0,
+      "webhook": "none"
+     },
+     "nightly_boot": null,
+     "bridge": null
+    },
+    "allowed_actions": []
+   }
+  },
+  {
+   "name": "SubmitOperationRequest: create",
+   "schema": "SubmitOperationRequest",
+   "value": {
+    "type": "create",
+    "kind": "VM",
+    "id": "web-1",
+    "idempotency_key": "k1",
+    "create": {
+     "vcpus": 2,
+     "memory_mib": 1024,
+     "image_id": "debian-13",
+     "disk_gib": 20,
+     "ssh_public_key": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGg4Zgd2sQ0v9i6Y0bq7n3m9c1m3k3Qm8iH6m3f3b2yd"
+    }
+   }
+  },
+  {
+   "name": "SubmitOperationRequest: start (no create)",
+   "schema": "SubmitOperationRequest",
+   "value": {
+    "type": "start",
+    "kind": "VM",
+    "id": "web-1",
+    "idempotency_key": "k2"
+   }
+  },
+  {
+   "name": "VM: running with a lease",
+   "schema": "VM",
+   "value": {
+    "id": "web-1",
+    "project_id": "default",
+    "generation": 1,
+    "name": "web-1",
+    "desired": {
+     "power": "running",
+     "backup_schedule": null
+    },
+    "observed": {
+     "power": "running",
+     "last_seen_at": "2026-10-10T09:00:00Z",
+     "managed": true,
+     "ip_address": "192.168.122.23",
+     "login_user": "debian",
+     "iso": null,
+     "disk_gib": null,
+     "snapshots": [],
+     "network": null,
+     "vcpus": null,
+     "memory_mib": null,
+     "usage": {
+      "state": "unavailable",
+      "cpu_percent": null,
+      "memory_used_mib": null,
+      "disk_kib_s": null,
+      "net_kib_s": null,
+      "history": []
+     },
+     "backup": {
+      "next_run_at": null,
+      "last_run": null
+     },
+     "graphical_console": "absent",
+     "rescue": false
+    },
+    "allowed_actions": []
+   }
+  },
+  {
+   "name": "Host: creation ready with notices",
+   "schema": "Host",
+   "value": {
+    "id": "local",
+    "generation": 1,
+    "name": "local-host",
+    "desired": {
+     "maintenance": false
+    },
+    "observed": {
+     "reachable": true,
+     "agent_version": "0.0.0-dev",
+     "cpu_count": 8,
+     "memory_mib": 16384,
+     "capability_verdict": "unknown",
+     "virtualization": {
+      "hardware": "available",
+      "kvm_device": "unavailable",
+      "libvirt_packages": "unknown",
+      "qemu_packages": "available"
+     },
+     "distribution": {
+      "id": "debian",
+      "version_id": "13"
+     },
+     "capability_findings": [],
+     "creation": {
+      "enabled": true,
+      "network": "available",
+      "storage": "available",
+      "vcpu_options": [
+       1,
+       2
+      ],
+      "memory_mib_options": [
+       512,
+       1024
+      ],
+      "disk_gib_options": [
+       10,
+       20
+      ],
+      "ready": true,
+      "reasons": [
+       "image_unqualified",
+       "host_not_qualified"
+      ]
+     },
+     "storage": {
+      "state": "unknown",
+      "pool_total_gib": null,
+      "pool_free_gib": null,
+      "images_gib": null,
+      "backups_configured": false,
+      "backups_gib": null,
+      "backups_free_gib": null,
+      "snapshots": "unknown",
+      "backup_targets": [],
+      "allocation_note": "Disk sizes shown for a VM are virtual sizes. Real usage is lower while the disk is thinly allocated; the pool free figure is what counts."
+     },
+     "usage": {
+      "state": "unavailable",
+      "interval_seconds": 30,
+      "cpu_percent": null,
+      "memory_used_mib": null,
+      "disk_kib_s": null,
+      "net_kib_s": null,
+      "history": []
+     },
+     "alerts": {
+      "open": 0,
+      "webhook": "none"
+     },
+     "nightly_boot": null,
+     "bridge": null
+    },
+    "allowed_actions": []
+   }
+  },
+  {
+   "name": "VirtualNetwork (foreign, no addressing)",
+   "schema": "VirtualNetwork",
+   "value": {
+    "id": "office",
+    "project_id": "default",
+    "generation": 1,
+    "name": "office",
+    "allowed_actions": [],
+    "desired": {
+     "mode": "isolated",
+     "autostart": false
+    },
+    "observed": {
+     "state": "inactive",
+     "managed": false,
+     "bridge": null,
+     "subnet": null,
+     "gateway": null,
+     "dhcp_start": null,
+     "dhcp_end": null,
+     "attached_vms": 0,
+     "reservations": []
+    }
+   }
+  },
+  {
+   "name": "VM: on a managed network with a reservation",
+   "schema": "VM",
+   "value": {
+    "id": "web-1",
+    "project_id": "default",
+    "generation": 1,
+    "name": "web-1",
+    "desired": {
+     "power": "running",
+     "backup_schedule": null
+    },
+    "observed": {
+     "power": "running",
+     "last_seen_at": "2026-10-10T09:00:00Z",
+     "managed": true,
+     "ip_address": "192.168.122.23",
+     "login_user": "debian",
+     "iso": null,
+     "disk_gib": null,
+     "snapshots": [],
+     "network": {
+      "name": "lab-net",
+      "mac": "52:54:00:aa:bb:cc",
+      "reserved_ip": "10.77.0.50",
+      "state": "active"
+     },
+     "vcpus": null,
+     "memory_mib": null,
+     "usage": {
+      "state": "unavailable",
+      "cpu_percent": null,
+      "memory_used_mib": null,
+      "disk_kib_s": null,
+      "net_kib_s": null,
+      "history": []
+     },
+     "backup": {
+      "next_run_at": null,
+      "last_run": null
+     },
+     "graphical_console": "absent",
+     "rescue": false
+    },
+    "allowed_actions": []
+   }
+  },
+  {
+   "name": "Host: sampled usage with history",
+   "schema": "Host",
+   "value": {
+    "id": "local",
+    "generation": 1,
+    "name": "local-host",
+    "desired": {
+     "maintenance": false
+    },
+    "observed": {
+     "reachable": true,
+     "agent_version": "0.0.0-dev",
+     "cpu_count": 8,
+     "memory_mib": 16384,
+     "capability_verdict": "unknown",
+     "virtualization": {
+      "hardware": "available",
+      "kvm_device": "unavailable",
+      "libvirt_packages": "unknown",
+      "qemu_packages": "available"
+     },
+     "distribution": {
+      "id": "debian",
+      "version_id": "13"
+     },
+     "capability_findings": [],
+     "creation": {
+      "enabled": false,
+      "network": "unknown",
+      "storage": "unknown",
+      "vcpu_options": [],
+      "memory_mib_options": [],
+      "disk_gib_options": [],
+      "ready": false,
+      "reasons": [
+       "mutation_disabled"
+      ]
+     },
+     "storage": {
+      "state": "unknown",
+      "pool_total_gib": null,
+      "pool_free_gib": null,
+      "images_gib": null,
+      "backups_configured": false,
+      "backups_gib": null,
+      "backups_free_gib": null,
+      "snapshots": "unknown",
+      "backup_targets": [],
+      "allocation_note": "Disk sizes shown for a VM are virtual sizes. Real usage is lower while the disk is thinly allocated; the pool free figure is what counts."
+     },
+     "usage": {
+      "state": "available",
+      "interval_seconds": 30,
+      "cpu_percent": 42,
+      "memory_used_mib": 4096,
+      "disk_kib_s": null,
+      "net_kib_s": null,
+      "history": [
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 40,
+        "memory_used_mib": 4000,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:30Z",
+        "cpu_percent": 42,
+        "memory_used_mib": 4096,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       }
+      ]
+     },
+     "alerts": {
+      "open": 0,
+      "webhook": "none"
+     },
+     "nightly_boot": null,
+     "bridge": null
+    },
+    "allowed_actions": []
+   }
+  },
+  {
+   "name": "VM: configured size and sampled usage",
+   "schema": "VM",
+   "value": {
+    "id": "vm-1",
+    "project_id": "default",
+    "generation": 1,
+    "name": "VM-1",
+    "allowed_actions": [
+     "start",
+     "stop",
+     "delete"
+    ],
+    "desired": {
+     "power": "running",
+     "backup_schedule": null
+    },
+    "observed": {
+     "power": "crashed",
+     "last_seen_at": "2026-10-08T10:00:00.123+05:30",
+     "managed": false,
+     "ip_address": null,
+     "login_user": null,
+     "iso": null,
+     "disk_gib": null,
+     "snapshots": [],
+     "network": null,
+     "vcpus": 2,
+     "memory_mib": 2048,
+     "usage": {
+      "state": "available",
+      "cpu_percent": 12,
+      "memory_used_mib": null,
+      "disk_kib_s": null,
+      "net_kib_s": null,
+      "history": [
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 12,
+        "memory_used_mib": 0,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       }
+      ]
+     },
+     "backup": {
+      "next_run_at": null,
+      "last_run": null
+     },
+     "graphical_console": "absent",
+     "rescue": false
+    }
+   }
+  },
+  {
+   "name": "AuthSession: signed in as operator",
+   "schema": "AuthSession",
+   "value": {
+    "authenticated": true,
+    "username": "admin",
+    "expires_at": "2026-10-09T08:30:00Z",
+    "role": "operator"
+   }
+  },
+  {
+   "name": "AuthSession: signed in as viewer",
+   "schema": "AuthSession",
+   "value": {
+    "authenticated": true,
+    "username": "admin",
+    "expires_at": "2026-10-09T08:30:00Z",
+    "role": "viewer"
+   }
+  },
+  {
+   "name": "Event: open alert with acknowledge",
+   "schema": "Event",
+   "value": {
+    "id": "ev-1",
+    "project_id": "default",
+    "type": "pool_free_low",
+    "resource_kind": "Host",
+    "resource_id": "local",
+    "created_at": "2026-10-08T10:00:00Z",
+    "allowed_actions": [
+     "acknowledge"
+    ],
+    "severity": "critical",
+    "state": "open",
+    "value": 7,
+    "updated_at": "2026-10-08T10:00:00Z"
+   }
+  },
+  {
+   "name": "Host: alerts and a nightly boot",
+   "schema": "Host",
+   "value": {
+    "id": "local",
+    "generation": 1,
+    "name": "local-host",
+    "desired": {
+     "maintenance": false
+    },
+    "observed": {
+     "reachable": true,
+     "agent_version": "0.0.0-dev",
+     "cpu_count": 8,
+     "memory_mib": 16384,
+     "capability_verdict": "unknown",
+     "virtualization": {
+      "hardware": "available",
+      "kvm_device": "unavailable",
+      "libvirt_packages": "unknown",
+      "qemu_packages": "available"
+     },
+     "distribution": {
+      "id": "debian",
+      "version_id": "13"
+     },
+     "capability_findings": [],
+     "creation": {
+      "enabled": false,
+      "network": "unknown",
+      "storage": "unknown",
+      "vcpu_options": [],
+      "memory_mib_options": [],
+      "disk_gib_options": [],
+      "ready": false,
+      "reasons": [
+       "mutation_disabled"
+      ]
+     },
+     "storage": {
+      "state": "unknown",
+      "pool_total_gib": null,
+      "pool_free_gib": null,
+      "images_gib": null,
+      "backups_configured": false,
+      "backups_gib": null,
+      "backups_free_gib": null,
+      "snapshots": "unknown",
+      "backup_targets": [],
+      "allocation_note": "Disk sizes shown for a VM are virtual sizes. Real usage is lower while the disk is thinly allocated; the pool free figure is what counts."
+     },
+     "usage": {
+      "state": "unavailable",
+      "interval_seconds": 30,
+      "cpu_percent": null,
+      "memory_used_mib": null,
+      "disk_kib_s": null,
+      "net_kib_s": null,
+      "history": []
+     },
+     "alerts": {
+      "open": 3,
+      "webhook": "configured"
+     },
+     "nightly_boot": {
+      "at": "2026-10-15T02:00:00Z",
+      "result": "pass",
+      "seconds": 412
+     },
+     "bridge": null
+    },
+    "allowed_actions": []
+   }
+  },
+  {
+   "name": "VM: scheduled backup",
+   "schema": "VM",
+   "value": {
+    "id": "vm-1",
+    "project_id": "default",
+    "generation": 1,
+    "name": "VM-1",
+    "allowed_actions": [
+     "start",
+     "stop",
+     "delete"
+    ],
+    "desired": {
+     "power": "running",
+     "backup_schedule": {
+      "every_hours": null,
+      "at": "02:30",
+      "keep_local": 3,
+      "keep_offsite": 0,
+      "target_id": null,
+      "downtime_acknowledged": true
+     }
+    },
+    "observed": {
+     "power": "crashed",
+     "last_seen_at": "2026-10-08T10:00:00.123+05:30",
+     "managed": false,
+     "ip_address": null,
+     "login_user": null,
+     "iso": null,
+     "disk_gib": null,
+     "snapshots": [],
+     "network": null,
+     "vcpus": null,
+     "memory_mib": null,
+     "usage": {
+      "state": "unavailable",
+      "cpu_percent": null,
+      "memory_used_mib": null,
+      "disk_kib_s": null,
+      "net_kib_s": null,
+      "history": []
+     },
+     "backup": {
+      "next_run_at": "2026-10-16T02:30:00Z",
+      "last_run": {
+       "at": "2026-10-15T02:30:00Z",
+       "result": "ok"
+      }
+     },
+     "graphical_console": "absent",
+     "rescue": false
+    }
+   }
+  },
+  {
+   "name": "VM: in rescue mode with a graphical console",
+   "schema": "VM",
+   "value": {
+    "id": "vm-1",
+    "project_id": "default",
+    "generation": 1,
+    "name": "VM-1",
+    "allowed_actions": [
+     "start",
+     "unrescue",
+     "delete"
+    ],
+    "desired": {
+     "power": "running",
+     "backup_schedule": null
+    },
+    "observed": {
+     "power": "crashed",
+     "last_seen_at": "2026-10-08T10:00:00.123+05:30",
+     "managed": false,
+     "ip_address": null,
+     "login_user": null,
+     "iso": "alpine-iso",
+     "disk_gib": null,
+     "snapshots": [],
+     "network": null,
+     "vcpus": null,
+     "memory_mib": null,
+     "usage": {
+      "state": "unavailable",
+      "cpu_percent": null,
+      "memory_used_mib": null,
+      "disk_kib_s": null,
+      "net_kib_s": null,
+      "history": []
+     },
+     "backup": {
+      "next_run_at": null,
+      "last_run": null
+     },
+     "graphical_console": "present",
+     "rescue": true
+    }
+   }
+  },
+  {
+   "name": "Host: bridge waiting for confirmation",
+   "schema": "Host",
+   "value": {
+    "id": "local",
+    "generation": 1,
+    "name": "local-host",
+    "desired": {
+     "maintenance": false
+    },
+    "observed": {
+     "reachable": true,
+     "agent_version": "0.0.0-dev",
+     "cpu_count": 8,
+     "memory_mib": 16384,
+     "capability_verdict": "unknown",
+     "virtualization": {
+      "hardware": "available",
+      "kvm_device": "unavailable",
+      "libvirt_packages": "unknown",
+      "qemu_packages": "available"
+     },
+     "distribution": {
+      "id": "debian",
+      "version_id": "13"
+     },
+     "capability_findings": [],
+     "creation": {
+      "enabled": false,
+      "network": "unknown",
+      "storage": "unknown",
+      "vcpu_options": [],
+      "memory_mib_options": [],
+      "disk_gib_options": [],
+      "ready": false,
+      "reasons": [
+       "mutation_disabled"
+      ]
+     },
+     "storage": {
+      "state": "unknown",
+      "pool_total_gib": null,
+      "pool_free_gib": null,
+      "images_gib": null,
+      "backups_configured": false,
+      "backups_gib": null,
+      "backups_free_gib": null,
+      "snapshots": "unknown",
+      "backup_targets": [],
+      "allocation_note": "Disk sizes shown for a VM are virtual sizes. Real usage is lower while the disk is thinly allocated; the pool free figure is what counts."
+     },
+     "usage": {
+      "state": "unavailable",
+      "interval_seconds": 30,
+      "cpu_percent": null,
+      "memory_used_mib": null,
+      "disk_kib_s": null,
+      "net_kib_s": null,
+      "history": []
+     },
+     "alerts": {
+      "open": 3,
+      "webhook": "configured"
+     },
+     "nightly_boot": {
+      "at": "2026-10-15T02:00:00Z",
+      "result": "pass",
+      "seconds": 412
+     },
+     "bridge": {
+      "state": "pending_confirmation",
+      "bridge": "svbr0",
+      "interface": "eno1",
+      "seconds_left": 90
+     }
+    },
+    "allowed_actions": []
+   }
+  },
+  {
+   "name": "Host: bridge active",
+   "schema": "Host",
+   "value": {
+    "id": "local",
+    "generation": 1,
+    "name": "local-host",
+    "desired": {
+     "maintenance": false
+    },
+    "observed": {
+     "reachable": true,
+     "agent_version": "0.0.0-dev",
+     "cpu_count": 8,
+     "memory_mib": 16384,
+     "capability_verdict": "unknown",
+     "virtualization": {
+      "hardware": "available",
+      "kvm_device": "unavailable",
+      "libvirt_packages": "unknown",
+      "qemu_packages": "available"
+     },
+     "distribution": {
+      "id": "debian",
+      "version_id": "13"
+     },
+     "capability_findings": [],
+     "creation": {
+      "enabled": false,
+      "network": "unknown",
+      "storage": "unknown",
+      "vcpu_options": [],
+      "memory_mib_options": [],
+      "disk_gib_options": [],
+      "ready": false,
+      "reasons": [
+       "mutation_disabled"
+      ]
+     },
+     "storage": {
+      "state": "unknown",
+      "pool_total_gib": null,
+      "pool_free_gib": null,
+      "images_gib": null,
+      "backups_configured": false,
+      "backups_gib": null,
+      "backups_free_gib": null,
+      "snapshots": "unknown",
+      "backup_targets": [],
+      "allocation_note": "Disk sizes shown for a VM are virtual sizes. Real usage is lower while the disk is thinly allocated; the pool free figure is what counts."
+     },
+     "usage": {
+      "state": "unavailable",
+      "interval_seconds": 30,
+      "cpu_percent": null,
+      "memory_used_mib": null,
+      "disk_kib_s": null,
+      "net_kib_s": null,
+      "history": []
+     },
+     "alerts": {
+      "open": 3,
+      "webhook": "configured"
+     },
+     "nightly_boot": {
+      "at": "2026-10-15T02:00:00Z",
+      "result": "pass",
+      "seconds": 412
+     },
+     "bridge": {
+      "state": "active",
+      "bridge": "svbr0",
+      "interface": "eno1",
+      "seconds_left": null
+     }
+    },
+    "allowed_actions": []
+   }
+  },
+  {
+   "name": "SubmitOperationRequest: network_create bridge mode",
+   "schema": "SubmitOperationRequest",
+   "value": {
+    "type": "network_create",
+    "kind": "VirtualNetwork",
+    "id": "lan",
+    "idempotency_key": "k9",
+    "params": {
+     "bridge": "svbr0"
+    }
+   }
+  }
+ ],
+ "negative": [
+  {
+   "name": "Health: other status",
+   "schema": "Health",
+   "value": {
+    "status": "ok"
+   },
+   "reason": "const",
+   "path": "$.status"
+  },
+  {
+   "name": "Health: extra key",
+   "schema": "Health",
+   "value": {
+    "status": "scaffold",
+    "version": "1"
+   },
+   "reason": "additionalProperties",
+   "path": "$.version"
+  },
+  {
+   "name": "Health: not an object",
+   "schema": "Health",
+   "value": [],
+   "reason": "type",
+   "path": "$"
+  },
+  {
+   "name": "Host: extra key",
+   "schema": "Host",
+   "value": {
+    "id": "local",
+    "generation": 1,
+    "name": "local-host",
+    "desired": {
+     "maintenance": false
+    },
+    "observed": {
+     "reachable": true,
+     "agent_version": "0.0.0-dev",
+     "cpu_count": 8,
+     "memory_mib": 16384,
+     "capability_verdict": "unknown",
+     "virtualization": {
+      "hardware": "available",
+      "kvm_device": "unavailable",
+      "libvirt_packages": "unknown",
+      "qemu_packages": "available"
+     },
+     "distribution": {
+      "id": "debian",
+      "version_id": "13"
+     },
+     "capability_findings": [],
+     "creation": {
+      "enabled": false,
+      "network": "unknown",
+      "storage": "unknown",
+      "vcpu_options": [],
+      "memory_mib_options": [],
+      "disk_gib_options": [],
+      "ready": false,
+      "reasons": [
+       "mutation_disabled"
+      ]
+     },
+     "storage": {
+      "state": "unknown",
+      "pool_total_gib": null,
+      "pool_free_gib": null,
+      "images_gib": null,
+      "backups_configured": false,
+      "backups_gib": null,
+      "backups_free_gib": null,
+      "snapshots": "unknown",
+      "backup_targets": [],
+      "allocation_note": "Disk sizes shown for a VM are virtual sizes. Real usage is lower while the disk is thinly allocated; the pool free figure is what counts."
+     },
+     "usage": {
+      "state": "unavailable",
+      "interval_seconds": 30,
+      "cpu_percent": null,
+      "memory_used_mib": null,
+      "disk_kib_s": null,
+      "net_kib_s": null,
+      "history": []
+     },
+     "alerts": {
+      "open": 0,
+      "webhook": "none"
+     },
+     "nightly_boot": null,
+     "bridge": null
+    },
+    "allowed_actions": [],
+    "message": "x"
+   },
+   "reason": "additionalProperties",
+   "path": "$.message"
+  },
+  {
+   "name": "Host: missing observed field",
+   "schema": "Host",
+   "value": {
+    "id": "local",
+    "generation": 1,
+    "name": "local-host",
+    "desired": {
+     "maintenance": false
+    },
+    "observed": {
+     "agent_version": "0.0.0-dev",
+     "cpu_count": 8,
+     "memory_mib": 16384,
+     "capability_verdict": "unknown",
+     "creation": {
+      "enabled": false,
+      "network": "unknown",
+      "storage": "unknown",
+      "vcpu_options": [],
+      "memory_mib_options": [],
+      "disk_gib_options": [],
+      "ready": false,
+      "reasons": [
+       "mutation_disabled"
+      ]
+     },
+     "usage": {
+      "state": "unavailable",
+      "interval_seconds": 30,
+      "cpu_percent": null,
+      "memory_used_mib": null,
+      "disk_kib_s": null,
+      "net_kib_s": null,
+      "history": []
+     },
+     "alerts": {
+      "open": 0,
+      "webhook": "none"
+     },
+     "nightly_boot": null,
+     "bridge": null
+    },
+    "allowed_actions": []
+   },
+   "reason": "required",
+   "path": "$.observed.reachable"
+  },
+  {
+   "name": "Host: unknown verdict",
+   "schema": "Host",
+   "value": {
+    "id": "local",
+    "generation": 1,
+    "name": "local-host",
+    "desired": {
+     "maintenance": false
+    },
+    "observed": {
+     "reachable": true,
+     "agent_version": "0.0.0-dev",
+     "cpu_count": 8,
+     "memory_mib": 16384,
+     "capability_verdict": "maybe",
+     "virtualization": {
+      "hardware": "available",
+      "kvm_device": "unavailable",
+      "libvirt_packages": "unknown",
+      "qemu_packages": "available"
+     },
+     "distribution": {
+      "id": "debian",
+      "version_id": "13"
+     },
+     "capability_findings": [],
+     "creation": {
+      "enabled": false,
+      "network": "unknown",
+      "storage": "unknown",
+      "vcpu_options": [],
+      "memory_mib_options": [],
+      "disk_gib_options": [],
+      "ready": false,
+      "reasons": [
+       "mutation_disabled"
+      ]
+     },
+     "storage": {
+      "state": "unknown",
+      "pool_total_gib": null,
+      "pool_free_gib": null,
+      "images_gib": null,
+      "backups_configured": false,
+      "backups_gib": null,
+      "backups_free_gib": null,
+      "snapshots": "unknown",
+      "backup_targets": [],
+      "allocation_note": "Disk sizes shown for a VM are virtual sizes. Real usage is lower while the disk is thinly allocated; the pool free figure is what counts."
+     },
+     "usage": {
+      "state": "unavailable",
+      "interval_seconds": 30,
+      "cpu_percent": null,
+      "memory_used_mib": null,
+      "disk_kib_s": null,
+      "net_kib_s": null,
+      "history": []
+     },
+     "alerts": {
+      "open": 0,
+      "webhook": "none"
+     },
+     "nightly_boot": null,
+     "bridge": null
+    },
+    "allowed_actions": []
+   },
+   "reason": "enum",
+   "path": "$.observed.capability_verdict"
+  },
+  {
+   "name": "Host: cpu_count zero",
+   "schema": "Host",
+   "value": {
+    "id": "local",
+    "generation": 1,
+    "name": "local-host",
+    "desired": {
+     "maintenance": false
+    },
+    "observed": {
+     "reachable": true,
+     "agent_version": "0.0.0-dev",
+     "cpu_count": 0,
+     "memory_mib": 16384,
+     "capability_verdict": "unknown",
+     "virtualization": {
+      "hardware": "available",
+      "kvm_device": "unavailable",
+      "libvirt_packages": "unknown",
+      "qemu_packages": "available"
+     },
+     "distribution": {
+      "id": "debian",
+      "version_id": "13"
+     },
+     "capability_findings": [],
+     "creation": {
+      "enabled": false,
+      "network": "unknown",
+      "storage": "unknown",
+      "vcpu_options": [],
+      "memory_mib_options": [],
+      "disk_gib_options": [],
+      "ready": false,
+      "reasons": [
+       "mutation_disabled"
+      ]
+     },
+     "storage": {
+      "state": "unknown",
+      "pool_total_gib": null,
+      "pool_free_gib": null,
+      "images_gib": null,
+      "backups_configured": false,
+      "backups_gib": null,
+      "backups_free_gib": null,
+      "snapshots": "unknown",
+      "backup_targets": [],
+      "allocation_note": "Disk sizes shown for a VM are virtual sizes. Real usage is lower while the disk is thinly allocated; the pool free figure is what counts."
+     },
+     "usage": {
+      "state": "unavailable",
+      "interval_seconds": 30,
+      "cpu_percent": null,
+      "memory_used_mib": null,
+      "disk_kib_s": null,
+      "net_kib_s": null,
+      "history": []
+     },
+     "alerts": {
+      "open": 0,
+      "webhook": "none"
+     },
+     "nightly_boot": null,
+     "bridge": null
+    },
+    "allowed_actions": []
+   },
+   "reason": "minimum",
+   "path": "$.observed.cpu_count"
+  },
+  {
+   "name": "Host: actions on a host",
+   "schema": "Host",
+   "value": {
+    "id": "local",
+    "generation": 1,
+    "name": "local-host",
+    "desired": {
+     "maintenance": false
+    },
+    "observed": {
+     "reachable": true,
+     "agent_version": "0.0.0-dev",
+     "cpu_count": 8,
+     "memory_mib": 16384,
+     "capability_verdict": "unknown",
+     "virtualization": {
+      "hardware": "available",
+      "kvm_device": "unavailable",
+      "libvirt_packages": "unknown",
+      "qemu_packages": "available"
+     },
+     "distribution": {
+      "id": "debian",
+      "version_id": "13"
+     },
+     "capability_findings": [],
+     "creation": {
+      "enabled": false,
+      "network": "unknown",
+      "storage": "unknown",
+      "vcpu_options": [],
+      "memory_mib_options": [],
+      "disk_gib_options": [],
+      "ready": false,
+      "reasons": [
+       "mutation_disabled"
+      ]
+     },
+     "storage": {
+      "state": "unknown",
+      "pool_total_gib": null,
+      "pool_free_gib": null,
+      "images_gib": null,
+      "backups_configured": false,
+      "backups_gib": null,
+      "backups_free_gib": null,
+      "snapshots": "unknown",
+      "backup_targets": [],
+      "allocation_note": "Disk sizes shown for a VM are virtual sizes. Real usage is lower while the disk is thinly allocated; the pool free figure is what counts."
+     },
+     "usage": {
+      "state": "unavailable",
+      "interval_seconds": 30,
+      "cpu_percent": null,
+      "memory_used_mib": null,
+      "disk_kib_s": null,
+      "net_kib_s": null,
+      "history": []
+     },
+     "alerts": {
+      "open": 0,
+      "webhook": "none"
+     },
+     "nightly_boot": null,
+     "bridge": null
+    },
+    "allowed_actions": [
+     "start"
+    ]
+   },
+   "reason": "maxItems",
+   "path": "$.allowed_actions"
+  },
+  {
+   "name": "Project: observed not empty",
+   "schema": "Project",
+   "value": {
+    "id": "default",
+    "generation": 1,
+    "name": "default",
+    "desired": {},
+    "observed": {
+     "x": 1
+    },
+    "allowed_actions": []
+   },
+   "reason": "additionalProperties",
+   "path": "$.observed.x"
+  },
+  {
+   "name": "VM: power enum",
+   "schema": "VM",
+   "value": {
+    "id": "vm-1",
+    "project_id": "default",
+    "generation": 1,
+    "name": "VM-1",
+    "allowed_actions": [
+     "start",
+     "stop",
+     "delete"
+    ],
+    "desired": {
+     "power": "running",
+     "backup_schedule": null
+    },
+    "observed": {
+     "power": "off",
+     "last_seen_at": "2026-10-08T10:00:00.123+05:30",
+     "managed": false,
+     "ip_address": null,
+     "login_user": null,
+     "iso": null,
+     "disk_gib": null,
+     "snapshots": [],
+     "network": null,
+     "vcpus": null,
+     "memory_mib": null,
+     "usage": {
+      "state": "unavailable",
+      "cpu_percent": null,
+      "memory_used_mib": null,
+      "disk_kib_s": null,
+      "net_kib_s": null,
+      "history": []
+     },
+     "backup": {
+      "next_run_at": null,
+      "last_run": null
+     },
+     "graphical_console": "absent",
+     "rescue": false
+    }
+   },
+   "reason": "enum",
+   "path": "$.observed.power"
+  },
+  {
+   "name": "VM: desired power paused",
+   "schema": "VM",
+   "value": {
+    "id": "vm-1",
+    "project_id": "default",
+    "generation": 1,
+    "name": "VM-1",
+    "allowed_actions": [
+     "start",
+     "stop",
+     "delete"
+    ],
+    "desired": {
+     "power": "paused",
+     "backup_schedule": null
+    },
+    "observed": {
+     "power": "crashed",
+     "last_seen_at": "2026-10-08T10:00:00.123+05:30",
+     "managed": false,
+     "ip_address": null,
+     "login_user": null,
+     "iso": null,
+     "disk_gib": null,
+     "snapshots": [],
+     "network": null,
+     "vcpus": null,
+     "memory_mib": null,
+     "usage": {
+      "state": "unavailable",
+      "cpu_percent": null,
+      "memory_used_mib": null,
+      "disk_kib_s": null,
+      "net_kib_s": null,
+      "history": []
+     },
+     "backup": {
+      "next_run_at": null,
+      "last_run": null
+     },
+     "graphical_console": "absent",
+     "rescue": false
+    }
+   },
+   "reason": "enum",
+   "path": "$.desired.power"
+  },
+  {
+   "name": "VM: name too long",
+   "schema": "VM",
+   "value": {
+    "id": "vm-1",
+    "project_id": "default",
+    "generation": 1,
+    "name": "nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn",
+    "allowed_actions": [
+     "start",
+     "stop",
+     "delete"
+    ],
+    "desired": {
+     "power": "running",
+     "backup_schedule": null
+    },
+    "observed": {
+     "power": "crashed",
+     "last_seen_at": "2026-10-08T10:00:00.123+05:30",
+     "managed": false,
+     "ip_address": null,
+     "login_user": null,
+     "iso": null,
+     "disk_gib": null,
+     "snapshots": [],
+     "network": null,
+     "vcpus": null,
+     "memory_mib": null,
+     "usage": {
+      "state": "unavailable",
+      "cpu_percent": null,
+      "memory_used_mib": null,
+      "disk_kib_s": null,
+      "net_kib_s": null,
+      "history": []
+     },
+     "backup": {
+      "next_run_at": null,
+      "last_run": null
+     },
+     "graphical_console": "absent",
+     "rescue": false
+    }
+   },
+   "reason": "maxLength",
+   "path": "$.name"
+  },
+  {
+   "name": "VM: name empty",
+   "schema": "VM",
+   "value": {
+    "id": "vm-1",
+    "project_id": "default",
+    "generation": 1,
+    "name": "",
+    "allowed_actions": [
+     "start",
+     "stop",
+     "delete"
+    ],
+    "desired": {
+     "power": "running",
+     "backup_schedule": null
+    },
+    "observed": {
+     "power": "crashed",
+     "last_seen_at": "2026-10-08T10:00:00.123+05:30",
+     "managed": false,
+     "ip_address": null,
+     "login_user": null,
+     "iso": null,
+     "disk_gib": null,
+     "snapshots": [],
+     "network": null,
+     "vcpus": null,
+     "memory_mib": null,
+     "usage": {
+      "state": "unavailable",
+      "cpu_percent": null,
+      "memory_used_mib": null,
+      "disk_kib_s": null,
+      "net_kib_s": null,
+      "history": []
+     },
+     "backup": {
+      "next_run_at": null,
+      "last_run": null
+     },
+     "graphical_console": "absent",
+     "rescue": false
+    }
+   },
+   "reason": "minLength",
+   "path": "$.name"
+  },
+  {
+   "name": "VM: id pattern",
+   "schema": "VM",
+   "value": {
+    "id": "vm 1",
+    "project_id": "default",
+    "generation": 1,
+    "name": "VM-1",
+    "allowed_actions": [
+     "start",
+     "stop",
+     "delete"
+    ],
+    "desired": {
+     "power": "running",
+     "backup_schedule": null
+    },
+    "observed": {
+     "power": "crashed",
+     "last_seen_at": "2026-10-08T10:00:00.123+05:30",
+     "managed": false,
+     "ip_address": null,
+     "login_user": null,
+     "iso": null,
+     "disk_gib": null,
+     "snapshots": [],
+     "network": null,
+     "vcpus": null,
+     "memory_mib": null,
+     "usage": {
+      "state": "unavailable",
+      "cpu_percent": null,
+      "memory_used_mib": null,
+      "disk_kib_s": null,
+      "net_kib_s": null,
+      "history": []
+     },
+     "backup": {
+      "next_run_at": null,
+      "last_run": null
+     },
+     "graphical_console": "absent",
+     "rescue": false
+    }
+   },
+   "reason": "pattern",
+   "path": "$.id"
+  },
+  {
+   "name": "VM: id leading dash",
+   "schema": "VM",
+   "value": {
+    "id": "-vm",
+    "project_id": "default",
+    "generation": 1,
+    "name": "VM-1",
+    "allowed_actions": [
+     "start",
+     "stop",
+     "delete"
+    ],
+    "desired": {
+     "power": "running",
+     "backup_schedule": null
+    },
+    "observed": {
+     "power": "crashed",
+     "last_seen_at": "2026-10-08T10:00:00.123+05:30",
+     "managed": false,
+     "ip_address": null,
+     "login_user": null,
+     "iso": null,
+     "disk_gib": null,
+     "snapshots": [],
+     "network": null,
+     "vcpus": null,
+     "memory_mib": null,
+     "usage": {
+      "state": "unavailable",
+      "cpu_percent": null,
+      "memory_used_mib": null,
+      "disk_kib_s": null,
+      "net_kib_s": null,
+      "history": []
+     },
+     "backup": {
+      "next_run_at": null,
+      "last_run": null
+     },
+     "graphical_console": "absent",
+     "rescue": false
+    }
+   },
+   "reason": "pattern",
+   "path": "$.id"
+  },
+  {
+   "name": "VM: id trailing newline",
+   "schema": "VM",
+   "value": {
+    "id": "vm-1\n",
+    "project_id": "default",
+    "generation": 1,
+    "name": "VM-1",
+    "allowed_actions": [
+     "start",
+     "stop",
+     "delete"
+    ],
+    "desired": {
+     "power": "running",
+     "backup_schedule": null
+    },
+    "observed": {
+     "power": "crashed",
+     "last_seen_at": "2026-10-08T10:00:00.123+05:30",
+     "managed": false,
+     "ip_address": null,
+     "login_user": null,
+     "iso": null,
+     "disk_gib": null,
+     "snapshots": [],
+     "network": null,
+     "vcpus": null,
+     "memory_mib": null,
+     "usage": {
+      "state": "unavailable",
+      "cpu_percent": null,
+      "memory_used_mib": null,
+      "disk_kib_s": null,
+      "net_kib_s": null,
+      "history": []
+     },
+     "backup": {
+      "next_run_at": null,
+      "last_run": null
+     },
+     "graphical_console": "absent",
+     "rescue": false
+    }
+   },
+   "reason": "pattern",
+   "path": "$.id"
+  },
+  {
+   "name": "VM: unknown action",
+   "schema": "VM",
+   "value": {
+    "id": "vm-1",
+    "project_id": "default",
+    "generation": 1,
+    "name": "VM-1",
+    "allowed_actions": [
+     "migrate"
+    ],
+    "desired": {
+     "power": "running",
+     "backup_schedule": null
+    },
+    "observed": {
+     "power": "crashed",
+     "last_seen_at": "2026-10-08T10:00:00.123+05:30",
+     "managed": false,
+     "ip_address": null,
+     "login_user": null,
+     "iso": null,
+     "disk_gib": null,
+     "snapshots": [],
+     "network": null,
+     "vcpus": null,
+     "memory_mib": null,
+     "usage": {
+      "state": "unavailable",
+      "cpu_percent": null,
+      "memory_used_mib": null,
+      "disk_kib_s": null,
+      "net_kib_s": null,
+      "history": []
+     },
+     "backup": {
+      "next_run_at": null,
+      "last_run": null
+     },
+     "graphical_console": "absent",
+     "rescue": false
+    }
+   },
+   "reason": "enum",
+   "path": "$.allowed_actions[0]"
+  },
+  {
+   "name": "VM: duplicate action",
+   "schema": "VM",
+   "value": {
+    "id": "vm-1",
+    "project_id": "default",
+    "generation": 1,
+    "name": "VM-1",
+    "allowed_actions": [
+     "start",
+     "start"
+    ],
+    "desired": {
+     "power": "running",
+     "backup_schedule": null
+    },
+    "observed": {
+     "power": "crashed",
+     "last_seen_at": "2026-10-08T10:00:00.123+05:30",
+     "managed": false,
+     "ip_address": null,
+     "login_user": null,
+     "iso": null,
+     "disk_gib": null,
+     "snapshots": [],
+     "network": null,
+     "vcpus": null,
+     "memory_mib": null,
+     "usage": {
+      "state": "unavailable",
+      "cpu_percent": null,
+      "memory_used_mib": null,
+      "disk_kib_s": null,
+      "net_kib_s": null,
+      "history": []
+     },
+     "backup": {
+      "next_run_at": null,
+      "last_run": null
+     },
+     "graphical_console": "absent",
+     "rescue": false
+    }
+   },
+   "reason": "uniqueItems",
+   "path": "$.allowed_actions"
+  },
+  {
+   "name": "VM: missing project_id",
+   "schema": "VM",
+   "value": {
+    "id": "vm-1",
+    "generation": 1,
+    "name": "VM-1",
+    "allowed_actions": [
+     "start",
+     "stop",
+     "delete"
+    ],
+    "desired": {
+     "power": "running",
+     "backup_schedule": null
+    },
+    "observed": {
+     "power": "crashed",
+     "last_seen_at": "2026-10-08T10:00:00.123+05:30",
+     "managed": false,
+     "ip_address": null,
+     "login_user": null,
+     "iso": null,
+     "disk_gib": null,
+     "snapshots": [],
+     "network": null,
+     "vcpus": null,
+     "memory_mib": null,
+     "usage": {
+      "state": "unavailable",
+      "cpu_percent": null,
+      "memory_used_mib": null,
+      "disk_kib_s": null,
+      "net_kib_s": null,
+      "history": []
+     },
+     "backup": {
+      "next_run_at": null,
+      "last_run": null
+     },
+     "graphical_console": "absent",
+     "rescue": false
+    }
+   },
+   "reason": "required",
+   "path": "$.project_id"
+  },
+  {
+   "name": "VM: last_seen_at format",
+   "schema": "VM",
+   "value": {
+    "id": "vm-1",
+    "project_id": "default",
+    "generation": 1,
+    "name": "VM-1",
+    "allowed_actions": [
+     "start",
+     "stop",
+     "delete"
+    ],
+    "desired": {
+     "power": "running",
+     "backup_schedule": null
+    },
+    "observed": {
+     "power": "crashed",
+     "last_seen_at": "yesterday",
+     "managed": false,
+     "ip_address": null,
+     "login_user": null,
+     "iso": null,
+     "disk_gib": null,
+     "snapshots": [],
+     "network": null,
+     "vcpus": null,
+     "memory_mib": null,
+     "usage": {
+      "state": "unavailable",
+      "cpu_percent": null,
+      "memory_used_mib": null,
+      "disk_kib_s": null,
+      "net_kib_s": null,
+      "history": []
+     },
+     "backup": {
+      "next_run_at": null,
+      "last_run": null
+     },
+     "graphical_console": "absent",
+     "rescue": false
+    }
+   },
+   "reason": "format",
+   "path": "$.observed.last_seen_at"
+  },
+  {
+   "name": "VM: last_seen_at impossible date",
+   "schema": "VM",
+   "value": {
+    "id": "vm-1",
+    "project_id": "default",
+    "generation": 1,
+    "name": "VM-1",
+    "allowed_actions": [
+     "start",
+     "stop",
+     "delete"
+    ],
+    "desired": {
+     "power": "running",
+     "backup_schedule": null
+    },
+    "observed": {
+     "power": "crashed",
+     "last_seen_at": "2026-02-30T10:00:00Z",
+     "managed": false,
+     "ip_address": null,
+     "login_user": null,
+     "iso": null,
+     "disk_gib": null,
+     "snapshots": [],
+     "network": null,
+     "vcpus": null,
+     "memory_mib": null,
+     "usage": {
+      "state": "unavailable",
+      "cpu_percent": null,
+      "memory_used_mib": null,
+      "disk_kib_s": null,
+      "net_kib_s": null,
+      "history": []
+     },
+     "backup": {
+      "next_run_at": null,
+      "last_run": null
+     },
+     "graphical_console": "absent",
+     "rescue": false
+    }
+   },
+   "reason": "format",
+   "path": "$.observed.last_seen_at"
+  },
+  {
+   "name": "VM: negative generation",
+   "schema": "VM",
+   "value": {
+    "id": "vm-1",
+    "project_id": "default",
+    "generation": -1,
+    "name": "VM-1",
+    "allowed_actions": [
+     "start",
+     "stop",
+     "delete"
+    ],
+    "desired": {
+     "power": "running",
+     "backup_schedule": null
+    },
+    "observed": {
+     "power": "crashed",
+     "last_seen_at": "2026-10-08T10:00:00.123+05:30",
+     "managed": false,
+     "ip_address": null,
+     "login_user": null,
+     "iso": null,
+     "disk_gib": null,
+     "snapshots": [],
+     "network": null,
+     "vcpus": null,
+     "memory_mib": null,
+     "usage": {
+      "state": "unavailable",
+      "cpu_percent": null,
+      "memory_used_mib": null,
+      "disk_kib_s": null,
+      "net_kib_s": null,
+      "history": []
+     },
+     "backup": {
+      "next_run_at": null,
+      "last_run": null
+     },
+     "graphical_console": "absent",
+     "rescue": false
+    }
+   },
+   "reason": "minimum",
+   "path": "$.generation"
+  },
+  {
+   "name": "VM: fractional generation",
+   "schema": "VM",
+   "value": {
+    "id": "vm-1",
+    "project_id": "default",
+    "generation": 1.5,
+    "name": "VM-1",
+    "allowed_actions": [
+     "start",
+     "stop",
+     "delete"
+    ],
+    "desired": {
+     "power": "running",
+     "backup_schedule": null
+    },
+    "observed": {
+     "power": "crashed",
+     "last_seen_at": "2026-10-08T10:00:00.123+05:30",
+     "managed": false,
+     "ip_address": null,
+     "login_user": null,
+     "iso": null,
+     "disk_gib": null,
+     "snapshots": [],
+     "network": null,
+     "vcpus": null,
+     "memory_mib": null,
+     "usage": {
+      "state": "unavailable",
+      "cpu_percent": null,
+      "memory_used_mib": null,
+      "disk_kib_s": null,
+      "net_kib_s": null,
+      "history": []
+     },
+     "backup": {
+      "next_run_at": null,
+      "last_run": null
+     },
+     "graphical_console": "absent",
+     "rescue": false
+    }
+   },
+   "reason": "type",
+   "path": "$.generation"
+  },
+  {
+   "name": "VM: generation as string",
+   "schema": "VM",
+   "value": {
+    "id": "vm-1",
+    "project_id": "default",
+    "generation": "1",
+    "name": "VM-1",
+    "allowed_actions": [
+     "start",
+     "stop",
+     "delete"
+    ],
+    "desired": {
+     "power": "running",
+     "backup_schedule": null
+    },
+    "observed": {
+     "power": "crashed",
+     "last_seen_at": "2026-10-08T10:00:00.123+05:30",
+     "managed": false,
+     "ip_address": null,
+     "login_user": null,
+     "iso": null,
+     "disk_gib": null,
+     "snapshots": [],
+     "network": null,
+     "vcpus": null,
+     "memory_mib": null,
+     "usage": {
+      "state": "unavailable",
+      "cpu_percent": null,
+      "memory_used_mib": null,
+      "disk_kib_s": null,
+      "net_kib_s": null,
+      "history": []
+     },
+     "backup": {
+      "next_run_at": null,
+      "last_run": null
+     },
+     "graphical_console": "absent",
+     "rescue": false
+    }
+   },
+   "reason": "type",
+   "path": "$.generation"
+  },
+  {
+   "name": "VM: secret-looking extra key",
+   "schema": "VM",
+   "value": {
+    "id": "vm-1",
+    "project_id": "default",
+    "generation": 1,
+    "name": "VM-1",
+    "allowed_actions": [
+     "start",
+     "stop",
+     "delete"
+    ],
+    "desired": {
+     "power": "running",
+     "backup_schedule": null
+    },
+    "observed": {
+     "power": "crashed",
+     "last_seen_at": "2026-10-08T10:00:00.123+05:30",
+     "managed": false,
+     "ip_address": null,
+     "login_user": null,
+     "iso": null,
+     "disk_gib": null,
+     "snapshots": [],
+     "network": null,
+     "vcpus": null,
+     "memory_mib": null,
+     "usage": {
+      "state": "unavailable",
+      "cpu_percent": null,
+      "memory_used_mib": null,
+      "disk_kib_s": null,
+      "net_kib_s": null,
+      "history": []
+     },
+     "backup": {
+      "next_run_at": null,
+      "last_run": null
+     },
+     "graphical_console": "absent",
+     "rescue": false
+    },
+    "password": "hunter2"
+   },
+   "reason": "additionalProperties",
+   "path": "$.password"
+  },
+  {
+   "name": "VM: null name",
+   "schema": "VM",
+   "value": {
+    "id": "vm-1",
+    "project_id": "default",
+    "generation": 1,
+    "name": null,
+    "allowed_actions": [
+     "start",
+     "stop",
+     "delete"
+    ],
+    "desired": {
+     "power": "running",
+     "backup_schedule": null
+    },
+    "observed": {
+     "power": "crashed",
+     "last_seen_at": "2026-10-08T10:00:00.123+05:30",
+     "managed": false,
+     "ip_address": null,
+     "login_user": null,
+     "iso": null,
+     "disk_gib": null,
+     "snapshots": [],
+     "network": null,
+     "vcpus": null,
+     "memory_mib": null,
+     "usage": {
+      "state": "unavailable",
+      "cpu_percent": null,
+      "memory_used_mib": null,
+      "disk_kib_s": null,
+      "net_kib_s": null,
+      "history": []
+     },
+     "backup": {
+      "next_run_at": null,
+      "last_run": null
+     },
+     "graphical_console": "absent",
+     "rescue": false
+    }
+   },
+   "reason": "type",
+   "path": "$.name"
+  },
+  {
+   "name": "Volume: attached_to bad id",
+   "schema": "Volume",
+   "value": {
+    "id": "volume-1",
+    "project_id": "default",
+    "generation": 1,
+    "name": "Volume-1",
+    "allowed_actions": [
+     "delete"
+    ],
+    "desired": {
+     "size_gib": 10,
+     "attached_to": "a b"
+    },
+    "observed": {
+     "state": "available"
+    }
+   },
+   "reason": "pattern",
+   "path": "$.desired.attached_to"
+  },
+  {
+   "name": "Volume: size zero",
+   "schema": "Volume",
+   "value": {
+    "id": "volume-1",
+    "project_id": "default",
+    "generation": 1,
+    "name": "Volume-1",
+    "allowed_actions": [
+     "delete"
+    ],
+    "desired": {
+     "size_gib": 0,
+     "attached_to": null
+    },
+    "observed": {
+     "state": "available"
+    }
+   },
+   "reason": "minimum",
+   "path": "$.desired.size_gib"
+  },
+  {
+   "name": "Image: digest not sha256",
+   "schema": "Image",
+   "value": {
+    "id": "image-1",
+    "project_id": "default",
+    "generation": 1,
+    "name": "Image-1",
+    "allowed_actions": [
+     "delete"
+    ],
+    "desired": {
+     "source_digest": "latest"
+    },
+    "observed": {
+     "state": "verifying",
+     "distribution": "Debian",
+     "version": "13",
+     "architecture": "x86_64",
+     "login_user": "debian",
+     "media": "disk",
+     "min_disk_gib": 3,
+     "qualification": "verified",
+     "qualification_evidence": null
+    }
+   },
+   "reason": "pattern",
+   "path": "$.desired.source_digest"
+  },
+  {
+   "name": "Image: uppercase digest",
+   "schema": "Image",
+   "value": {
+    "id": "image-1",
+    "project_id": "default",
+    "generation": 1,
+    "name": "Image-1",
+    "allowed_actions": [
+     "delete"
+    ],
+    "desired": {
+     "source_digest": "sha256:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+    },
+    "observed": {
+     "state": "verifying",
+     "distribution": "Debian",
+     "version": "13",
+     "architecture": "x86_64",
+     "login_user": "debian",
+     "media": "disk",
+     "min_disk_gib": 3,
+     "qualification": "verified",
+     "qualification_evidence": null
+    }
+   },
+   "reason": "pattern",
+   "path": "$.desired.source_digest"
+  },
+  {
+   "name": "App: state enum",
+   "schema": "App",
+   "value": {
+    "id": "app-1",
+    "project_id": "default",
+    "generation": 1,
+    "name": "App-1",
+    "allowed_actions": [
+     "start",
+     "stop",
+     "delete"
+    ],
+    "desired": {
+     "image_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    "observed": {
+     "state": "paused"
+    }
+   },
+   "reason": "enum",
+   "path": "$.observed.state"
+  },
+  {
+   "name": "Backup: missing source",
+   "schema": "Backup",
+   "value": {
+    "id": "backup-1",
+    "project_id": "default",
+    "generation": 1,
+    "name": "Backup-1",
+    "allowed_actions": [
+     "delete"
+    ],
+    "desired": {},
+    "observed": {
+     "state": "complete",
+     "copies": []
+    }
+   },
+   "reason": "required",
+   "path": "$.desired.source_volume_id"
+  },
+  {
+   "name": "VirtualNetwork: mode",
+   "schema": "VirtualNetwork",
+   "value": {
+    "id": "lab-net",
+    "project_id": "default",
+    "generation": 1,
+    "name": "lab-net",
+    "allowed_actions": [
+     "stop",
+     "delete",
+     "disable_autostart"
+    ],
+    "desired": {
+     "mode": "routed",
+     "autostart": true
+    },
+    "observed": {
+     "state": "active",
+     "managed": true,
+     "bridge": "svbr7a7a7a7a",
+     "subnet": "10.77.0.0/24",
+     "gateway": "10.77.0.1",
+     "dhcp_start": "10.77.0.10",
+     "dhcp_end": "10.77.0.200",
+     "attached_vms": 0,
+     "reservations": [
+      {
+       "mac": "52:54:00:aa:bb:cc",
+       "ip": "10.77.0.50"
+      }
+     ]
+    }
+   },
+   "reason": "enum",
+   "path": "$.desired.mode"
+  },
+  {
+   "name": "Operation: status enum",
+   "schema": "Operation",
+   "value": {
+    "id": "op-1",
+    "project_id": "default",
+    "resource_kind": "VM",
+    "resource_id": "vm-1",
+    "type": "delete",
+    "status": "paused",
+    "requested_by": "owner",
+    "generation": 2,
+    "attempts": 3,
+    "error_category": "timeout",
+    "created_at": "2026-10-08T10:00:00Z",
+    "updated_at": "2026-10-08T10:00:00Z",
+    "allowed_actions": [
+     "cancel"
+    ]
+   },
+   "reason": "enum",
+   "path": "$.status"
+  },
+  {
+   "name": "Operation: idempotency_key is never returned",
+   "schema": "Operation",
+   "value": {
+    "id": "op-1",
+    "project_id": "default",
+    "resource_kind": "VM",
+    "resource_id": "vm-1",
+    "type": "delete",
+    "status": "retryable_failure",
+    "requested_by": "owner",
+    "generation": 2,
+    "attempts": 3,
+    "error_category": "timeout",
+    "created_at": "2026-10-08T10:00:00Z",
+    "updated_at": "2026-10-08T10:00:00Z",
+    "allowed_actions": [
+     "cancel"
+    ],
+    "idempotency_key": "k"
+   },
+   "reason": "additionalProperties",
+   "path": "$.idempotency_key"
+  },
+  {
+   "name": "Operation: error_category enum",
+   "schema": "Operation",
+   "value": {
+    "id": "op-1",
+    "project_id": "default",
+    "resource_kind": "VM",
+    "resource_id": "vm-1",
+    "type": "delete",
+    "status": "retryable_failure",
+    "requested_by": "owner",
+    "generation": 2,
+    "attempts": 3,
+    "error_category": "teapot",
+    "created_at": "2026-10-08T10:00:00Z",
+    "updated_at": "2026-10-08T10:00:00Z",
+    "allowed_actions": [
+     "cancel"
+    ]
+   },
+   "reason": "enum",
+   "path": "$.error_category"
+  },
+  {
+   "name": "Operation: attempts negative",
+   "schema": "Operation",
+   "value": {
+    "id": "op-1",
+    "project_id": "default",
+    "resource_kind": "VM",
+    "resource_id": "vm-1",
+    "type": "delete",
+    "status": "retryable_failure",
+    "requested_by": "owner",
+    "generation": 2,
+    "attempts": -1,
+    "error_category": "timeout",
+    "created_at": "2026-10-08T10:00:00Z",
+    "updated_at": "2026-10-08T10:00:00Z",
+    "allowed_actions": [
+     "cancel"
+    ]
+   },
+   "reason": "minimum",
+   "path": "$.attempts"
+  },
+  {
+   "name": "Operation: requested_by empty",
+   "schema": "Operation",
+   "value": {
+    "id": "op-1",
+    "project_id": "default",
+    "resource_kind": "VM",
+    "resource_id": "vm-1",
+    "type": "delete",
+    "status": "retryable_failure",
+    "requested_by": "",
+    "generation": 2,
+    "attempts": 3,
+    "error_category": "timeout",
+    "created_at": "2026-10-08T10:00:00Z",
+    "updated_at": "2026-10-08T10:00:00Z",
+    "allowed_actions": [
+     "cancel"
+    ]
+   },
+   "reason": "minLength",
+   "path": "$.requested_by"
+  },
+  {
+   "name": "Operation: delete is not an action",
+   "schema": "Operation",
+   "value": {
+    "id": "op-1",
+    "project_id": "default",
+    "resource_kind": "VM",
+    "resource_id": "vm-1",
+    "type": "delete",
+    "status": "retryable_failure",
+    "requested_by": "owner",
+    "generation": 2,
+    "attempts": 3,
+    "error_category": "timeout",
+    "created_at": "2026-10-08T10:00:00Z",
+    "updated_at": "2026-10-08T10:00:00Z",
+    "allowed_actions": [
+     "delete"
+    ]
+   },
+   "reason": "enum",
+   "path": "$.allowed_actions[0]"
+  },
+  {
+   "name": "Operation: resource kind not submittable",
+   "schema": "Operation",
+   "value": {
+    "id": "op-1",
+    "project_id": "default",
+    "resource_kind": "Host",
+    "resource_id": "vm-1",
+    "type": "delete",
+    "status": "retryable_failure",
+    "requested_by": "owner",
+    "generation": 2,
+    "attempts": 3,
+    "error_category": "timeout",
+    "created_at": "2026-10-08T10:00:00Z",
+    "updated_at": "2026-10-08T10:00:00Z",
+    "allowed_actions": [
+     "cancel"
+    ]
+   },
+   "reason": "enum",
+   "path": "$.resource_kind"
+  },
+  {
+   "name": "Event: generation",
+   "schema": "Event",
+   "value": {
+    "id": "ev-1",
+    "project_id": "default",
+    "type": "vm.started",
+    "resource_kind": "VM",
+    "resource_id": "vm-1",
+    "created_at": "2026-10-08T10:00:00Z",
+    "allowed_actions": [],
+    "generation": 1,
+    "severity": "warning",
+    "state": "open",
+    "value": null,
+    "updated_at": "2026-10-08T10:00:00Z"
+   },
+   "reason": "additionalProperties",
+   "path": "$.generation"
+  },
+  {
+   "name": "Event: action",
+   "schema": "Event",
+   "value": {
+    "id": "ev-1",
+    "project_id": "default",
+    "type": "vm.started",
+    "resource_kind": "VM",
+    "resource_id": "vm-1",
+    "created_at": "2026-10-08T10:00:00Z",
+    "allowed_actions": [
+     "delete"
+    ],
+    "severity": "warning",
+    "state": "open",
+    "value": null,
+    "updated_at": "2026-10-08T10:00:00Z"
+   },
+   "reason": "enum",
+   "path": "$.allowed_actions[0]"
+  },
+  {
+   "name": "VMList: missing cursor",
+   "schema": "VMList",
+   "value": {
+    "items": [
+     {
+      "id": "vm-1",
+      "project_id": "default",
+      "generation": 1,
+      "name": "VM-1",
+      "allowed_actions": [
+       "start",
+       "stop",
+       "delete"
+      ],
+      "desired": {
+       "power": "running",
+       "backup_schedule": null
+      },
+      "observed": {
+       "power": "crashed",
+       "last_seen_at": "2026-10-08T10:00:00.123+05:30",
+       "managed": false,
+       "ip_address": null,
+       "login_user": null,
+       "iso": null,
+       "disk_gib": null,
+       "snapshots": [],
+       "network": null,
+       "vcpus": null,
+       "memory_mib": null,
+       "usage": {
+        "state": "unavailable",
+        "cpu_percent": null,
+        "memory_used_mib": null,
+        "disk_kib_s": null,
+        "net_kib_s": null,
+        "history": []
+       },
+       "backup": {
+        "next_run_at": null,
+        "last_run": null
+       },
+       "graphical_console": "absent",
+       "rescue": false
+      }
+     }
+    ],
+    "allowed_actions": []
+   },
+   "reason": "required",
+   "path": "$.next_cursor"
+  },
+  {
+   "name": "VMList: bad cursor",
+   "schema": "VMList",
+   "value": {
+    "items": [
+     {
+      "id": "vm-1",
+      "project_id": "default",
+      "generation": 1,
+      "name": "VM-1",
+      "allowed_actions": [
+       "start",
+       "stop",
+       "delete"
+      ],
+      "desired": {
+       "power": "running",
+       "backup_schedule": null
+      },
+      "observed": {
+       "power": "crashed",
+       "last_seen_at": "2026-10-08T10:00:00.123+05:30",
+       "managed": false,
+       "ip_address": null,
+       "login_user": null,
+       "iso": null,
+       "disk_gib": null,
+       "snapshots": [],
+       "network": null,
+       "vcpus": null,
+       "memory_mib": null,
+       "usage": {
+        "state": "unavailable",
+        "cpu_percent": null,
+        "memory_used_mib": null,
+        "disk_kib_s": null,
+        "net_kib_s": null,
+        "history": []
+       },
+       "backup": {
+        "next_run_at": null,
+        "last_run": null
+       },
+       "graphical_console": "absent",
+       "rescue": false
+      }
+     }
+    ],
+    "allowed_actions": [],
+    "next_cursor": "bad cursor!"
+   },
+   "reason": "pattern",
+   "path": "$.next_cursor"
+  },
+  {
+   "name": "VMList: long cursor",
+   "schema": "VMList",
+   "value": {
+    "items": [
+     {
+      "id": "vm-1",
+      "project_id": "default",
+      "generation": 1,
+      "name": "VM-1",
+      "allowed_actions": [
+       "start",
+       "stop",
+       "delete"
+      ],
+      "desired": {
+       "power": "running",
+       "backup_schedule": null
+      },
+      "observed": {
+       "power": "crashed",
+       "last_seen_at": "2026-10-08T10:00:00.123+05:30",
+       "managed": false,
+       "ip_address": null,
+       "login_user": null,
+       "iso": null,
+       "disk_gib": null,
+       "snapshots": [],
+       "network": null,
+       "vcpus": null,
+       "memory_mib": null,
+       "usage": {
+        "state": "unavailable",
+        "cpu_percent": null,
+        "memory_used_mib": null,
+        "disk_kib_s": null,
+        "net_kib_s": null,
+        "history": []
+       },
+       "backup": {
+        "next_run_at": null,
+        "last_run": null
+       },
+       "graphical_console": "absent",
+       "rescue": false
+      }
+     }
+    ],
+    "allowed_actions": [],
+    "next_cursor": "ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+   },
+   "reason": "maxLength",
+   "path": "$.next_cursor"
+  },
+  {
+   "name": "VMList: delete is not a collection action",
+   "schema": "VMList",
+   "value": {
+    "items": [
+     {
+      "id": "vm-1",
+      "project_id": "default",
+      "generation": 1,
+      "name": "VM-1",
+      "allowed_actions": [
+       "start",
+       "stop",
+       "delete"
+      ],
+      "desired": {
+       "power": "running",
+       "backup_schedule": null
+      },
+      "observed": {
+       "power": "crashed",
+       "last_seen_at": "2026-10-08T10:00:00.123+05:30",
+       "managed": false,
+       "ip_address": null,
+       "login_user": null,
+       "iso": null,
+       "disk_gib": null,
+       "snapshots": [],
+       "network": null,
+       "vcpus": null,
+       "memory_mib": null,
+       "usage": {
+        "state": "unavailable",
+        "cpu_percent": null,
+        "memory_used_mib": null,
+        "disk_kib_s": null,
+        "net_kib_s": null,
+        "history": []
+       },
+       "backup": {
+        "next_run_at": null,
+        "last_run": null
+       },
+       "graphical_console": "absent",
+       "rescue": false
+      }
+     }
+    ],
+    "allowed_actions": [
+     "delete"
+    ],
+    "next_cursor": null
+   },
+   "reason": "enum",
+   "path": "$.allowed_actions[0]"
+  },
+  {
+   "name": "VMList: bad item",
+   "schema": "VMList",
+   "value": {
+    "items": [
+     {
+      "id": "vm-1",
+      "project_id": "default",
+      "generation": 1,
+      "name": "VM-1",
+      "allowed_actions": [
+       "start",
+       "stop",
+       "delete"
+      ],
+      "desired": {
+       "power": "running",
+       "backup_schedule": null
+      },
+      "observed": {
+       "power": "off",
+       "last_seen_at": "2026-10-08T10:00:00.123+05:30",
+       "managed": false,
+       "ip_address": null,
+       "login_user": null,
+       "iso": null,
+       "disk_gib": null,
+       "snapshots": [],
+       "network": null,
+       "vcpus": null,
+       "memory_mib": null,
+       "usage": {
+        "state": "unavailable",
+        "cpu_percent": null,
+        "memory_used_mib": null,
+        "disk_kib_s": null,
+        "net_kib_s": null,
+        "history": []
+       },
+       "backup": {
+        "next_run_at": null,
+        "last_run": null
+       },
+       "graphical_console": "absent",
+       "rescue": false
+      }
+     }
+    ],
+    "allowed_actions": [],
+    "next_cursor": null
+   },
+   "reason": "enum",
+   "path": "$.items[0].observed.power"
+  },
+  {
+   "name": "HostList: create on hosts",
+   "schema": "HostList",
+   "value": {
+    "items": [
+     {
+      "id": "local",
+      "generation": 1,
+      "name": "local-host",
+      "desired": {
+       "maintenance": false
+      },
+      "observed": {
+       "reachable": true,
+       "agent_version": "0.0.0-dev",
+       "cpu_count": 8,
+       "memory_mib": 16384,
+       "capability_verdict": "unknown",
+       "virtualization": {
+        "hardware": "available",
+        "kvm_device": "unavailable",
+        "libvirt_packages": "unknown",
+        "qemu_packages": "available"
+       },
+       "distribution": {
+        "id": "debian",
+        "version_id": "13"
+       },
+       "capability_findings": [],
+       "creation": {
+        "enabled": false,
+        "network": "unknown",
+        "storage": "unknown",
+        "vcpu_options": [],
+        "memory_mib_options": [],
+        "disk_gib_options": [],
+        "ready": false,
+        "reasons": [
+         "mutation_disabled"
+        ]
+       },
+       "storage": {
+        "state": "unknown",
+        "pool_total_gib": null,
+        "pool_free_gib": null,
+        "images_gib": null,
+        "backups_configured": false,
+        "backups_gib": null,
+        "backups_free_gib": null,
+        "snapshots": "unknown",
+        "backup_targets": [],
+        "allocation_note": "Disk sizes shown for a VM are virtual sizes. Real usage is lower while the disk is thinly allocated; the pool free figure is what counts."
+       },
+       "usage": {
+        "state": "unavailable",
+        "interval_seconds": 30,
+        "cpu_percent": null,
+        "memory_used_mib": null,
+        "disk_kib_s": null,
+        "net_kib_s": null,
+        "history": []
+       },
+       "alerts": {
+        "open": 0,
+        "webhook": "none"
+       },
+       "nightly_boot": null,
+       "bridge": null
+      },
+      "allowed_actions": []
+     }
+    ],
+    "allowed_actions": [
+     "create"
+    ],
+    "next_cursor": null
+   },
+   "reason": "maxItems",
+   "path": "$.allowed_actions"
+  },
+  {
+   "name": "EventList: create on events",
+   "schema": "EventList",
+   "value": {
+    "items": [
+     {
+      "id": "ev-1",
+      "project_id": "default",
+      "type": "vm.started",
+      "resource_kind": "VM",
+      "resource_id": "vm-1",
+      "created_at": "2026-10-08T10:00:00Z",
+      "allowed_actions": [],
+      "severity": "warning",
+      "state": "open",
+      "value": null,
+      "updated_at": "2026-10-08T10:00:00Z"
+     }
+    ],
+    "allowed_actions": [
+     "create"
+    ],
+    "next_cursor": null
+   },
+   "reason": "maxItems",
+   "path": "$.allowed_actions"
+  },
+  {
+   "name": "ApiError: free-text message",
+   "schema": "ApiError",
+   "value": {
+    "category": "internal",
+    "retryable": false,
+    "correlation_id": "0123456789abcdef0123456789abcdef",
+    "message": "panic at main.go:42"
+   },
+   "reason": "additionalProperties",
+   "path": "$.message"
+  },
+  {
+   "name": "ApiError: no correlation id",
+   "schema": "ApiError",
+   "value": {
+    "category": "forbidden",
+    "retryable": false
+   },
+   "reason": "required",
+   "path": "$.correlation_id"
+  },
+  {
+   "name": "ApiError: no retryable",
+   "schema": "ApiError",
+   "value": {
+    "category": "forbidden",
+    "correlation_id": "0123456789abcdef0123456789abcdef"
+   },
+   "reason": "required",
+   "path": "$.retryable"
+  },
+  {
+   "name": "ApiError: short correlation id",
+   "schema": "ApiError",
+   "value": {
+    "category": "forbidden",
+    "retryable": false,
+    "correlation_id": "abc"
+   },
+   "reason": "pattern",
+   "path": "$.correlation_id"
+  },
+  {
+   "name": "ApiError: correlation id with markup",
+   "schema": "ApiError",
+   "value": {
+    "category": "forbidden",
+    "retryable": false,
+    "correlation_id": "<script>alert(1)</script>"
+   },
+   "reason": "pattern",
+   "path": "$.correlation_id"
+  },
+  {
+   "name": "ApiError: unknown category",
+   "schema": "ApiError",
+   "value": {
+    "category": "teapot",
+    "retryable": false,
+    "correlation_id": "0123456789abcdef0123456789abcdef"
+   },
+   "reason": "enum",
+   "path": "$.category"
+  },
+  {
+   "name": "ApiError: retryable wrong for category",
+   "schema": "ApiError",
+   "value": {
+    "category": "rate_limited",
+    "retryable": false,
+    "correlation_id": "0123456789abcdef0123456789abcdef"
+   },
+   "reason": "oneOf",
+   "path": "$"
+  },
+  {
+   "name": "ApiError: retryable wrong for forbidden",
+   "schema": "ApiError",
+   "value": {
+    "category": "forbidden",
+    "retryable": true,
+    "correlation_id": "0123456789abcdef0123456789abcdef"
+   },
+   "reason": "oneOf",
+   "path": "$"
+  },
+  {
+   "name": "ApiError: field error code",
+   "schema": "ApiError",
+   "value": {
+    "category": "validation",
+    "retryable": false,
+    "correlation_id": "0123456789abcdef0123456789abcdef",
+    "field_errors": [
+     {
+      "field": "name",
+      "code": "teapot"
+     }
+    ]
+   },
+   "reason": "enum",
+   "path": "$.field_errors[0].code"
+  },
+  {
+   "name": "ApiError: field error echo",
+   "schema": "ApiError",
+   "value": {
+    "category": "validation",
+    "retryable": false,
+    "correlation_id": "0123456789abcdef0123456789abcdef",
+    "field_errors": [
+     {
+      "field": "name",
+      "code": "required",
+      "value": "x"
+     }
+    ]
+   },
+   "reason": "additionalProperties",
+   "path": "$.field_errors[0].value"
+  },
+  {
+   "name": "ApiError: field name with markup",
+   "schema": "ApiError",
+   "value": {
+    "category": "validation",
+    "retryable": false,
+    "correlation_id": "0123456789abcdef0123456789abcdef",
+    "field_errors": [
+     {
+      "field": "<b>",
+      "code": "required"
+     }
+    ]
+   },
+   "reason": "pattern",
+   "path": "$.field_errors[0].field"
+  },
+  {
+   "name": "SubmitOperationRequest: unknown type",
+   "schema": "SubmitOperationRequest",
+   "value": {
+    "type": "restart",
+    "kind": "VM",
+    "id": "web-1",
+    "idempotency_key": "k"
+   },
+   "reason": "enum",
+   "path": "$.type"
+  },
+  {
+   "name": "SubmitOperationRequest: missing id",
+   "schema": "SubmitOperationRequest",
+   "value": {
+    "type": "create",
+    "kind": "VM",
+    "idempotency_key": "k"
+   },
+   "reason": "required",
+   "path": "$.id"
+  },
+  {
+   "name": "SubmitOperationRequest: Host is not submittable",
+   "schema": "SubmitOperationRequest",
+   "value": {
+    "type": "create",
+    "kind": "Host",
+    "id": "h",
+    "idempotency_key": "k"
+   },
+   "reason": "enum",
+   "path": "$.kind"
+  },
+  {
+   "name": "SubmitOperationRequest: extra key",
+   "schema": "SubmitOperationRequest",
+   "value": {
+    "type": "create",
+    "kind": "VM",
+    "id": "web-1",
+    "idempotency_key": "k",
+    "force": true
+   },
+   "reason": "additionalProperties",
+   "path": "$.force"
+  },
+  {
+   "name": "Host: virtualization state not in the closed set",
+   "schema": "Host",
+   "value": {
+    "id": "local",
+    "generation": 1,
+    "name": "local-host",
+    "desired": {
+     "maintenance": false
+    },
+    "observed": {
+     "reachable": true,
+     "agent_version": "0.0.0-dev",
+     "cpu_count": 8,
+     "memory_mib": 16384,
+     "capability_verdict": "unknown",
+     "virtualization": {
+      "hardware": "maybe",
+      "kvm_device": "unavailable",
+      "libvirt_packages": "unknown",
+      "qemu_packages": "available"
+     },
+     "distribution": {
+      "id": "debian",
+      "version_id": "13"
+     },
+     "capability_findings": [],
+     "creation": {
+      "enabled": false,
+      "network": "unknown",
+      "storage": "unknown",
+      "vcpu_options": [],
+      "memory_mib_options": [],
+      "disk_gib_options": [],
+      "ready": false,
+      "reasons": [
+       "mutation_disabled"
+      ]
+     },
+     "storage": {
+      "state": "unknown",
+      "pool_total_gib": null,
+      "pool_free_gib": null,
+      "images_gib": null,
+      "backups_configured": false,
+      "backups_gib": null,
+      "backups_free_gib": null,
+      "snapshots": "unknown",
+      "backup_targets": [],
+      "allocation_note": "Disk sizes shown for a VM are virtual sizes. Real usage is lower while the disk is thinly allocated; the pool free figure is what counts."
+     },
+     "usage": {
+      "state": "unavailable",
+      "interval_seconds": 30,
+      "cpu_percent": null,
+      "memory_used_mib": null,
+      "disk_kib_s": null,
+      "net_kib_s": null,
+      "history": []
+     },
+     "alerts": {
+      "open": 0,
+      "webhook": "none"
+     },
+     "nightly_boot": null,
+     "bridge": null
+    },
+    "allowed_actions": []
+   },
+   "reason": "enum",
+   "path": "$.observed.virtualization.hardware"
+  },
+  {
+   "name": "Host: unapproved field in distribution",
+   "schema": "Host",
+   "value": {
+    "id": "local",
+    "generation": 1,
+    "name": "local-host",
+    "desired": {
+     "maintenance": false
+    },
+    "observed": {
+     "reachable": true,
+     "agent_version": "0.0.0-dev",
+     "cpu_count": 8,
+     "memory_mib": 16384,
+     "capability_verdict": "unknown",
+     "virtualization": {
+      "hardware": "available",
+      "kvm_device": "unavailable",
+      "libvirt_packages": "unknown",
+      "qemu_packages": "available"
+     },
+     "distribution": {
+      "id": "debian",
+      "version_id": "13",
+      "kernel_cmdline": "root=/dev/sda1 secret"
+     },
+     "capability_findings": [],
+     "creation": {
+      "enabled": false,
+      "network": "unknown",
+      "storage": "unknown",
+      "vcpu_options": [],
+      "memory_mib_options": [],
+      "disk_gib_options": [],
+      "ready": false,
+      "reasons": [
+       "mutation_disabled"
+      ]
+     },
+     "storage": {
+      "state": "unknown",
+      "pool_total_gib": null,
+      "pool_free_gib": null,
+      "images_gib": null,
+      "backups_configured": false,
+      "backups_gib": null,
+      "backups_free_gib": null,
+      "snapshots": "unknown",
+      "backup_targets": [],
+      "allocation_note": "Disk sizes shown for a VM are virtual sizes. Real usage is lower while the disk is thinly allocated; the pool free figure is what counts."
+     },
+     "usage": {
+      "state": "unavailable",
+      "interval_seconds": 30,
+      "cpu_percent": null,
+      "memory_used_mib": null,
+      "disk_kib_s": null,
+      "net_kib_s": null,
+      "history": []
+     },
+     "alerts": {
+      "open": 0,
+      "webhook": "none"
+     },
+     "nightly_boot": null,
+     "bridge": null
+    },
+    "allowed_actions": []
+   },
+   "reason": "additionalProperties",
+   "path": "$.observed.distribution.kernel_cmdline"
+  },
+  {
+   "name": "Host: too many findings",
+   "schema": "Host",
+   "value": {
+    "id": "local",
+    "generation": 1,
+    "name": "local-host",
+    "desired": {
+     "maintenance": false
+    },
+    "observed": {
+     "reachable": true,
+     "agent_version": "0.0.0-dev",
+     "cpu_count": 8,
+     "memory_mib": 16384,
+     "capability_verdict": "unknown",
+     "virtualization": {
+      "hardware": "available",
+      "kvm_device": "unavailable",
+      "libvirt_packages": "unknown",
+      "qemu_packages": "available"
+     },
+     "distribution": {
+      "id": "debian",
+      "version_id": "13"
+     },
+     "capability_findings": [
+      {
+       "code": "X",
+       "remediation": ""
+      },
+      {
+       "code": "X",
+       "remediation": ""
+      },
+      {
+       "code": "X",
+       "remediation": ""
+      },
+      {
+       "code": "X",
+       "remediation": ""
+      },
+      {
+       "code": "X",
+       "remediation": ""
+      },
+      {
+       "code": "X",
+       "remediation": ""
+      },
+      {
+       "code": "X",
+       "remediation": ""
+      },
+      {
+       "code": "X",
+       "remediation": ""
+      },
+      {
+       "code": "X",
+       "remediation": ""
+      },
+      {
+       "code": "X",
+       "remediation": ""
+      },
+      {
+       "code": "X",
+       "remediation": ""
+      },
+      {
+       "code": "X",
+       "remediation": ""
+      },
+      {
+       "code": "X",
+       "remediation": ""
+      },
+      {
+       "code": "X",
+       "remediation": ""
+      },
+      {
+       "code": "X",
+       "remediation": ""
+      },
+      {
+       "code": "X",
+       "remediation": ""
+      },
+      {
+       "code": "X",
+       "remediation": ""
+      }
+     ],
+     "creation": {
+      "enabled": false,
+      "network": "unknown",
+      "storage": "unknown",
+      "vcpu_options": [],
+      "memory_mib_options": [],
+      "disk_gib_options": [],
+      "ready": false,
+      "reasons": [
+       "mutation_disabled"
+      ]
+     },
+     "storage": {
+      "state": "unknown",
+      "pool_total_gib": null,
+      "pool_free_gib": null,
+      "images_gib": null,
+      "backups_configured": false,
+      "backups_gib": null,
+      "backups_free_gib": null,
+      "snapshots": "unknown",
+      "backup_targets": [],
+      "allocation_note": "Disk sizes shown for a VM are virtual sizes. Real usage is lower while the disk is thinly allocated; the pool free figure is what counts."
+     },
+     "usage": {
+      "state": "unavailable",
+      "interval_seconds": 30,
+      "cpu_percent": null,
+      "memory_used_mib": null,
+      "disk_kib_s": null,
+      "net_kib_s": null,
+      "history": []
+     },
+     "alerts": {
+      "open": 0,
+      "webhook": "none"
+     },
+     "nightly_boot": null,
+     "bridge": null
+    },
+    "allowed_actions": []
+   },
+   "reason": "maxItems",
+   "path": "$.observed.capability_findings"
+  },
+  {
+   "name": "AuthSession: carries a secret field",
+   "schema": "AuthSession",
+   "value": {
+    "authenticated": true,
+    "username": "admin",
+    "expires_at": null,
+    "csrf_token": "x"
+   },
+   "reason": "additionalProperties",
+   "path": "$.csrf_token"
+  },
+  {
+   "name": "SignInRequest: password too long",
+   "schema": "SignInRequest",
+   "value": {
+    "username": "admin",
+    "password": "ppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp"
+   },
+   "reason": "maxLength",
+   "path": "$.password"
+  },
+  {
+   "name": "SignInRequest: unknown field",
+   "schema": "SignInRequest",
+   "value": {
+    "username": "admin",
+    "password": "x",
+    "remember": true
+   },
+   "reason": "additionalProperties",
+   "path": "$.remember"
+  },
+  {
+   "name": "SubmitOperationRequest: create with a path",
+   "schema": "SubmitOperationRequest",
+   "value": {
+    "type": "create",
+    "kind": "VM",
+    "id": "web-1",
+    "idempotency_key": "k1",
+    "create": {
+     "vcpus": 2,
+     "memory_mib": 1024,
+     "image_id": "debian-13",
+     "disk_gib": 20,
+     "ssh_public_key": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGg4Zgd2sQ0v9i6Y0bq7n3m9c1m3k3Qm8iH6m3f3b2yd",
+     "disk_path": "/var/lib/x.qcow2"
+    }
+   },
+   "reason": "additionalProperties",
+   "path": "$.create.disk_path"
+  },
+  {
+   "name": "SubmitOperationRequest: create with network xml",
+   "schema": "SubmitOperationRequest",
+   "value": {
+    "type": "create",
+    "kind": "VM",
+    "id": "web-1",
+    "idempotency_key": "k1",
+    "create": {
+     "vcpus": 2,
+     "memory_mib": 1024,
+     "image_id": "debian-13",
+     "disk_gib": 20,
+     "ssh_public_key": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGg4Zgd2sQ0v9i6Y0bq7n3m9c1m3k3Qm8iH6m3f3b2yd",
+     "network": "<network/>"
+    }
+   },
+   "reason": "pattern",
+   "path": "$.create.network"
+  },
+  {
+   "name": "SubmitOperationRequest: image id is a url",
+   "schema": "SubmitOperationRequest",
+   "value": {
+    "type": "create",
+    "kind": "VM",
+    "id": "web-1",
+    "idempotency_key": "k1",
+    "create": {
+     "vcpus": 2,
+     "memory_mib": 1024,
+     "image_id": "https://evil.example/x.qcow2",
+     "disk_gib": 20,
+     "ssh_public_key": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGg4Zgd2sQ0v9i6Y0bq7n3m9c1m3k3Qm8iH6m3f3b2yd"
+    }
+   },
+   "reason": "pattern",
+   "path": "$.create.image_id"
+  },
+  {
+   "name": "SubmitOperationRequest: vcpus as string",
+   "schema": "SubmitOperationRequest",
+   "value": {
+    "type": "create",
+    "kind": "VM",
+    "id": "web-1",
+    "idempotency_key": "k1",
+    "create": {
+     "vcpus": "2",
+     "memory_mib": 1024,
+     "image_id": "debian-13",
+     "disk_gib": 20,
+     "ssh_public_key": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGg4Zgd2sQ0v9i6Y0bq7n3m9c1m3k3Qm8iH6m3f3b2yd"
+    }
+   },
+   "reason": "type",
+   "path": "$.create.vcpus"
+  },
+  {
+   "name": "SubmitOperationRequest: key too long",
+   "schema": "SubmitOperationRequest",
+   "value": {
+    "type": "create",
+    "kind": "VM",
+    "id": "web-1",
+    "idempotency_key": "k1",
+    "create": {
+     "vcpus": 2,
+     "memory_mib": 1024,
+     "image_id": "debian-13",
+     "disk_gib": 20,
+     "ssh_public_key": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    }
+   },
+   "reason": "maxLength",
+   "path": "$.create.ssh_public_key"
+  },
+  {
+   "name": "VM: bad ip address",
+   "schema": "VM",
+   "value": {
+    "id": "web-1",
+    "project_id": "default",
+    "generation": 1,
+    "name": "web-1",
+    "desired": {
+     "power": "running",
+     "backup_schedule": null
+    },
+    "observed": {
+     "power": "running",
+     "last_seen_at": "2026-10-10T09:00:00Z",
+     "managed": true,
+     "ip_address": "not-an-ip",
+     "login_user": null,
+     "iso": null,
+     "disk_gib": null,
+     "snapshots": [],
+     "network": null,
+     "vcpus": null,
+     "memory_mib": null,
+     "usage": {
+      "state": "unavailable",
+      "cpu_percent": null,
+      "memory_used_mib": null,
+      "disk_kib_s": null,
+      "net_kib_s": null,
+      "history": []
+     },
+     "backup": {
+      "next_run_at": null,
+      "last_run": null
+     },
+     "graphical_console": "absent",
+     "rescue": false
+    },
+    "allowed_actions": []
+   },
+   "reason": "pattern",
+   "path": "$.observed.ip_address"
+  },
+  {
+   "name": "Host: creation reason is a free-text path",
+   "schema": "Host",
+   "value": {
+    "id": "local",
+    "generation": 1,
+    "name": "local-host",
+    "desired": {
+     "maintenance": false
+    },
+    "observed": {
+     "reachable": true,
+     "agent_version": "0.0.0-dev",
+     "cpu_count": 8,
+     "memory_mib": 16384,
+     "capability_verdict": "unknown",
+     "virtualization": {
+      "hardware": "available",
+      "kvm_device": "unavailable",
+      "libvirt_packages": "unknown",
+      "qemu_packages": "available"
+     },
+     "distribution": {
+      "id": "debian",
+      "version_id": "13"
+     },
+     "capability_findings": [],
+     "creation": {
+      "enabled": true,
+      "network": "available",
+      "storage": "available",
+      "vcpu_options": [
+       1,
+       2
+      ],
+      "memory_mib_options": [
+       512,
+       1024
+      ],
+      "disk_gib_options": [
+       10,
+       20
+      ],
+      "ready": true,
+      "reasons": [
+       "a path /var/lib/x"
+      ]
+     },
+     "storage": {
+      "state": "unknown",
+      "pool_total_gib": null,
+      "pool_free_gib": null,
+      "images_gib": null,
+      "backups_configured": false,
+      "backups_gib": null,
+      "backups_free_gib": null,
+      "snapshots": "unknown",
+      "backup_targets": [],
+      "allocation_note": "Disk sizes shown for a VM are virtual sizes. Real usage is lower while the disk is thinly allocated; the pool free figure is what counts."
+     },
+     "usage": {
+      "state": "unavailable",
+      "interval_seconds": 30,
+      "cpu_percent": null,
+      "memory_used_mib": null,
+      "disk_kib_s": null,
+      "net_kib_s": null,
+      "history": []
+     },
+     "alerts": {
+      "open": 0,
+      "webhook": "none"
+     },
+     "nightly_boot": null,
+     "bridge": null
+    },
+    "allowed_actions": []
+   },
+   "reason": "enum",
+   "path": "$.observed.creation.reasons[0]"
+  },
+  {
+   "name": "Image: unknown qualification",
+   "schema": "Image",
+   "value": {
+    "id": "image-1",
+    "project_id": "default",
+    "generation": 1,
+    "name": "Image-1",
+    "allowed_actions": [
+     "delete"
+    ],
+    "desired": {
+     "source_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    "observed": {
+     "state": "verifying",
+     "distribution": "Debian",
+     "version": "13",
+     "architecture": "x86_64",
+     "login_user": "debian",
+     "media": "disk",
+     "min_disk_gib": 3,
+     "qualification": "trusted",
+     "qualification_evidence": null
+    }
+   },
+   "reason": "enum",
+   "path": "$.observed.qualification"
+  },
+  {
+   "name": "VirtualNetwork: reservation ip not v4",
+   "schema": "VirtualNetwork",
+   "value": {
+    "id": "lab-net",
+    "project_id": "default",
+    "generation": 1,
+    "name": "lab-net",
+    "allowed_actions": [
+     "stop",
+     "delete",
+     "disable_autostart"
+    ],
+    "desired": {
+     "mode": "nat",
+     "autostart": true
+    },
+    "observed": {
+     "state": "active",
+     "managed": true,
+     "bridge": "svbr7a7a7a7a",
+     "subnet": "10.77.0.0/24",
+     "gateway": "10.77.0.1",
+     "dhcp_start": "10.77.0.10",
+     "dhcp_end": "10.77.0.200",
+     "attached_vms": 0,
+     "reservations": [
+      {
+       "mac": "52:54:00:aa:bb:cc",
+       "ip": "fd00::5"
+      }
+     ]
+    }
+   },
+   "reason": "pattern",
+   "path": "$.observed.reservations[0].ip"
+  },
+  {
+   "name": "VirtualNetwork: subnet not a cidr",
+   "schema": "VirtualNetwork",
+   "value": {
+    "id": "lab-net",
+    "project_id": "default",
+    "generation": 1,
+    "name": "lab-net",
+    "allowed_actions": [
+     "stop",
+     "delete",
+     "disable_autostart"
+    ],
+    "desired": {
+     "mode": "nat",
+     "autostart": true
+    },
+    "observed": {
+     "state": "active",
+     "managed": true,
+     "bridge": "svbr7a7a7a7a",
+     "subnet": "10.77.0.0",
+     "gateway": "10.77.0.1",
+     "dhcp_start": "10.77.0.10",
+     "dhcp_end": "10.77.0.200",
+     "attached_vms": 0,
+     "reservations": [
+      {
+       "mac": "52:54:00:aa:bb:cc",
+       "ip": "10.77.0.50"
+      }
+     ]
+    }
+   },
+   "reason": "pattern",
+   "path": "$.observed.subnet"
+  },
+  {
+   "name": "VM: network with a path",
+   "schema": "VM",
+   "value": {
+    "id": "web-1",
+    "project_id": "default",
+    "generation": 1,
+    "name": "web-1",
+    "desired": {
+     "power": "running",
+     "backup_schedule": null
+    },
+    "observed": {
+     "power": "running",
+     "last_seen_at": "2026-10-10T09:00:00Z",
+     "managed": true,
+     "ip_address": "192.168.122.23",
+     "login_user": "debian",
+     "iso": null,
+     "disk_gib": null,
+     "snapshots": [],
+     "network": {
+      "name": "lab-net",
+      "mac": "52:54:00:aa:bb:cc",
+      "reserved_ip": null,
+      "state": "active",
+      "path": "/etc"
+     },
+     "vcpus": null,
+     "memory_mib": null,
+     "usage": {
+      "state": "unavailable",
+      "cpu_percent": null,
+      "memory_used_mib": null,
+      "disk_kib_s": null,
+      "net_kib_s": null,
+      "history": []
+     },
+     "backup": {
+      "next_run_at": null,
+      "last_run": null
+     },
+     "graphical_console": "absent",
+     "rescue": false
+    },
+    "allowed_actions": []
+   },
+   "reason": "additionalProperties",
+   "path": "$.observed.network.path"
+  },
+  {
+   "name": "SubmitOperationRequest: unknown param",
+   "schema": "SubmitOperationRequest",
+   "value": {
+    "type": "network_create",
+    "kind": "VirtualNetwork",
+    "id": "lab-net",
+    "idempotency_key": "k1",
+    "params": {
+     "subnet": "10.77.0.0/24",
+     "script": "br0"
+    }
+   },
+   "reason": "additionalProperties",
+   "path": "$.params.script"
+  },
+  {
+   "name": "Host: usage cpu above 100",
+   "schema": "Host",
+   "value": {
+    "id": "local",
+    "generation": 1,
+    "name": "local-host",
+    "desired": {
+     "maintenance": false
+    },
+    "observed": {
+     "reachable": true,
+     "agent_version": "0.0.0-dev",
+     "cpu_count": 8,
+     "memory_mib": 16384,
+     "capability_verdict": "unknown",
+     "virtualization": {
+      "hardware": "available",
+      "kvm_device": "unavailable",
+      "libvirt_packages": "unknown",
+      "qemu_packages": "available"
+     },
+     "distribution": {
+      "id": "debian",
+      "version_id": "13"
+     },
+     "capability_findings": [],
+     "creation": {
+      "enabled": false,
+      "network": "unknown",
+      "storage": "unknown",
+      "vcpu_options": [],
+      "memory_mib_options": [],
+      "disk_gib_options": [],
+      "ready": false,
+      "reasons": [
+       "mutation_disabled"
+      ]
+     },
+     "storage": {
+      "state": "unknown",
+      "pool_total_gib": null,
+      "pool_free_gib": null,
+      "images_gib": null,
+      "backups_configured": false,
+      "backups_gib": null,
+      "backups_free_gib": null,
+      "snapshots": "unknown",
+      "backup_targets": [],
+      "allocation_note": "Disk sizes shown for a VM are virtual sizes. Real usage is lower while the disk is thinly allocated; the pool free figure is what counts."
+     },
+     "usage": {
+      "state": "available",
+      "interval_seconds": 30,
+      "cpu_percent": 101,
+      "memory_used_mib": 4096,
+      "disk_kib_s": null,
+      "net_kib_s": null,
+      "history": [
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 40,
+        "memory_used_mib": 4000,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:30Z",
+        "cpu_percent": 42,
+        "memory_used_mib": 4096,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       }
+      ]
+     },
+     "alerts": {
+      "open": 0,
+      "webhook": "none"
+     },
+     "nightly_boot": null,
+     "bridge": null
+    },
+    "allowed_actions": []
+   },
+   "reason": "maximum",
+   "path": "$.observed.usage.cpu_percent"
+  },
+  {
+   "name": "Host: usage history too long",
+   "schema": "Host",
+   "value": {
+    "id": "local",
+    "generation": 1,
+    "name": "local-host",
+    "desired": {
+     "maintenance": false
+    },
+    "observed": {
+     "reachable": true,
+     "agent_version": "0.0.0-dev",
+     "cpu_count": 8,
+     "memory_mib": 16384,
+     "capability_verdict": "unknown",
+     "virtualization": {
+      "hardware": "available",
+      "kvm_device": "unavailable",
+      "libvirt_packages": "unknown",
+      "qemu_packages": "available"
+     },
+     "distribution": {
+      "id": "debian",
+      "version_id": "13"
+     },
+     "capability_findings": [],
+     "creation": {
+      "enabled": false,
+      "network": "unknown",
+      "storage": "unknown",
+      "vcpu_options": [],
+      "memory_mib_options": [],
+      "disk_gib_options": [],
+      "ready": false,
+      "reasons": [
+       "mutation_disabled"
+      ]
+     },
+     "storage": {
+      "state": "unknown",
+      "pool_total_gib": null,
+      "pool_free_gib": null,
+      "images_gib": null,
+      "backups_configured": false,
+      "backups_gib": null,
+      "backups_free_gib": null,
+      "snapshots": "unknown",
+      "backup_targets": [],
+      "allocation_note": "Disk sizes shown for a VM are virtual sizes. Real usage is lower while the disk is thinly allocated; the pool free figure is what counts."
+     },
+     "usage": {
+      "state": "available",
+      "interval_seconds": 30,
+      "cpu_percent": 42,
+      "memory_used_mib": 4096,
+      "disk_kib_s": null,
+      "net_kib_s": null,
+      "history": [
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 1,
+        "memory_used_mib": 1,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       }
+      ]
+     },
+     "alerts": {
+      "open": 0,
+      "webhook": "none"
+     },
+     "nightly_boot": null,
+     "bridge": null
+    },
+    "allowed_actions": []
+   },
+   "reason": "maxItems",
+   "path": "$.observed.usage.history"
+  },
+  {
+   "name": "Host: unapproved field in a usage sample",
+   "schema": "Host",
+   "value": {
+    "id": "local",
+    "generation": 1,
+    "name": "local-host",
+    "desired": {
+     "maintenance": false
+    },
+    "observed": {
+     "reachable": true,
+     "agent_version": "0.0.0-dev",
+     "cpu_count": 8,
+     "memory_mib": 16384,
+     "capability_verdict": "unknown",
+     "virtualization": {
+      "hardware": "available",
+      "kvm_device": "unavailable",
+      "libvirt_packages": "unknown",
+      "qemu_packages": "available"
+     },
+     "distribution": {
+      "id": "debian",
+      "version_id": "13"
+     },
+     "capability_findings": [],
+     "creation": {
+      "enabled": false,
+      "network": "unknown",
+      "storage": "unknown",
+      "vcpu_options": [],
+      "memory_mib_options": [],
+      "disk_gib_options": [],
+      "ready": false,
+      "reasons": [
+       "mutation_disabled"
+      ]
+     },
+     "storage": {
+      "state": "unknown",
+      "pool_total_gib": null,
+      "pool_free_gib": null,
+      "images_gib": null,
+      "backups_configured": false,
+      "backups_gib": null,
+      "backups_free_gib": null,
+      "snapshots": "unknown",
+      "backup_targets": [],
+      "allocation_note": "Disk sizes shown for a VM are virtual sizes. Real usage is lower while the disk is thinly allocated; the pool free figure is what counts."
+     },
+     "usage": {
+      "state": "available",
+      "interval_seconds": 30,
+      "cpu_percent": 42,
+      "memory_used_mib": 4096,
+      "disk_kib_s": null,
+      "net_kib_s": null,
+      "history": [
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 40,
+        "memory_used_mib": 4000,
+        "process": "qemu",
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       },
+       {
+        "at": "2026-10-13T09:00:30Z",
+        "cpu_percent": 42,
+        "memory_used_mib": 4096,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       }
+      ]
+     },
+     "alerts": {
+      "open": 0,
+      "webhook": "none"
+     },
+     "nightly_boot": null,
+     "bridge": null
+    },
+    "allowed_actions": []
+   },
+   "reason": "additionalProperties",
+   "path": "$.observed.usage.history[0].process"
+  },
+  {
+   "name": "Host: usage state not in the closed set",
+   "schema": "Host",
+   "value": {
+    "id": "local",
+    "generation": 1,
+    "name": "local-host",
+    "desired": {
+     "maintenance": false
+    },
+    "observed": {
+     "reachable": true,
+     "agent_version": "0.0.0-dev",
+     "cpu_count": 8,
+     "memory_mib": 16384,
+     "capability_verdict": "unknown",
+     "virtualization": {
+      "hardware": "available",
+      "kvm_device": "unavailable",
+      "libvirt_packages": "unknown",
+      "qemu_packages": "available"
+     },
+     "distribution": {
+      "id": "debian",
+      "version_id": "13"
+     },
+     "capability_findings": [],
+     "creation": {
+      "enabled": false,
+      "network": "unknown",
+      "storage": "unknown",
+      "vcpu_options": [],
+      "memory_mib_options": [],
+      "disk_gib_options": [],
+      "ready": false,
+      "reasons": [
+       "mutation_disabled"
+      ]
+     },
+     "storage": {
+      "state": "unknown",
+      "pool_total_gib": null,
+      "pool_free_gib": null,
+      "images_gib": null,
+      "backups_configured": false,
+      "backups_gib": null,
+      "backups_free_gib": null,
+      "snapshots": "unknown",
+      "backup_targets": [],
+      "allocation_note": "Disk sizes shown for a VM are virtual sizes. Real usage is lower while the disk is thinly allocated; the pool free figure is what counts."
+     },
+     "usage": {
+      "state": "degraded",
+      "interval_seconds": 30,
+      "cpu_percent": 42,
+      "memory_used_mib": 4096,
+      "history": [
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 40,
+        "memory_used_mib": 4000
+       },
+       {
+        "at": "2026-10-13T09:00:30Z",
+        "cpu_percent": 42,
+        "memory_used_mib": 4096
+       }
+      ],
+      "disk_kib_s": null,
+      "net_kib_s": null
+     },
+     "alerts": {
+      "open": 0,
+      "webhook": "none"
+     },
+     "nightly_boot": null,
+     "bridge": null
+    },
+    "allowed_actions": []
+   },
+   "reason": "enum",
+   "path": "$.observed.usage.state"
+  },
+  {
+   "name": "VM: usage cpu negative",
+   "schema": "VM",
+   "value": {
+    "id": "vm-1",
+    "project_id": "default",
+    "generation": 1,
+    "name": "VM-1",
+    "allowed_actions": [
+     "start",
+     "stop",
+     "delete"
+    ],
+    "desired": {
+     "power": "running",
+     "backup_schedule": null
+    },
+    "observed": {
+     "power": "crashed",
+     "last_seen_at": "2026-10-08T10:00:00.123+05:30",
+     "managed": false,
+     "ip_address": null,
+     "login_user": null,
+     "iso": null,
+     "disk_gib": null,
+     "snapshots": [],
+     "network": null,
+     "vcpus": 2,
+     "memory_mib": 2048,
+     "usage": {
+      "state": "available",
+      "cpu_percent": -1,
+      "memory_used_mib": null,
+      "disk_kib_s": null,
+      "net_kib_s": null,
+      "history": [
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 12,
+        "memory_used_mib": 0,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       }
+      ]
+     },
+     "backup": {
+      "next_run_at": null,
+      "last_run": null
+     },
+     "graphical_console": "absent",
+     "rescue": false
+    }
+   },
+   "reason": "minimum",
+   "path": "$.observed.usage.cpu_percent"
+  },
+  {
+   "name": "VM: vcpus zero",
+   "schema": "VM",
+   "value": {
+    "id": "vm-1",
+    "project_id": "default",
+    "generation": 1,
+    "name": "VM-1",
+    "allowed_actions": [
+     "start",
+     "stop",
+     "delete"
+    ],
+    "desired": {
+     "power": "running",
+     "backup_schedule": null
+    },
+    "observed": {
+     "power": "crashed",
+     "last_seen_at": "2026-10-08T10:00:00.123+05:30",
+     "managed": false,
+     "ip_address": null,
+     "login_user": null,
+     "iso": null,
+     "disk_gib": null,
+     "snapshots": [],
+     "network": null,
+     "vcpus": 0,
+     "memory_mib": 2048,
+     "usage": {
+      "state": "available",
+      "cpu_percent": 12,
+      "memory_used_mib": null,
+      "disk_kib_s": null,
+      "net_kib_s": null,
+      "history": [
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 12,
+        "memory_used_mib": 0,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       }
+      ]
+     },
+     "backup": {
+      "next_run_at": null,
+      "last_run": null
+     },
+     "graphical_console": "absent",
+     "rescue": false
+    }
+   },
+   "reason": "minimum",
+   "path": "$.observed.vcpus"
+  },
+  {
+   "name": "VM: unapproved field in usage",
+   "schema": "VM",
+   "value": {
+    "id": "vm-1",
+    "project_id": "default",
+    "generation": 1,
+    "name": "VM-1",
+    "allowed_actions": [
+     "start",
+     "stop",
+     "delete"
+    ],
+    "desired": {
+     "power": "running",
+     "backup_schedule": null
+    },
+    "observed": {
+     "power": "crashed",
+     "last_seen_at": "2026-10-08T10:00:00.123+05:30",
+     "managed": false,
+     "ip_address": null,
+     "login_user": null,
+     "iso": null,
+     "disk_gib": null,
+     "snapshots": [],
+     "network": null,
+     "vcpus": 2,
+     "memory_mib": 2048,
+     "usage": {
+      "state": "available",
+      "cpu_percent": 12,
+      "memory_used_mib": null,
+      "disk_kib_s": null,
+      "net_kib_s": null,
+      "history": [
+       {
+        "at": "2026-10-13T09:00:00Z",
+        "cpu_percent": 12,
+        "memory_used_mib": 0,
+        "disk_kib_s": 0,
+        "net_kib_s": 0
+       }
+      ],
+      "pid": 42
+     },
+     "backup": {
+      "next_run_at": null,
+      "last_run": null
+     },
+     "graphical_console": "absent",
+     "rescue": false
+    }
+   },
+   "reason": "additionalProperties",
+   "path": "$.observed.usage.pid"
+  },
+  {
+   "name": "AuthSession: unknown role",
+   "schema": "AuthSession",
+   "value": {
+    "authenticated": true,
+    "username": "admin",
+    "expires_at": "2026-10-09T08:30:00Z",
+    "role": "root"
+   },
+   "reason": "enum",
+   "path": "$.role"
+  },
+  {
+   "name": "Event: severity not in the closed set",
+   "schema": "Event",
+   "value": {
+    "id": "ev-1",
+    "project_id": "default",
+    "type": "vm.started",
+    "resource_kind": "VM",
+    "resource_id": "vm-1",
+    "created_at": "2026-10-08T10:00:00Z",
+    "allowed_actions": [],
+    "severity": "fatal",
+    "state": "open",
+    "value": null,
+    "updated_at": "2026-10-08T10:00:00Z"
+   },
+   "reason": "enum",
+   "path": "$.severity"
+  },
+  {
+   "name": "Event: state not in the closed set",
+   "schema": "Event",
+   "value": {
+    "id": "ev-1",
+    "project_id": "default",
+    "type": "vm.started",
+    "resource_kind": "VM",
+    "resource_id": "vm-1",
+    "created_at": "2026-10-08T10:00:00Z",
+    "allowed_actions": [],
+    "severity": "warning",
+    "state": "muted",
+    "value": null,
+    "updated_at": "2026-10-08T10:00:00Z"
+   },
+   "reason": "enum",
+   "path": "$.state"
+  },
+  {
+   "name": "Event: negative value",
+   "schema": "Event",
+   "value": {
+    "id": "ev-1",
+    "project_id": "default",
+    "type": "vm.started",
+    "resource_kind": "VM",
+    "resource_id": "vm-1",
+    "created_at": "2026-10-08T10:00:00Z",
+    "allowed_actions": [],
+    "severity": "warning",
+    "state": "open",
+    "value": -1,
+    "updated_at": "2026-10-08T10:00:00Z"
+   },
+   "reason": "minimum",
+   "path": "$.value"
+  },
+  {
+   "name": "Event: missing severity",
+   "schema": "Event",
+   "value": {
+    "id": "ev-1",
+    "project_id": "default",
+    "type": "vm.started",
+    "resource_kind": "VM",
+    "resource_id": "vm-1",
+    "created_at": "2026-10-08T10:00:00Z",
+    "allowed_actions": [],
+    "state": "open",
+    "value": null,
+    "updated_at": "2026-10-08T10:00:00Z"
+   },
+   "reason": "required",
+   "path": "$.severity"
+  },
+  {
+   "name": "Host: webhook not in the closed set",
+   "schema": "Host",
+   "value": {
+    "id": "local",
+    "generation": 1,
+    "name": "local-host",
+    "desired": {
+     "maintenance": false
+    },
+    "observed": {
+     "reachable": true,
+     "agent_version": "0.0.0-dev",
+     "cpu_count": 8,
+     "memory_mib": 16384,
+     "capability_verdict": "unknown",
+     "virtualization": {
+      "hardware": "available",
+      "kvm_device": "unavailable",
+      "libvirt_packages": "unknown",
+      "qemu_packages": "available"
+     },
+     "distribution": {
+      "id": "debian",
+      "version_id": "13"
+     },
+     "capability_findings": [],
+     "creation": {
+      "enabled": false,
+      "network": "unknown",
+      "storage": "unknown",
+      "vcpu_options": [],
+      "memory_mib_options": [],
+      "disk_gib_options": [],
+      "ready": false,
+      "reasons": [
+       "mutation_disabled"
+      ]
+     },
+     "storage": {
+      "state": "unknown",
+      "pool_total_gib": null,
+      "pool_free_gib": null,
+      "images_gib": null,
+      "backups_configured": false,
+      "backups_gib": null,
+      "backups_free_gib": null,
+      "snapshots": "unknown",
+      "backup_targets": [],
+      "allocation_note": "Disk sizes shown for a VM are virtual sizes. Real usage is lower while the disk is thinly allocated; the pool free figure is what counts."
+     },
+     "usage": {
+      "state": "unavailable",
+      "interval_seconds": 30,
+      "cpu_percent": null,
+      "memory_used_mib": null,
+      "disk_kib_s": null,
+      "net_kib_s": null,
+      "history": []
+     },
+     "alerts": {
+      "open": 0,
+      "webhook": "https://x"
+     },
+     "nightly_boot": null,
+     "bridge": null
+    },
+    "allowed_actions": []
+   },
+   "reason": "enum",
+   "path": "$.observed.alerts.webhook"
+  },
+  {
+   "name": "Host: nightly boot result not in the closed set",
+   "schema": "Host",
+   "value": {
+    "id": "local",
+    "generation": 1,
+    "name": "local-host",
+    "desired": {
+     "maintenance": false
+    },
+    "observed": {
+     "reachable": true,
+     "agent_version": "0.0.0-dev",
+     "cpu_count": 8,
+     "memory_mib": 16384,
+     "capability_verdict": "unknown",
+     "virtualization": {
+      "hardware": "available",
+      "kvm_device": "unavailable",
+      "libvirt_packages": "unknown",
+      "qemu_packages": "available"
+     },
+     "distribution": {
+      "id": "debian",
+      "version_id": "13"
+     },
+     "capability_findings": [],
+     "creation": {
+      "enabled": false,
+      "network": "unknown",
+      "storage": "unknown",
+      "vcpu_options": [],
+      "memory_mib_options": [],
+      "disk_gib_options": [],
+      "ready": false,
+      "reasons": [
+       "mutation_disabled"
+      ]
+     },
+     "storage": {
+      "state": "unknown",
+      "pool_total_gib": null,
+      "pool_free_gib": null,
+      "images_gib": null,
+      "backups_configured": false,
+      "backups_gib": null,
+      "backups_free_gib": null,
+      "snapshots": "unknown",
+      "backup_targets": [],
+      "allocation_note": "Disk sizes shown for a VM are virtual sizes. Real usage is lower while the disk is thinly allocated; the pool free figure is what counts."
+     },
+     "usage": {
+      "state": "unavailable",
+      "interval_seconds": 30,
+      "cpu_percent": null,
+      "memory_used_mib": null,
+      "disk_kib_s": null,
+      "net_kib_s": null,
+      "history": []
+     },
+     "alerts": {
+      "open": 0,
+      "webhook": "none"
+     },
+     "nightly_boot": {
+      "at": "2026-10-15T02:00:00Z",
+      "result": "maybe",
+      "seconds": 1
+     },
+     "bridge": null
+    },
+    "allowed_actions": []
+   },
+   "reason": "enum",
+   "path": "$.observed.nightly_boot.result"
+  },
+  {
+   "name": "VM: schedule time not HH:MM",
+   "schema": "VM",
+   "value": {
+    "id": "vm-1",
+    "project_id": "default",
+    "generation": 1,
+    "name": "VM-1",
+    "allowed_actions": [
+     "start",
+     "stop",
+     "delete"
+    ],
+    "desired": {
+     "power": "running",
+     "backup_schedule": {
+      "every_hours": null,
+      "at": "25:99",
+      "keep_local": 3,
+      "keep_offsite": 0,
+      "target_id": null,
+      "downtime_acknowledged": true
+     }
+    },
+    "observed": {
+     "power": "crashed",
+     "last_seen_at": "2026-10-08T10:00:00.123+05:30",
+     "managed": false,
+     "ip_address": null,
+     "login_user": null,
+     "iso": null,
+     "disk_gib": null,
+     "snapshots": [],
+     "network": null,
+     "vcpus": null,
+     "memory_mib": null,
+     "usage": {
+      "state": "unavailable",
+      "cpu_percent": null,
+      "memory_used_mib": null,
+      "disk_kib_s": null,
+      "net_kib_s": null,
+      "history": []
+     },
+     "backup": {
+      "next_run_at": null,
+      "last_run": null
+     },
+     "graphical_console": "absent",
+     "rescue": false
+    }
+   },
+   "reason": "pattern",
+   "path": "$.desired.backup_schedule.at"
+  },
+  {
+   "name": "VM: schedule retention above the limit",
+   "schema": "VM",
+   "value": {
+    "id": "vm-1",
+    "project_id": "default",
+    "generation": 1,
+    "name": "VM-1",
+    "allowed_actions": [
+     "start",
+     "stop",
+     "delete"
+    ],
+    "desired": {
+     "power": "running",
+     "backup_schedule": {
+      "every_hours": 24,
+      "at": null,
+      "keep_local": 31,
+      "keep_offsite": 0,
+      "target_id": null,
+      "downtime_acknowledged": true
+     }
+    },
+    "observed": {
+     "power": "crashed",
+     "last_seen_at": "2026-10-08T10:00:00.123+05:30",
+     "managed": false,
+     "ip_address": null,
+     "login_user": null,
+     "iso": null,
+     "disk_gib": null,
+     "snapshots": [],
+     "network": null,
+     "vcpus": null,
+     "memory_mib": null,
+     "usage": {
+      "state": "unavailable",
+      "cpu_percent": null,
+      "memory_used_mib": null,
+      "disk_kib_s": null,
+      "net_kib_s": null,
+      "history": []
+     },
+     "backup": {
+      "next_run_at": null,
+      "last_run": null
+     },
+     "graphical_console": "absent",
+     "rescue": false
+    }
+   },
+   "reason": "maximum",
+   "path": "$.desired.backup_schedule.keep_local"
+  },
+  {
+   "name": "VM: last backup result not in the closed set",
+   "schema": "VM",
+   "value": {
+    "id": "vm-1",
+    "project_id": "default",
+    "generation": 1,
+    "name": "VM-1",
+    "allowed_actions": [
+     "start",
+     "stop",
+     "delete"
+    ],
+    "desired": {
+     "power": "running",
+     "backup_schedule": null
+    },
+    "observed": {
+     "power": "crashed",
+     "last_seen_at": "2026-10-08T10:00:00.123+05:30",
+     "managed": false,
+     "ip_address": null,
+     "login_user": null,
+     "iso": null,
+     "disk_gib": null,
+     "snapshots": [],
+     "network": null,
+     "vcpus": null,
+     "memory_mib": null,
+     "usage": {
+      "state": "unavailable",
+      "cpu_percent": null,
+      "memory_used_mib": null,
+      "disk_kib_s": null,
+      "net_kib_s": null,
+      "history": []
+     },
+     "backup": {
+      "next_run_at": null,
+      "last_run": {
+       "at": "2026-10-15T02:30:00Z",
+       "result": "great"
+      }
+     },
+     "graphical_console": "absent",
+     "rescue": false
+    }
+   },
+   "reason": "enum",
+   "path": "$.observed.backup.last_run.result"
+  },
+  {
+   "name": "VM: graphical console state not in the closed set",
+   "schema": "VM",
+   "value": {
+    "id": "vm-1",
+    "project_id": "default",
+    "generation": 1,
+    "name": "VM-1",
+    "allowed_actions": [
+     "start",
+     "stop",
+     "delete"
+    ],
+    "desired": {
+     "power": "running",
+     "backup_schedule": null
+    },
+    "observed": {
+     "power": "crashed",
+     "last_seen_at": "2026-10-08T10:00:00.123+05:30",
+     "managed": false,
+     "ip_address": null,
+     "login_user": null,
+     "iso": null,
+     "disk_gib": null,
+     "snapshots": [],
+     "network": null,
+     "vcpus": null,
+     "memory_mib": null,
+     "usage": {
+      "state": "unavailable",
+      "cpu_percent": null,
+      "memory_used_mib": null,
+      "disk_kib_s": null,
+      "net_kib_s": null,
+      "history": []
+     },
+     "backup": {
+      "next_run_at": null,
+      "last_run": null
+     },
+     "graphical_console": "vnc://host:5900",
+     "rescue": false
+    }
+   },
+   "reason": "enum",
+   "path": "$.observed.graphical_console"
+  },
+  {
+   "name": "VM: rescue is not a boolean",
+   "schema": "VM",
+   "value": {
+    "id": "vm-1",
+    "project_id": "default",
+    "generation": 1,
+    "name": "VM-1",
+    "allowed_actions": [
+     "start",
+     "stop",
+     "delete"
+    ],
+    "desired": {
+     "power": "running",
+     "backup_schedule": null
+    },
+    "observed": {
+     "power": "crashed",
+     "last_seen_at": "2026-10-08T10:00:00.123+05:30",
+     "managed": false,
+     "ip_address": null,
+     "login_user": null,
+     "iso": null,
+     "disk_gib": null,
+     "snapshots": [],
+     "network": null,
+     "vcpus": null,
+     "memory_mib": null,
+     "usage": {
+      "state": "unavailable",
+      "cpu_percent": null,
+      "memory_used_mib": null,
+      "disk_kib_s": null,
+      "net_kib_s": null,
+      "history": []
+     },
+     "backup": {
+      "next_run_at": null,
+      "last_run": null
+     },
+     "graphical_console": "absent",
+     "rescue": "yes"
+    }
+   },
+   "reason": "type",
+   "path": "$.observed.rescue"
+  },
+  {
+   "name": "VM: action id outside the closed set",
+   "schema": "VM",
+   "value": {
+    "id": "vm-1",
+    "project_id": "default",
+    "generation": 1,
+    "name": "VM-1",
+    "allowed_actions": [
+     "open_vnc"
+    ],
+    "desired": {
+     "power": "running",
+     "backup_schedule": null
+    },
+    "observed": {
+     "power": "crashed",
+     "last_seen_at": "2026-10-08T10:00:00.123+05:30",
+     "managed": false,
+     "ip_address": null,
+     "login_user": null,
+     "iso": null,
+     "disk_gib": null,
+     "snapshots": [],
+     "network": null,
+     "vcpus": null,
+     "memory_mib": null,
+     "usage": {
+      "state": "unavailable",
+      "cpu_percent": null,
+      "memory_used_mib": null,
+      "disk_kib_s": null,
+      "net_kib_s": null,
+      "history": []
+     },
+     "backup": {
+      "next_run_at": null,
+      "last_run": null
+     },
+     "graphical_console": "absent",
+     "rescue": false
+    }
+   },
+   "reason": "enum",
+   "path": "$.allowed_actions[0]"
+  },
+  {
+   "name": "Host: bridge state not in the closed set",
+   "schema": "Host",
+   "value": {
+    "id": "local",
+    "generation": 1,
+    "name": "local-host",
+    "desired": {
+     "maintenance": false
+    },
+    "observed": {
+     "reachable": true,
+     "agent_version": "0.0.0-dev",
+     "cpu_count": 8,
+     "memory_mib": 16384,
+     "capability_verdict": "unknown",
+     "virtualization": {
+      "hardware": "available",
+      "kvm_device": "unavailable",
+      "libvirt_packages": "unknown",
+      "qemu_packages": "available"
+     },
+     "distribution": {
+      "id": "debian",
+      "version_id": "13"
+     },
+     "capability_findings": [],
+     "creation": {
+      "enabled": false,
+      "network": "unknown",
+      "storage": "unknown",
+      "vcpu_options": [],
+      "memory_mib_options": [],
+      "disk_gib_options": [],
+      "ready": false,
+      "reasons": [
+       "mutation_disabled"
+      ]
+     },
+     "storage": {
+      "state": "unknown",
+      "pool_total_gib": null,
+      "pool_free_gib": null,
+      "images_gib": null,
+      "backups_configured": false,
+      "backups_gib": null,
+      "backups_free_gib": null,
+      "snapshots": "unknown",
+      "backup_targets": [],
+      "allocation_note": "Disk sizes shown for a VM are virtual sizes. Real usage is lower while the disk is thinly allocated; the pool free figure is what counts."
+     },
+     "usage": {
+      "state": "unavailable",
+      "interval_seconds": 30,
+      "cpu_percent": null,
+      "memory_used_mib": null,
+      "disk_kib_s": null,
+      "net_kib_s": null,
+      "history": []
+     },
+     "alerts": {
+      "open": 0,
+      "webhook": "none"
+     },
+     "nightly_boot": null,
+     "bridge": {
+      "state": "maybe",
+      "bridge": "svbr0",
+      "interface": "eno1",
+      "seconds_left": null
+     }
+    },
+    "allowed_actions": []
+   },
+   "reason": "enum",
+   "path": "$.observed.bridge.state"
+  },
+  {
+   "name": "Host: bridge countdown beyond an hour",
+   "schema": "Host",
+   "value": {
+    "id": "local",
+    "generation": 1,
+    "name": "local-host",
+    "desired": {
+     "maintenance": false
+    },
+    "observed": {
+     "reachable": true,
+     "agent_version": "0.0.0-dev",
+     "cpu_count": 8,
+     "memory_mib": 16384,
+     "capability_verdict": "unknown",
+     "virtualization": {
+      "hardware": "available",
+      "kvm_device": "unavailable",
+      "libvirt_packages": "unknown",
+      "qemu_packages": "available"
+     },
+     "distribution": {
+      "id": "debian",
+      "version_id": "13"
+     },
+     "capability_findings": [],
+     "creation": {
+      "enabled": false,
+      "network": "unknown",
+      "storage": "unknown",
+      "vcpu_options": [],
+      "memory_mib_options": [],
+      "disk_gib_options": [],
+      "ready": false,
+      "reasons": [
+       "mutation_disabled"
+      ]
+     },
+     "storage": {
+      "state": "unknown",
+      "pool_total_gib": null,
+      "pool_free_gib": null,
+      "images_gib": null,
+      "backups_configured": false,
+      "backups_gib": null,
+      "backups_free_gib": null,
+      "snapshots": "unknown",
+      "backup_targets": [],
+      "allocation_note": "Disk sizes shown for a VM are virtual sizes. Real usage is lower while the disk is thinly allocated; the pool free figure is what counts."
+     },
+     "usage": {
+      "state": "unavailable",
+      "interval_seconds": 30,
+      "cpu_percent": null,
+      "memory_used_mib": null,
+      "disk_kib_s": null,
+      "net_kib_s": null,
+      "history": []
+     },
+     "alerts": {
+      "open": 0,
+      "webhook": "none"
+     },
+     "nightly_boot": null,
+     "bridge": {
+      "state": "pending_confirmation",
+      "bridge": "svbr0",
+      "interface": "eno1",
+      "seconds_left": 99999
+     }
+    },
+    "allowed_actions": []
+   },
+   "reason": "maximum",
+   "path": "$.observed.bridge.seconds_left"
+  },
+  {
+   "name": "Host: bridge name with a space",
+   "schema": "Host",
+   "value": {
+    "id": "local",
+    "generation": 1,
+    "name": "local-host",
+    "desired": {
+     "maintenance": false
+    },
+    "observed": {
+     "reachable": true,
+     "agent_version": "0.0.0-dev",
+     "cpu_count": 8,
+     "memory_mib": 16384,
+     "capability_verdict": "unknown",
+     "virtualization": {
+      "hardware": "available",
+      "kvm_device": "unavailable",
+      "libvirt_packages": "unknown",
+      "qemu_packages": "available"
+     },
+     "distribution": {
+      "id": "debian",
+      "version_id": "13"
+     },
+     "capability_findings": [],
+     "creation": {
+      "enabled": false,
+      "network": "unknown",
+      "storage": "unknown",
+      "vcpu_options": [],
+      "memory_mib_options": [],
+      "disk_gib_options": [],
+      "ready": false,
+      "reasons": [
+       "mutation_disabled"
+      ]
+     },
+     "storage": {
+      "state": "unknown",
+      "pool_total_gib": null,
+      "pool_free_gib": null,
+      "images_gib": null,
+      "backups_configured": false,
+      "backups_gib": null,
+      "backups_free_gib": null,
+      "snapshots": "unknown",
+      "backup_targets": [],
+      "allocation_note": "Disk sizes shown for a VM are virtual sizes. Real usage is lower while the disk is thinly allocated; the pool free figure is what counts."
+     },
+     "usage": {
+      "state": "unavailable",
+      "interval_seconds": 30,
+      "cpu_percent": null,
+      "memory_used_mib": null,
+      "disk_kib_s": null,
+      "net_kib_s": null,
+      "history": []
+     },
+     "alerts": {
+      "open": 0,
+      "webhook": "none"
+     },
+     "nightly_boot": null,
+     "bridge": {
+      "state": "active",
+      "bridge": "a b",
+      "interface": "eno1",
+      "seconds_left": null
+     }
+    },
+    "allowed_actions": []
+   },
+   "reason": "pattern",
+   "path": "$.observed.bridge.bridge"
+  }
+ ]
+}

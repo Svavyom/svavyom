@@ -1,0 +1,13 @@
+{
+  "request": {
+    "boundary": "browser-api",
+    "category": "health",
+    "payload": {
+      "name": "%3Cdisk%3E"
+    }
+  },
+  "expect": [
+    "HYPERVISOR_XML",
+    "SCHEMA_VIOLATION"
+  ]
+}

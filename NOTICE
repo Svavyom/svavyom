@@ -1,0 +1,15 @@
+Svavyom
+Copyright 2026 Dhanraj Sheth
+
+Svavyom is free software. It is licensed per directory as described in
+LICENSING.md and REUSE.toml:
+
+  - the server product (backend, frontend, packages, toolchain, tests):
+    GNU Affero General Public License, version 3 or (at your option) any later
+    version (AGPL-3.0-or-later), see LICENSE;
+  - the interface contracts, tools and documentation: Apache License 2.0, see
+    LICENSES/Apache-2.0.txt.
+
+Third-party components keep their own licences; see THIRD-PARTY-NOTICES.md and
+docs/sbom/. "Svavyom" is the name of this project; it is not a registered
+trademark.

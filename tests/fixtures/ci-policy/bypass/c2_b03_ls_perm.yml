@@ -1,0 +1,13 @@
+name: t
+on:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions: # x       contents: read     x-pad:
+      contents: write
+    steps:
+      - run: echo hi

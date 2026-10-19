@@ -1,0 +1,14 @@
+{
+  "request": {
+    "boundary": "browser-api",
+    "category": "health",
+    "payload": {
+      "<qemu:commandline>": "x"
+    }
+  },
+  "expect": [
+    "ARBITRARY_SHELL",
+    "HYPERVISOR_XML",
+    "SCHEMA_VIOLATION"
+  ]
+}

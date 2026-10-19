@@ -1,0 +1,12 @@
+# gitleaks configuration for the working-tree scan only (story M0-E02-S02).
+# Excludes generated, untracked npm output; anchored so it cannot hide files
+# elsewhere. Committed content is covered by the history scan (.gitleaks.toml).
+[extend]
+path = ".gitleaks.toml"
+
+[[allowlists]]
+description = "Untracked generated frontend output"
+paths = [
+  '''^frontend/node_modules/''',
+  '''^frontend/dist/''',
+]

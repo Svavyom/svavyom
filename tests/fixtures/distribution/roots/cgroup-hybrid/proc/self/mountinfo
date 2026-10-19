@@ -1,0 +1,2 @@
+25 1 259:2 / / rw - ext4 /dev/sda2 rw
+30 25 0:26 / /sys/fs/cgroup ro - tmpfs tmpfs ro

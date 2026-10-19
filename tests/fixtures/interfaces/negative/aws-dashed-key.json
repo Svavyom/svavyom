@@ -1,0 +1,13 @@
+{
+  "request": {
+    "boundary": "browser-api",
+    "category": "health",
+    "payload": {
+      "aws-access-key-id": "x"
+    }
+  },
+  "expect": [
+    "PROVIDER_CREDENTIALS",
+    "SCHEMA_VIOLATION"
+  ]
+}

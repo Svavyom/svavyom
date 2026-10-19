@@ -1,0 +1,26 @@
+# Review ownership (M0-S03). The teams below do not exist until the repository administrator creates them (OPERATOR_ACTIONS_REQUIRED.md, item R2);
+# until then GitHub reports these lines as unresolvable owners and the "require review from Code Owners" setting cannot be enforced. This file states the
+# intended ownership; it is not proof that a rule is active. Security-sensitive paths need BOTH owners (product owner + security/infra), as AGENTS.md rule 10 requires.
+
+# Everything by default.
+*                                   @svavyom/product-owners
+
+# Privileged boundaries and trust anchors: product owner AND security/infra.
+/backend/internal/mutagent/         @svavyom/product-owners @svavyom/security-reviewers
+/backend/internal/provision/        @svavyom/product-owners @svavyom/security-reviewers
+/backend/internal/console/          @svavyom/product-owners @svavyom/security-reviewers
+/backend/internal/hypervisor/       @svavyom/product-owners @svavyom/security-reviewers
+/backend/internal/auth/             @svavyom/product-owners @svavyom/security-reviewers
+/backend/internal/operation/        @svavyom/product-owners @svavyom/security-reviewers
+/backend/cmd/mutation-supervisor/   @svavyom/product-owners @svavyom/security-reviewers
+/backend/cmd/mutation-helper/       @svavyom/product-owners @svavyom/security-reviewers
+/backend/cmd/console-broker/        @svavyom/product-owners @svavyom/security-reviewers
+/packages/                          @svavyom/product-owners @svavyom/security-reviewers
+/toolchain/                         @svavyom/product-owners @svavyom/security-reviewers
+/.github/                           @svavyom/product-owners @svavyom/security-reviewers
+/ci/                                @svavyom/product-owners @svavyom/security-reviewers
+/contracts/                         @svavyom/product-owners @svavyom/security-reviewers
+/docs-lock.json                     @svavyom/product-owners @svavyom/security-reviewers
+/release/                           @svavyom/product-owners @svavyom/security-reviewers
+/tools/check_*                      @svavyom/product-owners @svavyom/security-reviewers
+/Makefile                           @svavyom/product-owners @svavyom/security-reviewers

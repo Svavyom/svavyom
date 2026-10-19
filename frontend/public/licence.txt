@@ -1,0 +1,19 @@
+Svavyom is free software.
+
+Copyright 2026 Dhanraj Sheth.
+
+The server product (this web console, the services and the tools) is licensed
+under the GNU Affero General Public License, version 3 or (at your option) any
+later version. The interface contracts, tools and documentation are licensed
+under the Apache License 2.0. Third-party components keep their own licences.
+
+You may use it on as many servers as you like. If you run a MODIFIED version as
+a network service for other people, the AGPL requires you to offer those users
+the source code of your modified version.
+
+The complete corresponding source of this version, the licence texts, the
+per-directory licence map and the third-party notices are in the project's
+public repository (see the files SOURCE-OFFER.md and LICENSING.md in the release
+archive this server was installed from).
+
+"Svavyom" is the name of the project. It is not a registered trademark.

@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "classification": "Development Preview / Pre-Alpha",
+  "license": "AGPL-3.0-or-later (server product); Apache-2.0 (contracts, tools, documentation)",
+  "target": "2026-10-20T11:00:00+05:30",
+  "scope": { "required": ["M0", "M1", "M2", "M3", "M4"], "excluded": ["M5", "M6"] },
+  "states": ["SUPPORTED", "QUALIFIED", "LIMITATION", "NOT SUPPORTED"],
+  "note": "Reflects final canonical main for M0-M4. Updated at every milestone merge. A capability is QUALIFIED only after a passing real-host qualification record exists for the merged code; SUPPORTED means implemented and gate-tested without a real-host record; nothing is listed that is not merged.",
+  "capabilities": [
+    { "id": "auth", "name": "Local administrator authentication", "state": "QUALIFIED", "limitation": "one administrator; no multi-user, no external identity provider" },
+    { "id": "host-readiness", "name": "Host readiness and capability check", "state": "SUPPORTED", "limitation": "a configuration check, not a host qualification; matrix verdicts for other distributions are not Development Preview support" },
+    { "id": "inventory", "name": "Read-only VM inventory", "state": "QUALIFIED" },
+    { "id": "create-start", "name": "Create VM from a qualified Ubuntu image with one SSH key, and Start", "state": "QUALIFIED", "limitation": "Ubuntu 24.04 cloud image; one qualification host class" },
+    { "id": "console", "name": "Serial boot output and interactive serial console", "state": "QUALIFIED", "limitation": "text console; early boot lines may be missing; graphical console and rescue mode are not offered; the interactive console is off unless the operator enables it" },
+    { "id": "lifecycle", "name": "Stop, Reboot, Force off, Delete", "state": "QUALIFIED", "limitation": "Delete only for a Stopped VM; no live operations" },
+    { "id": "storage-recovery", "name": "Images, storage, resize, reinstall, snapshots, backup, restore (M2)", "state": "QUALIFIED", "limitation": "local-only backup; internal snapshots only; images imported by the host administrator; one qualification host class" },
+    { "id": "networking", "name": "Managed NAT networks, IP assignment, compute resize, profiles (M3)", "state": "QUALIFIED", "limitation": "NAT with one NIC only; a DHCP reservation does not re-address a VM that already holds an active lease; it governs a later allocation" },
+    { "id": "install-operate", "name": "Installer, systemd deployment, upgrade, rollback, diagnostics, uninstall (M4)", "state": "QUALIFIED", "limitation": "Ubuntu 24.04 LTS x86_64 only; unsigned local release build; old-configuration migration is limited; host-reboot qualification remains an open item" },
+    { "id": "host-bridge", "name": "Host bridge for VMs on the host's own network (wave 2)", "state": "LIMITATION", "limitation": "netplan with networkd and one static IPv4 Ethernet uplink only; applied in nested guests, not on the qualification host; Svavyom does not know the addresses of VMs on a bridge network" },
+    { "id": "multi-host-ha", "name": "Multi-host, HA, live migration (M5/M6)", "state": "NOT SUPPORTED", "limitation": "excluded from this launch" },
+    { "id": "automation-api", "name": "Public API, automation, billing, reseller, enterprise tenancy (M5/M6)", "state": "NOT SUPPORTED", "limitation": "excluded from this launch" }
+  ]
+}

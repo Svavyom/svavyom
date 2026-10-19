@@ -1,0 +1,8 @@
+name: t
+on:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  b:
+    uses: org/repo/.github/workflows/r.yml@main

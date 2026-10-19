@@ -1,0 +1,17 @@
+{
+  "catalog_dir": "/var/lib/svavyom/images",
+  "pool": "svavyom",
+  "network": "default",
+  "domain_type": "kvm",
+  "libvirt_uri": "qemu:///system",
+  "state_dir": "/var/lib/svavyom/state",
+  "trust": {
+    "deploy_uid": 0,
+    "runtime_identities": [
+      {"name": "api",      "uid": @SVAVYOM_API_UID@, "gids": [@SVAVYOM_API_GID@]},
+      {"name": "agent",    "uid": @SVAVYOM_RO_UID@,  "gids": [@SVAVYOM_RO_GID@]},
+      {"name": "mutation", "uid": @SVAVYOM_MUT_UID@, "gids": [@SVAVYOM_MUT_GID@, @LIBVIRT_GID@]},
+      {"name": "console",  "uid": @SVAVYOM_CON_UID@, "gids": [@SVAVYOM_CON_GID@, @LIBVIRT_GID@]}
+    ]
+  }
+}

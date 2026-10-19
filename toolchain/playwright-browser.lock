@@ -1,0 +1,11 @@
+{
+  "schema": 1,
+  "playwright": "1.63.0",
+  "browsers": [
+    "chromium_headless_shell-1243",
+    "ffmpeg-1011"
+  ],
+  "tree_manifest_sha256": "83e350c5b10247e9db3ac0192a2595a56e0cef069bf204c4b8b3ff1321cc70a1",
+  "recorded": "2026-10-08",
+  "note": "Trust on first use (DR-010 D4 = A): Playwright publishes no checksums. This is the SHA-256 of the sorted listing of /opt/ms-playwright (type, mode, path, symlink target) followed by the per-file SHA-256 list, taken from the runtime image (after the final chmod) of the first reviewed build. Re-review and re-record on every @playwright/test version change. Recorded 2026-10-07 (files only), re-recorded 2026-10-08 to include types, modes and symlinks (S06 review N11)."
+}

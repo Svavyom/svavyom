@@ -1,0 +1,12 @@
+{
+  "request": {
+    "boundary": "browser-api",
+    "category": "HEALTH",
+    "payload": {}
+  },
+  "expect": [
+    "CATEGORY_NOT_PERMITTED",
+    "PRIVILEGED_BEFORE_AUTH",
+    "SCHEMA_VIOLATION"
+  ]
+}

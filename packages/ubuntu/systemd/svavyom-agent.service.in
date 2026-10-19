@@ -1,0 +1,59 @@
+# Svavyom read-only host agent. Reads VM inventory through libvirt's READ-ONLY socket; has no mutating operation at all.
+[Unit]
+Description=Svavyom read-only host agent
+Documentation=file:///usr/share/doc/svavyom/UBUNTU-DEPLOYMENT.md
+After=libvirtd.service libvirtd.socket libvirtd-ro.socket
+Wants=libvirtd.socket libvirtd-ro.socket
+StartLimitIntervalSec=60
+StartLimitBurst=5
+
+[Service]
+Type=exec
+User=svavyom-ro
+Group=svavyom-ro
+# No libvirt group: libvirt's read-only socket is world-accessible and the daemon itself refuses every mutation on it.
+SupplementaryGroups=
+ExecStart=/usr/libexec/svavyom/agent --socket /run/svavyom/agent/agent.sock --allow-uid @SVAVYOM_API_UID@
+Restart=on-failure
+RestartSec=2s
+TimeoutStopSec=15s
+
+# --- hardening ---
+NoNewPrivileges=yes
+CapabilityBoundingSet=
+AmbientCapabilities=
+PrivateTmp=yes
+PrivateDevices=yes
+# libvirt is reached over a path-based Unix socket only, which works inside a private network namespace.
+PrivateNetwork=yes
+ProtectSystem=strict
+ProtectHome=yes
+ProtectProc=invisible
+ProcSubset=pid
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+ProtectHostname=yes
+RestrictNamespaces=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+SystemCallErrorNumber=EPERM
+RestrictAddressFamilies=AF_UNIX
+UMask=0007
+# Resource limits (M4): generous for a single-host Development Preview, tight enough that a runaway process cannot take the host with it.
+TasksMax=256
+LimitNOFILE=1024
+MemoryMax=256M
+ReadWritePaths=/run/svavyom/agent
+ReadOnlyPaths=/etc/svavyom /usr/libexec/svavyom /var/lib/svavyom/images
+InaccessiblePaths=/var/lib/svavyom/api /var/lib/svavyom/state /var/lib/svavyom/pool
+# EXCEPTION: MemoryDenyWriteExecute is deliberately NOT set. The agent links libvirt's client library (GLib, GnuTLS), which has not
+# been verified to run under W^X on a real host. Re-test with MemoryDenyWriteExecute=yes during qualification and enable it if clean.
+
+[Install]
+WantedBy=multi-user.target

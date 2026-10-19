@@ -1,0 +1,20 @@
+node_modules/
+dist/
+coverage/
+*.db
+*.sqlite*
+.env
+.env.*
+!.env.example
+__pycache__/
+.pytest_cache/
+.DS_Store
+dist-gallery/
+test-results/
+playwright-report/
+
+# Real-host qualification output (host paths, reports); never tracked (M0-S01)
+qualification-out/
+*.key
+id_ed25519*
+release-out/

@@ -1,0 +1,19 @@
+{
+  "request": {
+    "boundary": "browser-api",
+    "category": "health",
+    "payload": {
+      "spec": [
+        {
+          "entrypoint": [
+            "sh"
+          ]
+        }
+      ]
+    }
+  },
+  "expect": [
+    "ARBITRARY_SHELL",
+    "SCHEMA_VIOLATION"
+  ]
+}

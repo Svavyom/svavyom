@@ -1,0 +1,90 @@
+{
+  "schema": 1,
+  "description": "Prohibited request categories (M0-E01-S01 draft; ADR-011, SECURITY-POLICY). Primary control: every request must match the allowlisted schema of its category (request-schemas.json, pinned by the checker); unknown keys, non-object payloads and unsafe strings are SCHEMA_VIOLATION. The categories below are defence in depth on NFKC-normalised, case-folded keys and values. Nothing is ever executed. All values below are pinned by tools/check_interfaces.py; contract edits cannot weaken them.",
+  "categories": {
+    "ARBITRARY_SHELL": {
+      "rule": "key_tokens",
+      "tokens": [
+        "shell",
+        "command",
+        "cmd",
+        "script",
+        "exec",
+        "argv",
+        "args",
+        "sudo",
+        "entrypoint",
+        "run"
+      ]
+    },
+    "HYPERVISOR_XML": {
+      "rule": "xml_markup",
+      "pattern": "<\\s*[a-z?!]|&lt;|%3c"
+    },
+    "AGENT_TCP": {
+      "rule": "transport_allowlist",
+      "boundary": "operation-manager-host-agent",
+      "allowed_transports": [
+        "unix"
+      ]
+    },
+    "REMOTE_HYPERVISOR": {
+      "rule": "transport_allowlist",
+      "boundary": "host-agent-libvirt",
+      "allowed_transports": [
+        "qemu:///system"
+      ]
+    },
+    "PROVIDER_CREDENTIALS": {
+      "rule": "key_tokens",
+      "tokens": [
+        "aws_access_key",
+        "aws_secret",
+        "token",
+        "api_key",
+        "apikey",
+        "secret",
+        "password",
+        "passwd",
+        "credential",
+        "private_key",
+        "bearer"
+      ]
+    },
+    "PRIVILEGED_BEFORE_AUTH": {
+      "rule": "any_category_except_health_while_auth_unapproved"
+    },
+    "CATEGORY_NOT_PERMITTED": {
+      "rule": "category_not_in_boundary"
+    },
+    "SCHEMA_VIOLATION": {
+      "rule": "request_schema"
+    }
+  },
+  "redaction": {
+    "description": "Audit and error output replace values of keys whose NFKC-normalised, case-folded name (with '-' as '_') contains any of these substrings with \"[REDACTED]\". Superset of credential tokens.",
+    "key_substrings": [
+      "api_key",
+      "apikey",
+      "authorization",
+      "aws_",
+      "bearer",
+      "connection_string",
+      "cookie",
+      "credential",
+      "dsn",
+      "jwt",
+      "key",
+      "kubeconfig",
+      "pass",
+      "passwd",
+      "password",
+      "private",
+      "private_key",
+      "pwd",
+      "secret",
+      "session",
+      "token"
+    ]
+  }
+}

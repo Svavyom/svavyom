@@ -1,0 +1,65 @@
+# Svavyom serial console broker (M1-D). A SEPARATE, non-root service with its own identity and its own Unix socket. It follows the serial
+# console of every running Svavyom-managed VM (so boot output is captured) and serves ONE interactive attachment per VM to the API.
+# Its closed protocol has two requests (snapshot a VM, attach to a VM); it can make exactly three libvirt calls (list running managed
+# VMs, read one VM's facts, open its serial console). It owns nothing it trusts and never sees a cookie or a console ticket.
+[Unit]
+Description=Svavyom serial console broker
+Documentation=file:///usr/share/doc/svavyom/UBUNTU-DEPLOYMENT.md
+After=libvirtd.service libvirtd.socket
+Wants=libvirtd.socket
+StartLimitIntervalSec=60
+StartLimitBurst=5
+
+[Service]
+Type=exec
+User=svavyom-con
+Group=svavyom-con
+# The libvirt group grants the read-write libvirt socket, which opening a console needs (libvirt has no read-only console). That group is
+# coarse (UBUNTU-DEPLOYMENT.md "Libvirt permissions"): the broker's code and closed protocol, not libvirt, limit this identity.
+SupplementaryGroups=libvirt
+ExecStart=/usr/libexec/svavyom/console-broker \
+    --socket /run/svavyom/console/console.sock \
+    --allow-uid @SVAVYOM_API_UID@
+Restart=on-failure
+RestartSec=2s
+TimeoutStopSec=15s
+
+# --- hardening ---
+NoNewPrivileges=yes
+CapabilityBoundingSet=
+AmbientCapabilities=
+PrivateTmp=yes
+PrivateDevices=yes
+PrivateNetwork=yes
+ProtectSystem=strict
+ProtectHome=yes
+ProtectProc=invisible
+ProcSubset=pid
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+ProtectHostname=yes
+RestrictNamespaces=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+SystemCallErrorNumber=EPERM
+RestrictAddressFamilies=AF_UNIX
+UMask=0077
+# Resource limits (M4): generous for a single-host Development Preview, tight enough that a runaway process cannot take the host with it.
+TasksMax=512
+LimitNOFILE=2048
+MemoryMax=512M
+# Writable: its own socket only. Console output is held in memory; nothing is written to disk. Everything else is read-only or invisible.
+ReadWritePaths=/run/svavyom/console
+ReadOnlyPaths=/etc/svavyom /usr/libexec/svavyom /var/lib/svavyom/images
+InaccessiblePaths=/var/lib/svavyom/api /var/lib/svavyom/state /var/lib/svavyom/pool
+# EXCEPTIONS (to be re-tested on the qualification host): MemoryDenyWriteExecute is not set (libvirt client libraries); PrivateUsers is
+# not set (libvirt authorises the socket by the caller's real uid/gid).
+
+[Install]
+WantedBy=multi-user.target

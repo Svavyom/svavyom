@@ -1,0 +1,15 @@
+{
+  "request": {
+    "boundary": "browser-api",
+    "category": "typed_host_command",
+    "payload": {
+      "action": "start_vm",
+      "operation_id": "op-1",
+      "attempt": "1"
+    }
+  },
+  "expect": [
+    "CATEGORY_NOT_PERMITTED",
+    "PRIVILEGED_BEFORE_AUTH"
+  ]
+}

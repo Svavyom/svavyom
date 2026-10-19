@@ -1,0 +1,86 @@
+{
+  "schema": 1,
+  "description": "M0-E02-S04 test classification: every discovered test file matches exactly one rule; rules are unordered and disjoint (explicit exclusions), each must match at least one file, and may map only to tiers the docs-repo taxonomy accepts in M0 (simulated T0/T1; DR-006 D2 = A). A record's tier must equal its tests' classified tier; its kinds are the union of their rules' kinds.",
+  "rules": [
+    {
+      "id": "py-unit",
+      "glob": "tests/unit_*.py",
+      "tier": "unit",
+      "kinds": [
+        "functional",
+        "contract",
+        "negative"
+      ]
+    },
+    {
+      "id": "py-integration",
+      "glob": "tests/integration_*.py",
+      "tier": "container_integration",
+      "kinds": [
+        "functional",
+        "negative"
+      ]
+    },
+    {
+      "id": "go-libvirt-test-driver",
+      "glob": "backend/internal/hypervisor/libvirttest/*_test.go",
+      "tier": "simulated_libvirt",
+      "kinds": [
+        "functional",
+        "contract"
+      ]
+    },
+    {
+      "id": "go-hypervisor-contract",
+      "glob": "backend/internal/hypervisor/contract_alignment_test.go",
+      "tier": "unit",
+      "kinds": [
+        "contract"
+      ]
+    },
+    {
+      "id": "go-capability",
+      "glob": "backend/**/capability*/*_test.go",
+      "tier": "unit",
+      "kinds": [
+        "functional",
+        "contract",
+        "negative",
+        "property"
+      ]
+    },
+    {
+      "id": "go-unit",
+      "glob": "backend/**/*_test.go",
+      "exclude": [
+        "backend/internal/hypervisor/libvirttest/*_test.go",
+        "backend/internal/hypervisor/contract_alignment_test.go",
+        "backend/internal/capability/*_test.go",
+        "backend/cmd/capability-check/*_test.go"
+      ],
+      "tier": "unit",
+      "kinds": [
+        "functional"
+      ]
+    },
+    {
+      "id": "fe-unit",
+      "glob": "frontend/src/**",
+      "tier": "unit",
+      "kinds": [
+        "functional",
+        "contract",
+        "negative"
+      ]
+    },
+    {
+      "id": "fe-browser",
+      "glob": "frontend/e2e/**",
+      "tier": "browser_e2e",
+      "kinds": [
+        "functional",
+        "e2e"
+      ]
+    }
+  ]
+}

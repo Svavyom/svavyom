@@ -1,0 +1,202 @@
+{
+  "schema": 1,
+  "description": "Trust-boundary inventory (M0-E01-S01 draft). Architecture: browser -> unprivileged Go API -> durable operation manager -> restrictive local Unix-socket host agent -> libvirt/QEMU/KVM; PaaS runtime only inside a separate workload VM (ADR-004, ADR-011). Security properties are enumerated in each boundary's `security` object and pinned by tools/check_interfaces.py; prose fields are explanatory only.",
+  "auth_design_approved": false,
+  "boundaries": {
+    "browser-api": {
+      "caller": "browser",
+      "callee": "api",
+      "transport": "HTTPS to the API; scaffold listens on http://127.0.0.1:8081 (loopback only)",
+      "authentication": "Opaque server-side session in an HttpOnly, SameSite=Strict cookie (Secure over HTTPS) for the single local administrator; Argon2id password hash; idle and absolute expiry; server-side revocation on sign-out; CSRF token (X-CSRF-Token, derived from the session) on cookie-authenticated state-changing requests and a pre-sign-in token for sign-in; failure throttling. Design: DR-015 D2.",
+      "authorization": "API enforces server-side RBAC per resource and action, deny by default, resource ownership check on every request (no IDOR).",
+      "audit": "API records actor, action, resource id, outcome and correlation id; secret-bearing fields redacted (redaction rules in prohibited.json).",
+      "data_owner": "api",
+      "permitted_request_categories": [
+        "health",
+        "list_resources",
+        "read_resource",
+        "submit_operation",
+        "cancel_operation",
+        "auth_status",
+        "sign_in",
+        "sign_out"
+      ],
+      "error_categories": [
+        "validation",
+        "unauthenticated",
+        "forbidden",
+        "not_found",
+        "conflict",
+        "rate_limited",
+        "prohibited",
+        "unavailable",
+        "internal"
+      ],
+      "implementation_status": "scaffold",
+      "implemented_requests": [
+        "GET /healthz",
+        "GET /api/v1/auth/session",
+        "POST /api/v1/auth/session",
+        "DELETE /api/v1/auth/session",
+        "GET /api/v1/hosts",
+        "GET /api/v1/hosts/{id}",
+        "GET /api/v1/vms",
+        "GET /api/v1/vms/{id}",
+        "GET /api/v1/images",
+        "GET /api/v1/images/{id}",
+        "GET /api/v1/virtual-networks",
+        "GET /api/v1/virtual-networks/{id}",
+        "GET /api/v1/volumes",
+        "GET /api/v1/volumes/{id}",
+        "GET /api/v1/backups",
+        "GET /api/v1/backups/{id}",
+        "GET /api/v1/operations",
+        "POST /api/v1/operations",
+        "GET /api/v1/operations/{id}",
+        "GET /api/v1/events",
+        "GET /api/v1/events/{id}"
+      ],
+      "security": {
+        "transport_kind": "https",
+        "listener": "loopback_scaffold",
+        "peer_auth": "session_cookie_csrf",
+        "authz_model": "deny_by_default",
+        "ownership_check": true,
+        "accepts_client_xml": false,
+        "executes_commands": false
+      }
+    },
+    "api-operation-manager": {
+      "caller": "api",
+      "callee": "operation-manager",
+      "transport": "In-process Go interface; no network listener",
+      "authentication": "Not applicable in-process; authenticated actor identity is propagated with every call.",
+      "authorization": "API authorizes before submission; the manager re-checks resource ownership and rejects operations on resources outside the actor's project.",
+      "audit": "Operation lifecycle events (submitted, started, succeeded, failed, cancelled) with actor and operation id.",
+      "data_owner": "operation-manager",
+      "permitted_request_categories": [
+        "submit_operation",
+        "get_operation",
+        "cancel_operation"
+      ],
+      "error_categories": [
+        "validation",
+        "forbidden",
+        "not_found",
+        "conflict",
+        "unavailable",
+        "internal"
+      ],
+      "implementation_status": "not_implemented",
+      "implemented_requests": [],
+      "security": {
+        "transport_kind": "in_process",
+        "listener": "none",
+        "peer_auth": "in_process_actor_propagation",
+        "authz_model": "deny_by_default",
+        "ownership_check": true,
+        "accepts_client_xml": false,
+        "executes_commands": false
+      }
+    },
+    "operation-manager-host-agent": {
+      "caller": "operation-manager",
+      "callee": "host-agent",
+      "transport": "Local Unix domain socket only; no TCP listener (public or loopback)",
+      "authentication": "SO_PEERCRED peer UID/GID allowlist on the socket.",
+      "authorization": "Agent accepts only enumerated typed commands with validated arguments; no general command execution, no sudo wrapper.",
+      "audit": "Agent logs command type, operation id and outcome; argument values that may contain secrets are redacted.",
+      "data_owner": "operation-manager",
+      "permitted_request_categories": [
+        "typed_host_command"
+      ],
+      "error_categories": [
+        "validation",
+        "unauthenticated",
+        "forbidden",
+        "prohibited",
+        "unavailable",
+        "timeout",
+        "host_error",
+        "internal"
+      ],
+      "implementation_status": "not_implemented",
+      "implemented_requests": [],
+      "security": {
+        "transport_kind": "unix",
+        "listener": "unix_socket",
+        "peer_auth": "so_peercred_allowlist",
+        "authz_model": "enumerated_typed_commands",
+        "ownership_check": true,
+        "accepts_client_xml": false,
+        "executes_commands": false
+      }
+    },
+    "host-agent-libvirt": {
+      "caller": "host-agent",
+      "callee": "libvirt",
+      "transport": "libvirt API via the local qemu:///system socket (the privilege boundary)",
+      "authentication": "libvirt socket permissions granted only to the agent's dedicated service account.",
+      "authorization": "Agent builds domain/network/volume definitions from typed parameters; never forwards client-supplied XML; storage paths confined to managed pools.",
+      "audit": "Agent records libvirt call class, target resource id and result.",
+      "data_owner": "libvirt",
+      "permitted_request_categories": [
+        "typed_libvirt_call"
+      ],
+      "error_categories": [
+        "prohibited",
+        "conflict",
+        "not_found",
+        "validation",
+        "unavailable",
+        "timeout",
+        "host_error",
+        "internal"
+      ],
+      "implementation_status": "not_implemented",
+      "implemented_requests": [],
+      "security": {
+        "transport_kind": "libvirt_local",
+        "listener": "none",
+        "peer_auth": "libvirt_socket_permissions",
+        "authz_model": "enumerated_typed_calls",
+        "ownership_check": true,
+        "accepts_client_xml": false,
+        "executes_commands": false
+      }
+    },
+    "paas-controller-workload-vm": {
+      "caller": "paas-controller",
+      "callee": "workload-vm",
+      "transport": "Managed network to a separately created PaaS workload VM; Podman runs only inside that VM (ADR-004)",
+      "authentication": "Per-VM credential provisioned at creation; never shared with the hypervisor host.",
+      "authorization": "Controller may only deploy container images to its own managed workload VM; no host-level container execution.",
+      "audit": "Deployment events with app id, image digest and outcome.",
+      "data_owner": "paas-controller",
+      "permitted_request_categories": [
+        "deploy_app",
+        "get_app"
+      ],
+      "error_categories": [
+        "validation",
+        "forbidden",
+        "not_found",
+        "unavailable",
+        "timeout",
+        "internal"
+      ],
+      "implementation_status": "not_implemented",
+      "implemented_requests": [],
+      "security": {
+        "transport_kind": "managed_vm_network",
+        "listener": "none",
+        "peer_auth": "per_vm_credential",
+        "authz_model": "deny_by_default",
+        "ownership_check": true,
+        "accepts_client_xml": false,
+        "executes_commands": false
+      }
+    }
+  },
+  "auth_gate": "While auth_design_approved is false, every category except 'health' is rejected (PRIVILEGED_BEFORE_AUTH), including reads, to avoid pre-auth IDOR. Stricter than draft AC02's wording; noted for the sponsor."
+}

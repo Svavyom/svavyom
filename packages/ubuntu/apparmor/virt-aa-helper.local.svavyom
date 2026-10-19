@@ -1,0 +1,18 @@
+# Svavyom: let libvirt's virt-aa-helper read the immutable managed base images, so they can enter each guest's generated profile.
+#
+# INSTALL ONLY IF NEEDED, and only after diagnosis. Since CT-PRODUCT-DELIVERY-008 every domain declares its base image explicitly
+# (backingStore with a per-source DAC relabel='no'), and the first attempt must use no AppArmor override at all. If a guest still
+# fails to start with an AppArmor DENIED entry (journalctl -k -g 'apparmor="DENIED"'), look at which profile was denied:
+#   * profile="/usr/lib/libvirt/virt-aa-helper" denying a path under the store: the helper cannot process the uncommon path, so it
+#     cannot add it to the per-guest profile. Append the rule below, as root, to Ubuntu's documented local override
+#         /etc/apparmor.d/local/usr.lib.libvirt.virt-aa-helper
+#     and reload that profile:  apparmor_parser -r /etc/apparmor.d/usr.lib.libvirt.virt-aa-helper
+#     virt-aa-helper then writes the access into the generated per-guest profile, for the guests whose XML names the path.
+#   * profile="libvirt-<uuid>" denying the store even though the helper succeeded: this is NOT covered here. Capture the evidence
+#     and have Control Tower review before anything broader is granted. No blanket rule for every QEMU guest is provided.
+# Never edit /etc/apparmor.d/usr.lib.libvirt.virt-aa-helper or any other package-managed profile, and never install this by default.
+#
+# Scope: published base images only (<sha256>.qcow2 directly in the store), read. No write, no lock grant for guests, no execute, no
+# directory listing, nothing outside the store, nothing for the pool that holds the writable overlays. If provision.json uses
+# another catalog_dir, change the path accordingly.
+/var/lib/svavyom/images/store/*.qcow2 r,

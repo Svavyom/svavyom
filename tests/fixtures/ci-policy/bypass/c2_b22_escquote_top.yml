@@ -1,0 +1,12 @@
+name: "t\" #
+permissions:
+  contents: read
+run-name: x # "
+on:
+  pull_request:
+jobs:
+  b:
+    runs-on: x
+    timeout-minutes: 1
+    steps:
+      - run: echo

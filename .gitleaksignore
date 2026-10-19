@@ -1,0 +1,31 @@
+# Reviewed false positives only (story M0-E02-S02). One fingerprint per line;
+# each needs a justification. Never ignore a real credential: rotate it instead.
+# AGENTS.md line 7 is policy prose about audit logging that the generic-api-key
+# rule misreads as a key assignment; no credential present (reviewed 2026-10-04).
+e0b017dd751924203941f982114b2b60c86ad31c:AGENTS.md:generic-api-key:7
+AGENTS.md:generic-api-key:7
+# toolchain/gotools/go.sum line 12 is the h1 module hash of
+# cloud.google.com/go/auth; generic-api-key misreads "auth ... h1:<hash>" as a
+# key assignment. Not a credential (reviewed 2026-10-04). A file:rule:line
+# fingerprint (no commit) suppresses that exact file, rule and line in every
+# commit and in the working tree (verified on a fresh single-branch clone);
+# other rules and other lines of go.sum are still scanned.
+toolchain/gotools/go.sum:generic-api-key:12
+# backend/go.sum line 51 is the h1 module hash of modernc.org/token (a dependency of modernc.org/sqlite);
+# generic-api-key misreads "token ... h1:<hash>" as a key assignment. Not a credential (reviewed 2026-10-09).
+backend/go.sum:generic-api-key:51
+# Same line after golang.org/x/crypto was added to go.sum (reviewed 2026-10-09; not a credential).
+backend/go.sum:generic-api-key:53
+# Same modernc.org/token h1 hash line after go-diskfs and its go.sum entries were added (reviewed 2026-10-10; not a credential).
+backend/go.sum:generic-api-key:87
+# release/boundary.json (commit e0aa801) listed PEM armor lines as search markers; it holds no key. The file now builds the armor at run time.
+e0aa8012af96383748962717b28034eba173dd00:release/boundary.json:private-key:67
+# backend/internal/ctl/bundle_test.go (commit f0dc657, M4 WIP) used fake PEM armor lines and a fake key name as redaction-test fixtures; no real secret (adjudicated 2026-10-11). The file now assembles them at run time.
+f0dc6573995cc902938da5a3475f834b486ff563:backend/internal/ctl/bundle_test.go:private-key:37
+f0dc6573995cc902938da5a3475f834b486ff563:backend/internal/ctl/bundle_test.go:private-key:66
+f0dc6573995cc902938da5a3475f834b486ff563:backend/internal/ctl/bundle_test.go:generic-api-key:46
+# Same fake fixture line (the secrets list in the redaction test) as it appears in two later M4 commits; not a credential.
+e6a17cfdaebedb0142f2c1c08e1b49786921034d:backend/internal/ctl/bundle_test.go:generic-api-key:46
+46e0d25da01d3bde3513650d28bdb22071a1b629:backend/internal/ctl/bundle_test.go:generic-api-key:46
+# a made-up GPG fingerprint in a test stub (backend/internal/ctl/signature_test.go), not a credential
+36ae334dbb796c1f3592fb40c146f75546d0dc3d:backend/internal/ctl/signature_test.go:generic-api-key:198

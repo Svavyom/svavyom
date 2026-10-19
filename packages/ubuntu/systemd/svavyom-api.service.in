@@ -1,0 +1,73 @@
+# Svavyom API (Development Preview). Non-root, no libvirt access of any kind, no write access to any trust anchor.
+# Placeholders (@SVAVYOM_..._UID@) are filled in by render-units.sh; nothing else is templated.
+[Unit]
+Description=Svavyom API (unprivileged web/API service)
+Documentation=file:///usr/share/doc/svavyom/UBUNTU-DEPLOYMENT.md
+After=network-online.target svavyom-agent.service svavyom-mutation.service svavyom-offsite.service svavyom-console.service
+Wants=network-online.target svavyom-agent.service svavyom-mutation.service svavyom-offsite.service svavyom-console.service
+StartLimitIntervalSec=60
+StartLimitBurst=5
+
+[Service]
+Type=exec
+User=svavyom-api
+Group=svavyom-api
+# Explicitly NO supplementary groups: the API is not in the libvirt, kvm or any Svavyom service group.
+SupplementaryGroups=
+ExecStart=/usr/libexec/svavyom/api serve \
+    --db /var/lib/svavyom/api/svavyom.db \
+    --listen 0.0.0.0:8443 \
+    --tls-cert /etc/svavyom/tls/cert.pem --tls-key /etc/svavyom/tls/key.pem \
+    --static-dir /usr/share/svavyom/web \
+    --agent-socket /run/svavyom/agent/agent.sock \
+    --mutation-socket /run/svavyom/mutation/mutation.sock \
+    --offsite-socket /run/svavyom/offsite/offsite.sock \
+    --console-socket /run/svavyom/console/console.sock \
+    --provision-config /etc/svavyom/provision.json
+# VM create/start/lifecycle and the interactive serial console are OFF by default (boot output can be read). To enable the Development
+# Preview, install the drop-in svavyom-api.service.d/experimental-mutation.conf (see UBUNTU-DEPLOYMENT.md); the API then also verifies
+# the trust anchors at start. The interactive console is a separate opt-in: experimental-console.conf.
+Restart=on-failure
+RestartSec=2s
+TimeoutStopSec=30s
+
+# --- hardening (no exceptions needed for the API) ---
+NoNewPrivileges=yes
+CapabilityBoundingSet=
+AmbientCapabilities=
+PrivateTmp=yes
+PrivateDevices=yes
+# Documented exception (found by the M4 installed-system qualification): the host summary reads host facts from /proc (meminfo, cpuinfo, modules) and looks
+# at the /dev/kvm node (lstat only, never opened). ProcSubset=pid would hide them (GET /api/v1/hosts then answers 503), and PrivateDevices hides the node;
+# the node is bound in read-only, so the private /dev keeps its closed device policy (nothing can be opened) and ProtectProc=invisible still hides other processes.
+BindReadOnlyPaths=-/dev/kvm
+ProtectSystem=strict
+ProtectHome=yes
+ProtectProc=invisible
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+ProtectHostname=yes
+RestrictNamespaces=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+SystemCallErrorNumber=EPERM
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+UMask=0077
+# Resource limits (M4): generous for a single-host Development Preview, tight enough that a runaway process cannot take the host with it.
+TasksMax=1024
+LimitNOFILE=8192
+MemoryMax=1G
+# The only writable place is the session database. Trust anchors are read-only; the mutation state is invisible.
+ReadWritePaths=/var/lib/svavyom/api
+ReadOnlyPaths=/etc/svavyom /usr/libexec/svavyom /var/lib/svavyom/images
+InaccessiblePaths=/var/lib/svavyom/state /var/lib/svavyom/pool
+
+[Install]
+WantedBy=multi-user.target

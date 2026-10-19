@@ -1,0 +1,10 @@
+{
+  "request": {
+    "boundary": "browser-agent",
+    "category": "health",
+    "payload": {}
+  },
+  "expect": [
+    "BOUNDARY_UNKNOWN"
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "request": {
+    "boundary": "browser-api",
+    "category": "list_resources",
+    "payload": {
+      "kind": "VM",
+      "limit": "50"
+    }
+  },
+  "expect": [
+    "PRIVILEGED_BEFORE_AUTH"
+  ]
+}

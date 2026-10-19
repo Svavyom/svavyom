@@ -1,0 +1,7 @@
+Package: base-files
+Status: install ok installed
+Version: 13.8
+
+Package: systemd
+Status: install ok installed
+Version: 257.8-1

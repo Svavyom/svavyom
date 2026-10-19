@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "description": "Regression matrix of operating systems for the Svavyom host (M4-E01-S03). 'expect' is what the product must do on that system: 'supported' means preflight passes and the full certification run is expected to pass; 'refused' means the installer must refuse and say why (the preflight verdict is the evidence). A row is only 'certified' by a signed certification record made on a real host of that system (certification/README.md). This file is a development and release tool; it is not part of any release artifact.",
+  "rows": [
+    {"id": "ubuntu-24.04", "os_id": "ubuntu", "version_id": "24.04", "expect": "supported", "note": "the one supported host"},
+    {"id": "ubuntu-22.04", "os_id": "ubuntu", "version_id": "22.04", "expect": "refused", "note": "older LTS: libvirt and systemd differ; not qualified"},
+    {"id": "ubuntu-26.04", "os_id": "ubuntu", "version_id": "26.04", "expect": "refused", "note": "newer LTS: not qualified until a run says so"},
+    {"id": "debian-12", "os_id": "debian", "version_id": "12", "expect": "refused", "note": "Debian is a candidate (M4-E01-S02) but not qualified"},
+    {"id": "debian-13", "os_id": "debian", "version_id": "13", "expect": "refused", "note": "Debian is a candidate (M4-E01-S02) but not qualified"},
+    {"id": "rocky-9", "os_id": "rocky", "version_id": "9", "expect": "refused", "note": "Alma/Rocky is not implemented (M4-E01-S01)"},
+    {"id": "almalinux-9", "os_id": "almalinux", "version_id": "9", "expect": "refused", "note": "Alma/Rocky is not implemented (M4-E01-S01)"}
+  ],
+  "suites": ["preflight", "install", "create", "lifecycle", "console", "storage", "network"]
+}

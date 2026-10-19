@@ -1,0 +1,12 @@
+{
+  "request": {
+    "boundary": "browser-api",
+    "category": "health",
+    "payload": {
+      "domain_xml": "x"
+    }
+  },
+  "expect": [
+    "SCHEMA_VIOLATION"
+  ]
+}

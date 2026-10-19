@@ -1,0 +1,76 @@
+{
+  "schema": 1,
+  "description": "M0-E01-S02 data classes with logging, export, redaction and storage-at-rest rules; every persisted, request-envelope and request field has exactly one class.",
+  "classes": {
+    "secret": {
+      "loggable": false,
+      "exportable": false,
+      "redacted": true,
+      "encrypted_at_rest": true
+    },
+    "credential": {
+      "loggable": false,
+      "exportable": false,
+      "redacted": true,
+      "encrypted_at_rest": true
+    },
+    "personal": {
+      "loggable": true,
+      "exportable": false,
+      "redacted": false,
+      "encrypted_at_rest": true
+    },
+    "operational": {
+      "loggable": true,
+      "exportable": true,
+      "redacted": false,
+      "encrypted_at_rest": false
+    },
+    "public": {
+      "loggable": true,
+      "exportable": true,
+      "redacted": false,
+      "encrypted_at_rest": false
+    }
+  },
+  "fields": {
+    "operation.id": "operational",
+    "operation.project_id": "operational",
+    "operation.resource_kind": "operational",
+    "operation.resource_id": "operational",
+    "operation.type": "operational",
+    "operation.status": "operational",
+    "operation.idempotency_key": "credential",
+    "operation.requested_by": "personal",
+    "operation.generation": "operational",
+    "operation.attempts": "operational",
+    "operation.error_category": "operational",
+    "operation.created_at": "operational",
+    "operation.updated_at": "operational",
+    "request.envelope.boundary": "operational",
+    "request.envelope.category": "operational",
+    "request.envelope.payload": "operational",
+    "request.envelope.transport": "operational",
+    "request.list_resources.kind": "operational",
+    "request.list_resources.limit": "operational",
+    "request.list_resources.cursor": "operational",
+    "request.read_resource.kind": "operational",
+    "request.read_resource.id": "operational",
+    "request.get_operation.id": "operational",
+    "request.cancel_operation.id": "operational",
+    "request.submit_operation.type": "operational",
+    "request.submit_operation.kind": "operational",
+    "request.submit_operation.id": "operational",
+    "request.submit_operation.idempotency_key": "credential",
+    "request.typed_host_command.action": "operational",
+    "request.typed_host_command.operation_id": "operational",
+    "request.typed_host_command.attempt": "operational",
+    "request.typed_libvirt_call.call": "operational",
+    "request.typed_libvirt_call.resource_id": "operational",
+    "request.deploy_app.app_id": "operational",
+    "request.deploy_app.image_digest": "operational",
+    "request.get_app.id": "operational",
+    "request.sign_in.username": "operational",
+    "request.sign_in.password": "credential"
+  }
+}

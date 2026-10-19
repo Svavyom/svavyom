@@ -1,0 +1,13 @@
+{
+  "request": {
+    "boundary": "browser-api",
+    "category": "health",
+    "payload": {
+      "c​md": "id"
+    }
+  },
+  "expect": [
+    "ARBITRARY_SHELL",
+    "SCHEMA_VIOLATION"
+  ]
+}

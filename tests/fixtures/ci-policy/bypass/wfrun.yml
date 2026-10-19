@@ -1,0 +1,12 @@
+name: ok
+on:
+  workflow_run:
+    workflows: [x]
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - run: echo "${{ github.event.workflow_run.head_branch }}"

@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "description": "Licences approved for inclusion in the Development Preview (permissive, or weak copyleft used only through dynamic linking/runtime prerequisites). Anything else must be listed under exceptions with a written explanation, or it fails `make licenses`. The top-level Svavyom licence (AGPL-3.0-or-later; see LICENSING.md) is not a dependency licence and is not in this file.",
+  "approved": [
+    "MIT",
+    "MIT-0",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "ISC",
+    "Apache-2.0",
+    "0BSD",
+    "BlueOak-1.0.0",
+    "CC0-1.0",
+    "Unlicense",
+    "MPL-2.0",
+    "LGPL-2.1-or-later",
+    "GPL-2.0-only"
+  ],
+  "exceptions": {
+    "npm:@fontsource/manrope": "SIL Open Font License 1.1, approved by the Product Sponsor for this one use: the typeface is bundled and served from the product's own origin. OFL permits bundling and embedding a font in software provided the copyright notice and licence text accompany it (kept in THIRD-PARTY-NOTICES.md); it is not a copyleft licence for the product's own code, the font is not sold on its own, no Reserved Font Name is claimed by the upstream project, and it grants no rights over, and imposes nothing on, Svavyom-owned code.",
+    "npm:@fontsource/jetbrains-mono": "SIL Open Font License 1.1, approved by the Product Sponsor for this one use: the typeface is bundled and served from the product's own origin. OFL permits bundling and embedding a font in software provided the copyright notice and licence text accompany it (kept in THIRD-PARTY-NOTICES.md); it is not a copyleft licence for the product's own code, the font is not sold on its own, no Reserved Font Name is claimed by the upstream project, and it grants no rights over, and imposes nothing on, Svavyom-owned code."
+  }
+}

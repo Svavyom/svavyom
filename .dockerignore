@@ -1,0 +1,8 @@
+*
+!toolchain/gotools/go.mod
+!toolchain/gotools/go.sum
+!toolchain/requirements-ci-policy.txt
+!frontend/package.json
+!frontend/package-lock.json
+!backend/go.mod
+!backend/go.sum
