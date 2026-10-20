@@ -300,7 +300,10 @@ docker-shell: docker-image
 test-integration: docker-image
 	$(COMPOSE) run --rm dev python3 tests/integration_gates.py
 
+# A public checkout has no ../cloud-product-docs: the container still mounts it read-only (that is part of what is tested), so an empty temporary directory stands in.
 test-container: docker-image
+	@d="$${DOCS_REPO_HOST:-}"; if [ -z "$$d" ] && [ ! -d ../cloud-product-docs ]; then d="$$(mktemp -d)"; trap 'rmdir "$$d"' EXIT; fi; \
+	if [ -n "$$d" ]; then export DOCS_REPO_HOST="$$d"; fi; \
 	PYTHONDONTWRITEBYTECODE=1 python3 tests/integration_container.py
 
 # --- Evidence replay (M0-E02-S04 AC03, DR-006 D3); host-side, needs Docker ---
