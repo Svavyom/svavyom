@@ -2,7 +2,7 @@
 
 **Svavyom is a Development Preview / Pre-Alpha.** It is a free, open control plane for **KVM/libvirt virtualization on dedicated Linux servers**: you manage VMs, storage, backups, networks and consoles from a web page, and the tool installs on the server you already have. It is for evaluation and for non-critical use;for exactly what is supported, what has been qualified on real hardware and what is not offered.
 
-* **Source and releases:** <https://github.com/Svavyom/svavyom>. 
+* **Source:** <https://github.com/Svavyom/svavyom> · **Releases:** <https://github.com/Svavyom/svavyom/releases> · **Documentation:** <https://docs.svavyom.com>
 * **Free to use on as many servers as you like.** No limit, licence key, trial or call home (`LICENSING.md`).
 * **Tested on:** Ubuntu 24.04 LTS, x86_64, KVM, libvirt `qemu:///system`. One host per installation.
 * **Not supported in the current release:** high availability, multi-host management, stability guarantees, or suitability for production workloads. Release artifacts are **not signed** yet.

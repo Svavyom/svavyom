@@ -23,7 +23,7 @@ GATES := versions $(GO_GATES) py-check $(FE_GATES) secrets ci-policy interfaces 
 # The gates a public checkout can run on its own (no access to the separate requirements repository). `make check` is the full set.
 PUBLIC_GATES := versions go-fmt go-vet go-staticcheck go-gosec go-test go-test-libvirt go-vuln public-py fe-install fe-check fe-build fe-audit public-fe-unit fe-negative secrets ci-policy claims boundary licenses
 
-.PHONY: public-fe-unit public-check public-py docker-public-check claims boundary licenses docker-qualify-libvirt-ro docker-qualify-libvirt-create docker-qualify-libvirt-lifecycle docker-qualify-libvirt-console docker-qualify-libvirt-storage docker-qualify-libvirt-network docker-qualify-libvirt-cleanup docker-release qualify-preflight check $(GATES) capability decisions fe-browser docker-fe-browser evidence-report evidence-replay require-nonroot docker-image docker-check docker-shell test-integration \
+.PHONY: docker-demo-video public-fe-unit public-check public-py docker-public-check claims boundary licenses docker-qualify-libvirt-ro docker-qualify-libvirt-create docker-qualify-libvirt-lifecycle docker-qualify-libvirt-console docker-qualify-libvirt-storage docker-qualify-libvirt-network docker-qualify-libvirt-cleanup docker-release qualify-preflight check $(GATES) capability decisions fe-browser docker-fe-browser evidence-report evidence-replay require-nonroot docker-image docker-check docker-shell test-integration \
         test-container verify-backlog verify-linkage docker-linkage
 
 check: $(GATES)
@@ -218,8 +218,16 @@ docker-check: docker-image
 docker-public-check: docker-image
 	@d="$$(mktemp -d)"; trap 'rmdir "$$d"' EXIT; DOCS_REPO_HOST="$$d" $(COMPOSE) run --rm dev toolchain/run-in-copy.sh make public-check
 
+# The product tour video: a silent, captioned screen recording of the real web console over the simulated host (frontend/demo/tour.demo.ts), written to demo-out/svavyom-tour.webm.
+docker-demo-video: docker-image
+	@mkdir -p demo-out
+	@d="$${DOCS_REPO_HOST:-}"; if [ -z "$$d" ] && [ ! -d ../cloud-product-docs ]; then d="$$(mktemp -d)"; trap 'rmdir "$$d"' EXIT; fi; \
+	if [ -n "$$d" ]; then export DOCS_REPO_HOST="$$d"; fi; \
+	$(COMPOSE) run --rm -v "$(CURDIR)/demo-out:/out" dev-offline toolchain/run-in-copy.sh sh toolchain/record-demo.sh
+
 docker-fe-browser: docker-image
-	$(COMPOSE) run --rm dev-offline toolchain/run-in-copy.sh make fe-browser
+	@d="$${DOCS_REPO_HOST:-}"; if [ -z "$$d" ] && [ ! -d ../cloud-product-docs ]; then d="$$(mktemp -d)"; trap 'rmdir "$$d"' EXIT; fi; \
+	if [ -n "$$d" ]; then DOCS_REPO_HOST="$$d" $(COMPOSE) run --rm dev-offline toolchain/run-in-copy.sh make fe-browser; else $(COMPOSE) run --rm dev-offline toolchain/run-in-copy.sh make fe-browser; fi
 
 # Higher-tier, READ-ONLY qualification against a real local qemu:///system (CT-PRODUCT-DELIVERY-004 s16). Only for an authorised
 # disposable host. The container gets no capabilities, no network, a read-only root and exactly one mounted file: libvirt's read-only

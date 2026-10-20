@@ -295,5 +295,56 @@ class ExploitRegressions(unittest.TestCase):
             self.assertIn("not valid UTF-8", proc.stdout)
 
 
+CLA_SHA = "ca4a40a7d1004f18d9960b404b97e5f30a505a08"
+CLA_PINS = PINS + "| contributor-assistant/github-action | %s |\n" % CLA_SHA
+CLA = (ROOT / ".github/workflows/cla.yml").read_text()
+
+
+def run_named(name, workflow, pins=CLA_PINS):
+    with tempfile.TemporaryDirectory() as tmp:
+        wf = Path(tmp) / name
+        wf.write_text(workflow)
+        pin_file = Path(tmp) / "pins.md"
+        pin_file.write_text(pins)
+        proc = subprocess.run([sys.executable, str(CHECKER), "--pins", str(pin_file), str(wf)], capture_output=True, text=True, timeout=30)
+        return proc.returncode, proc.stdout
+
+
+class ClaException(unittest.TestCase):
+    """The contributor-agreement bot is the one reviewed exception, and only in a file named cla.yml with exactly its shape."""
+
+    def bad(self, workflow, fragment, name="cla.yml"):
+        code, out = run_named(name, workflow)
+        self.assertEqual(code, 1, out)
+        self.assertIn(fragment, out)
+
+    def test_the_committed_cla_workflow_is_accepted(self):
+        self.assertEqual(run_named("cla.yml", CLA)[0], 0)
+
+    def test_the_same_file_under_another_name_is_refused(self):
+        self.bad(CLA, "pull_request_target trigger is forbidden", name="other.yml")
+
+    def test_extra_triggers_steps_or_shell_are_refused(self):
+        self.bad(CLA.replace("      - closed\n", "      - closed\n      - labeled\n"), "triggers must be exactly")
+        self.bad(CLA + "      - run: echo hi\n", "exactly one step")
+        self.bad(CLA.replace("        uses:", "        run: echo hi\n        uses:"), "unexpected step key run")
+        self.bad(CLA.replace("      - name: CLA Assistant\n", "      - uses: actions/checkout@%s\n        with:\n          persist-credentials: false\n      - name: CLA Assistant\n" % SHA), "exactly one step")
+
+    def test_broader_permissions_or_a_different_action_are_refused(self):
+        self.bad(CLA.replace("      actions: write\n", "      actions: write\n      contents: write\n").replace("      contents: read\n      pull-requests", "      pull-requests"), "job permissions must be exactly")
+        self.bad(CLA.replace("contributor-assistant/github-action@", "evil/action@"), "must use contributor-assistant/github-action")
+        self.bad(CLA.replace(CLA_SHA, "v2.6.1"), "must use contributor-assistant/github-action")
+
+    def test_an_unrecorded_pin_extra_secret_or_unknown_input_is_refused(self):
+        code, out = run_named("cla.yml", CLA, pins=PINS)
+        self.assertEqual(code, 1)
+        self.assertIn("not recorded in CI-PINS.md", out)
+        self.bad(CLA.replace("          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}\n", "          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}\n          OTHER: ${{ secrets.OTHER }}\n"), "env must be exactly")
+        self.bad(CLA.replace("          branch: main\n", "          branch: main\n          exec: rm\n"), "input the policy does not know")
+
+    def test_it_must_stay_inert_until_enabled(self):
+        self.bad(CLA.replace("vars.CLA_ENABLED == 'true' && ", ""), "inert until")
+
+
 if __name__ == "__main__":
     unittest.main()

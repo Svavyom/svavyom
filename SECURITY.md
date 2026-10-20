@@ -8,7 +8,7 @@ Use GitHub's **private vulnerability reporting** on this repository (the *Securi
 We will acknowledge a report, tell you whether we consider it a vulnerability, and agree a disclosure date with you. This is a small project: please allow reasonable time.
 
 ## What to expect of the product
-* The design and its known gaps are in [`THREAT-MODEL.md`](https://github.com/Svavyom/svavyom-docs/blob/main/THREAT-MODEL.md), [`SECURITY-BASELINE.md`](https://github.com/Svavyom/svavyom-docs/blob/main/SECURITY-BASELINE.md) and [`KNOWN-LIMITATIONS.md`](https://github.com/Svavyom/svavyom-docs/blob/main/KNOWN-LIMITATIONS.md). Read them before you rely on Svavyom.
+* The design and its known gaps are in [Safety design](https://docs.svavyom.com/concepts/safety/), [Security](https://docs.svavyom.com/security/) and [Known limitations](https://docs.svavyom.com/known-limitations/). Read them before you rely on Svavyom.
 * Release artifacts are **not signed** yet; verify them against the published `SHA256SUMS` over a channel you trust (`INSTALLING.md`).
 * The web console is served over HTTPS with a self-signed certificate unless you install your own. Bind it to loopback and use an SSH tunnel or a reverse proxy you control if you are unsure.
 

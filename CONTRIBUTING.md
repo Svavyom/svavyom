@@ -9,9 +9,9 @@ Thank you for looking. Svavyom is a Development Preview run by a small team, so 
 
 ## When contributions open
 1. Read `BUILDING.md` and make `make docker-check` pass on your change (some gates need the separate requirements repository and are marked in `BUILDING.md`).
-2. Keep a change small and say why. A change that touches VM creation also repeats the real-host steps of [`RELEASE-CHECKLIST.md`](https://github.com/Svavyom/svavyom-docs/blob/main/RELEASE-CHECKLIST.md).
+2. Keep a change small and say why. A change that touches VM creation also repeats the real-host steps of [Contributing](https://docs.svavyom.com/development/contributing/).
 3. The open-core rules apply: nothing in this repository may add a licence key, trial, host or VM limit, entitlement check or call home (`release/open-core.json`).
-4. New dependencies need a licence on the approved list ([`DEPENDENCIES.md`](https://github.com/Svavyom/svavyom-docs/blob/main/DEPENDENCIES.md)).
+4. New dependencies need a licence on the approved list ([Licensing and dependencies](https://docs.svavyom.com/licensing/)).
 5. By contributing you agree to the contributor licence agreement.
 
 ## Conduct

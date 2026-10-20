@@ -221,6 +221,66 @@ def check_tree(tree, pins):
     return findings
 
 
+# The one reviewed exception to the rules above: the contributor-licence-agreement bot. It cannot work without the pull_request_target and issue_comment
+# triggers, a repository secret and write access to pull requests and statuses, so those are allowed for ONE file with this exact shape and nothing else:
+# one job, one step, one pinned action, no checkout of the pull request, no shell, inert until the repository variable CLA_ENABLED is "true". The action reads
+# pull request metadata through the API and never executes contributed code.
+CLA_FILE = "cla.yml"
+CLA_ACTION = "contributor-assistant/github-action"
+CLA_ON = {"issue_comment": {"types": ["created"]}, "pull_request_target": {"types": ["opened", "closed", "synchronize"]}}
+CLA_PERMISSIONS = {"actions": "write", "contents": "read", "pull-requests": "write", "statuses": "write"}
+CLA_ENV = {"GITHUB_TOKEN": "${{ secrets.GITHUB_TOKEN }}", "PERSONAL_ACCESS_TOKEN": "${{ secrets.CLA_SIGNATURES_TOKEN }}"}
+CLA_WITH_KEYS = {"path-to-signatures", "path-to-document", "branch", "allowlist", "remote-organization-name", "remote-repository-name", "custom-notsigned-prcomment",
+                 "custom-pr-sign-comment", "custom-allsigned-prcomment", "signed-commit-message", "create-file-commit-message", "lock-pullrequest-aftermerge"}
+
+
+def check_cla_tree(tree, pins):
+    """The exact shape the exception allows; anything else is a violation."""
+    if not isinstance(tree, dict):
+        return ["workflow must be a mapping"]
+    f = []
+    if tree.get("on") != CLA_ON:
+        f.append("cla.yml: triggers must be exactly issue_comment (created) and pull_request_target (opened, closed, synchronize)")
+    if tree.get("permissions") != {"contents": "read"}:
+        f.append("cla.yml: top-level permissions must be exactly 'contents: read'")
+    jobs = tree.get("jobs")
+    if not isinstance(jobs, dict) or list(jobs) != ["cla"]:
+        return f + ["cla.yml: exactly one job named cla"]
+    job = jobs["cla"]
+    if not isinstance(job, dict):
+        return f + ["cla.yml: job must be a mapping"]
+    if job.get("permissions") != CLA_PERMISSIONS:
+        f.append("cla.yml: job permissions must be exactly %s" % CLA_PERMISSIONS)
+    if not isinstance(job.get("timeout-minutes"), str) or not TIMEOUT_RE.fullmatch(job["timeout-minutes"]):
+        f.append("cla.yml: job lacks a numeric timeout-minutes")
+    if "CLA_ENABLED" not in str(job.get("if", "")) or "'true'" not in str(job.get("if", "")):
+        f.append("cla.yml: the job must be inert until the repository variable CLA_ENABLED is 'true'")
+    allowed_job_keys = {"name", "runs-on", "if", "permissions", "timeout-minutes", "steps"}
+    for k in job:
+        if k not in allowed_job_keys:
+            f.append("cla.yml: unexpected job key %s" % k)
+    steps = job.get("steps")
+    if not isinstance(steps, list) or len(steps) != 1 or not isinstance(steps[0], dict):
+        return f + ["cla.yml: exactly one step"]
+    step = steps[0]
+    for k in step:
+        if k not in {"name", "uses", "env", "with"}:
+            f.append("cla.yml: unexpected step key %s (no run, no checkout)" % k)
+    parsed = parse_uses(step.get("uses"))
+    if parsed is None or parsed[0] != CLA_ACTION or parsed[1]:
+        f.append("cla.yml: the step must use %s" % CLA_ACTION)
+    else:
+        f.extend("cla.yml: " + m for m in check_uses(step["uses"], "step", pins))
+    if step.get("env") != CLA_ENV:
+        f.append("cla.yml: env must be exactly the two tokens %s" % sorted(CLA_ENV))
+    with_ = step.get("with")
+    if not isinstance(with_, dict) or set(with_) - CLA_WITH_KEYS:
+        f.append("cla.yml: with: has an input the policy does not know")
+    elif not str(with_.get("path-to-document", "")).startswith("https://github.com/"):
+        f.append("cla.yml: path-to-document must be a github.com URL")
+    return f
+
+
 def check_workflow(path, pins):
     name = str(path)
     try:
@@ -231,6 +291,8 @@ def check_workflow(path, pins):
         tree = parse(text)
     except PolicyError as exc:
         return [(name, str(exc))]
+    if Path(path).name == CLA_FILE:
+        return [(name, message) for message in check_cla_tree(tree, pins)]
     return [(name, message) for message in check_tree(tree, pins)]
 
 

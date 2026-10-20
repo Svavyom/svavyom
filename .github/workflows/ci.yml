@@ -1,5 +1,5 @@
 name: CI (pinned toolchain, unprivileged)
-# Story M0-E02-S02. Policy enforced by tools/check_ci_policy.py (make ci-policy).
+# Policy enforced by tools/check_ci_policy.py (make ci-policy).
 # Never add root-required or host-mutating tests to shared runners.
 on:
   push:
@@ -23,43 +23,15 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 0
           persist-credentials: false
-      - name: Require docs repository variable (fail closed)
-        env:
-          DOCS_REPOSITORY: ${{ vars.DOCS_REPOSITORY }}
-        run: |
-          if [ -z "$DOCS_REPOSITORY" ]; then
-            echo "::error::Set repository variable DOCS_REPOSITORY (owner/cloud-product-docs); see docs/CI.md"
-            exit 1
-          fi
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          repository: ${{ vars.DOCS_REPOSITORY }}
-          path: cloud-product-docs
-          fetch-depth: 0
-          persist-credentials: false
-      # Host-side safety test runs first, before any container step can
-      # modify working-tree files (S02 review F6).
-      - name: Container safety (AC04)
+      # Host-side safety test runs first, before any container step can modify working-tree files.
+      - name: Container safety
         working-directory: cloud-platform
         run: make test-container
-      - name: make docker-check (all G0 gates)
+      # Every gate a public checkout can run on its own (the maintainers' fuller set also reads a separate, private requirements repository).
+      - name: make docker-public-check
         working-directory: cloud-platform
-        run: make docker-check
-      # M0-S02: the browser tier (Chromium, offline, simulated host). Real-KVM qualification is NOT run here: it is a manual privileged tier.
+        run: make docker-public-check
+      # The browser tier (Chromium, offline, simulated host). Real-KVM qualification is NOT run here: it is a manual privileged tier.
       - name: Browser tier (make docker-fe-browser)
         working-directory: cloud-platform
         run: make docker-fe-browser
-      - name: Gate-defect integration tests (AC02)
-        working-directory: cloud-platform
-        run: make test-integration
-      - name: Backlog validation and docs linkage (M0-E02-S01)
-        working-directory: cloud-platform
-        env:
-          EVENT_NAME: ${{ github.event_name }}
-          BASE_REF: ${{ github.base_ref }}
-        run: |
-          if [ "$EVENT_NAME" = "pull_request" ]; then
-            make docker-linkage LINKAGE_BASE="origin/$BASE_REF" REQUIRE_COMMITS=1
-          else
-            make docker-linkage LINKAGE_MODE=lock
-          fi

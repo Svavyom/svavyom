@@ -48,7 +48,7 @@ Verify any artifact with its own tool: `release-out/svavyom-<version>/bin/svavyo
 | API contract | `contracts/openapi.yaml` | edit it first; generated code and the types follow |
 | Operator tool | `backend/cmd/svavyom-ctl` | install, upgrade, bridge and diagnostics |
 
-Changing the version: edit `VERSION`, run `toolchain/regen-sbom.sh` (regenerates `docs/sbom/*` and `THIRD-PARTY-NOTICES.md`; the licence gate fails if they are stale), update the version named in [`RELEASE-NOTES-DEVELOPMENT-PREVIEW.md`](https://github.com/Svavyom/svavyom-docs/blob/main/RELEASE-NOTES-DEVELOPMENT-PREVIEW.md), run the gates, then build the artifact.
+Changing the version: edit `VERSION`, run `toolchain/regen-sbom.sh` (regenerates `docs/sbom/*` and `THIRD-PARTY-NOTICES.md`; the licence gate fails if they are stale), update the version named in [Release notes](https://github.com/Svavyom/svavyom/releases), run the gates, then build the artifact.
 
 ## 6. If something fails
 | Symptom | Cause and fix |
@@ -61,4 +61,4 @@ Changing the version: edit `VERSION`, run `toolchain/regen-sbom.sh` (regenerates
 | `make boundary` fails on a new file | add it to a tier in `release/open-core.json` and to `release/boundary.json`; run `python3 tools/check_open_core.py --write` to regenerate `REUSE.toml` |
 
 ## 7. Honest limits
-The build is not yet proven reproducible byte for byte, no hosted CI has run it, and the artifact is unsigned ([`TECH-DEBT.md`](https://github.com/Svavyom/svavyom-docs/blob/main/TECH-DEBT.md)). Signing options are in [`SIGNING-OPTIONS.md`](https://github.com/Svavyom/svavyom-docs/blob/main/SIGNING-OPTIONS.md).
+The build is not yet proven reproducible byte for byte, no hosted CI has run it, and the artifact is unsigned ([Known limitations](https://docs.svavyom.com/known-limitations/)). Signing options are in [Security](https://docs.svavyom.com/security/).
