@@ -27,7 +27,6 @@
     ".gitleaksignore",
     "docs/*.md",
     "docs/sbom/**",
-    "OPERATOR_ACTIONS_REQUIRED.md",
     "NOTICE",
     "LICENSING.md",
     "CONTRIBUTING.md",

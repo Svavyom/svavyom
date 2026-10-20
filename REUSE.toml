@@ -2,7 +2,7 @@
 version = 1
 
 [[annotations]]
-path = ["backend/**", "frontend/**", "agent/**", "packages/**", "toolchain/**", "ci/**", ".github/**", "compose.yaml", "Makefile", "VERSION", "release/**", "docs-lock.json", "AGENTS.md", "README.md", "OPERATOR_ACTIONS_REQUIRED.md", ".gitignore", ".dockerignore", ".gitleaks.toml", ".gitleaks-dir.toml", ".gitleaksignore"]
+path = ["backend/**", "frontend/**", "agent/**", "packages/**", "toolchain/**", "ci/**", ".github/**", "compose.yaml", "Makefile", "VERSION", "release/**", "docs-lock.json", "AGENTS.md", "README.md", ".gitignore", ".dockerignore", ".gitleaks.toml", ".gitleaks-dir.toml", ".gitleaksignore"]
 precedence = "aggregate"
 SPDX-FileCopyrightText = "2026 Dhanraj Sheth"
 SPDX-License-Identifier = "AGPL-3.0-or-later"

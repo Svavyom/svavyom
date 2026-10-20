@@ -2,7 +2,7 @@
 # Placeholders (@SVAVYOM_..._UID@) are filled in by render-units.sh; nothing else is templated.
 [Unit]
 Description=Svavyom API (unprivileged web/API service)
-Documentation=file:///usr/share/doc/svavyom/UBUNTU-DEPLOYMENT.md
+Documentation=https://docs.svavyom.com/getting-started/install/
 After=network-online.target svavyom-agent.service svavyom-mutation.service svavyom-offsite.service svavyom-console.service
 Wants=network-online.target svavyom-agent.service svavyom-mutation.service svavyom-offsite.service svavyom-console.service
 StartLimitIntervalSec=60
@@ -25,7 +25,7 @@ ExecStart=/usr/libexec/svavyom/api serve \
     --console-socket /run/svavyom/console/console.sock \
     --provision-config /etc/svavyom/provision.json
 # VM create/start/lifecycle and the interactive serial console are OFF by default (boot output can be read). To enable the Development
-# Preview, install the drop-in svavyom-api.service.d/experimental-mutation.conf (see UBUNTU-DEPLOYMENT.md); the API then also verifies
+# Preview, install the drop-in svavyom-api.service.d/experimental-mutation.conf (see the install guide, https://docs.svavyom.com/getting-started/install/); the API then also verifies
 # the trust anchors at start. The interactive console is a separate opt-in: experimental-console.conf.
 Restart=on-failure
 RestartSec=2s

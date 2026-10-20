@@ -17,7 +17,6 @@
       "docs-lock.json",
       "AGENTS.md",
       "README.md",
-      "OPERATOR_ACTIONS_REQUIRED.md",
       ".gitignore",
       ".dockerignore",
       ".gitleaks.toml",

@@ -3,7 +3,7 @@
 # image store and base images belong to root and are read-only here.
 [Unit]
 Description=Svavyom mutation supervisor (launches the short-lived libvirt helper)
-Documentation=file:///usr/share/doc/svavyom/UBUNTU-DEPLOYMENT.md
+Documentation=https://docs.svavyom.com/getting-started/install/
 After=libvirtd.service libvirtd.socket
 Wants=libvirtd.socket
 StartLimitIntervalSec=60
@@ -13,7 +13,7 @@ StartLimitBurst=5
 Type=exec
 User=svavyom-mut
 Group=svavyom-mut
-# The libvirt group grants the read-write libvirt socket. That group is coarse (see UBUNTU-DEPLOYMENT.md "Libvirt permissions"):
+# The libvirt group grants the read-write libvirt socket. That group is coarse (see the install guide, https://docs.svavyom.com/getting-started/install/):
 # the closed protocol and the helper's code, not libvirt, limit this identity to preflight, define a stopped VM, and start.
 SupplementaryGroups=libvirt
 ExecStart=/usr/libexec/svavyom/mutation-supervisor \

@@ -4,7 +4,7 @@
 # on its own Unix socket whose peer must be the API identity.
 [Unit]
 Description=Svavyom off-host backup copy service
-Documentation=file:///usr/share/doc/svavyom/UBUNTU-DEPLOYMENT.md
+Documentation=https://docs.svavyom.com/getting-started/install/
 After=network-online.target
 Wants=network-online.target
 StartLimitIntervalSec=60

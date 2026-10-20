@@ -4,7 +4,7 @@
 # VMs, read one VM's facts, open its serial console). It owns nothing it trusts and never sees a cookie or a console ticket.
 [Unit]
 Description=Svavyom serial console broker
-Documentation=file:///usr/share/doc/svavyom/UBUNTU-DEPLOYMENT.md
+Documentation=https://docs.svavyom.com/getting-started/install/
 After=libvirtd.service libvirtd.socket
 Wants=libvirtd.socket
 StartLimitIntervalSec=60
@@ -15,7 +15,7 @@ Type=exec
 User=svavyom-con
 Group=svavyom-con
 # The libvirt group grants the read-write libvirt socket, which opening a console needs (libvirt has no read-only console). That group is
-# coarse (UBUNTU-DEPLOYMENT.md "Libvirt permissions"): the broker's code and closed protocol, not libvirt, limit this identity.
+# coarse (the install guide, https://docs.svavyom.com/getting-started/install/): the broker's code and closed protocol, not libvirt, limit this identity.
 SupplementaryGroups=libvirt
 ExecStart=/usr/libexec/svavyom/console-broker \
     --socket /run/svavyom/console/console.sock \

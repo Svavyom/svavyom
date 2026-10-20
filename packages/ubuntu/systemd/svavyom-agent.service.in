@@ -1,7 +1,7 @@
 # Svavyom read-only host agent. Reads VM inventory through libvirt's READ-ONLY socket; has no mutating operation at all.
 [Unit]
 Description=Svavyom read-only host agent
-Documentation=file:///usr/share/doc/svavyom/UBUNTU-DEPLOYMENT.md
+Documentation=https://docs.svavyom.com/getting-started/install/
 After=libvirtd.service libvirtd.socket libvirtd-ro.socket
 Wants=libvirtd.socket libvirtd-ro.socket
 StartLimitIntervalSec=60

@@ -18,7 +18,7 @@ else
   con_uid=$(id -u svavyom-con) con_gid=$(id -g svavyom-con)
 fi
 for v in "$api_uid" "$api_gid" "$ro_uid" "$ro_gid" "$mut_uid" "$mut_gid" "$lv_gid" "$con_uid" "$con_gid"; do
-  case "$v" in ''|*[!0-9]*) echo "ERROR a service identity is missing (create the users first; see UBUNTU-DEPLOYMENT.md)" >&2; exit 2;; esac
+  case "$v" in ''|*[!0-9]*) echo "ERROR a service identity is missing (create the users first; see https://docs.svavyom.com/getting-started/install/)" >&2; exit 2;; esac
   [ "$v" -ne 0 ] || { echo "ERROR a service identity resolves to uid/gid 0; refusing" >&2; exit 2; }
 done
 mkdir -p "$out/systemd/svavyom-api.service.d" "$out/etc"
