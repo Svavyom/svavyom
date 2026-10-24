@@ -7,7 +7,8 @@
 * **Tested on:** Ubuntu 24.04 LTS, x86_64, KVM, libvirt `qemu:///system`. One host per installation.
 * **Not supported in the current release:** high availability, multi-host management, stability guarantees, or suitability for production workloads. Release artifacts are **not signed** yet.
 ## Tour
-[svavyom-tour.webm](https://github.com/user-attachments/assets/8293edf6-4208-4dbe-873a-39e9535e2304)
+[svavyom-tour.webm](https://github.com/user-attachments/assets/0c200e1b-c579-4ce1-baac-a62860c96db4)
+
 
 
 
