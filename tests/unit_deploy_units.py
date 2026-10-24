@@ -179,6 +179,27 @@ class Units(unittest.TestCase):
         for p in rows:
             self.assertFalse(p.startswith("/tmp"), p)
 
+    def test_default_pool_directory_is_unchanged_and_explained(self):
+        """M1-E01-S06: the packaged default pool stays as it was (root, 0711, no Svavyom service reads it) and the installer guide says when it stays empty."""
+        rows, comments = {}, []
+        for ln in (PKG / "tmpfiles.d" / "svavyom.conf").read_text().splitlines():
+            p = ln.split()
+            if len(p) >= 5 and p[0] == "d":
+                rows[p[1]] = (p[2], p[3], p[4])
+            elif ln.startswith("#"):
+                comments.append(ln)
+        self.assertEqual(rows["/var/lib/svavyom/pool"], ("0711", "root", "root"))
+        self.assertTrue(any("stays empty" in c and "provision.json" in c for c in comments), "the tmpfiles comment must say the default pool can stay empty")
+        pool_xml = (PKG / "libvirt" / "pool-svavyom.xml").read_text()
+        self.assertIn("<path>/var/lib/svavyom/pool</path>", pool_xml)
+        guide = (PKG.parents[1] / "INSTALLING.md").read_text()
+        section = guide.split("### Where VM disks live", 1)[1].split("\n## ", 1)[0]
+        for needle in ("/var/lib/svavyom/pool", "--pool NAME", "--create-pool", "provision.json", "empty", "virsh pool-list"):
+            self.assertIn(needle, section, needle)
+        for unit in UNITS:
+            text = (PKG / "systemd" / (unit + ".service.in")).read_text()
+            self.assertNotIn("ReadWritePaths=/var/lib/svavyom/pool", text)
+
     def test_sysusers_defines_four_nologin_users_and_no_libvirt_membership(self):
         text = (PKG / "sysusers.d" / "svavyom.conf").read_text()
         lines = [ln for ln in text.splitlines() if ln and not ln.startswith("#")]
