@@ -37,6 +37,11 @@ Open the VM from **Virtual machines**. Depending on its state and your role you 
 
 ## 4. Storage, backups and recovery
 * **Images** are imported by the host administrator (they are never uploaded or downloaded by the browser).
+* **Image rules.** `register-image` refuses anything outside these rules and names the field that failed (it never repeats what you typed):
+  * `--id`: use lower-case letters, digits, '.', '_' or '-', starting with a letter or digit, at most 63 characters
+  * `--display-name`, `--distribution`, `--version`: start with a letter or digit, then letters, digits, spaces and . _ ( ) + - only, at most 63 characters
+  * `--login-user` (cloud images): use lower-case letters, digits, '_' or '-', starting with a letter or '_', at most 32 characters
+  * `--min-disk-gib`: use a whole number from 1 to 4096 (GiB)
 * **Data volumes**: create, attach to a stopped VM, detach, delete.
 * **Backups** are kept on the host. For protection against losing the host, declare **off-host targets** (a mounted directory or an SSH server whose host key you pinned) in `/etc/svavyom/provision.json` and copy a backup there from its page; copies are verified by SHA-256 but are **not encrypted** by Svavyom ([Storage, backups and recovery](https://docs.svavyom.com/using/storage/)).
 * **The database** has its own consistent copies: `sudo svavyom-ctl db-backup`, `db-backups`, `db-restore` ([Operations](https://docs.svavyom.com/operations/upgrade/)).

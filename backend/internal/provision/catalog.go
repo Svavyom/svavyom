@@ -92,38 +92,72 @@ func (i Image) storeExt() string {
 	return ".qcow2"
 }
 
+// The rules an operator's metadata must meet, in words. A refusal names the field and one of these; it never repeats the value that was given.
+const (
+	ruleID    = "use lower-case letters, digits, '.', '_' or '-', starting with a letter or digit, at most 63 characters"
+	ruleText  = "start with a letter or digit, then letters, digits, spaces and . _ ( ) + - only, at most 63 characters"
+	ruleLogin = "use lower-case letters, digits, '_' or '-', starting with a letter or '_', at most 32 characters"
+	ruleDisk  = "use a whole number from 1 to 4096 (GiB)"
+)
+
+// rejected is ErrCatalog with the field and the rule that failed (errors.Is still matches ErrCatalog).
+func rejected(field, rule string) error { return fmt.Errorf("%w: %s: %s", ErrCatalog, field, rule) }
+
+// validateOperatorFields checks the fields an operator supplies, one by one, so a refusal can say which one failed.
+func (i Image) validateOperatorFields() error {
+	switch {
+	case !imageIDRE.MatchString(i.ID):
+		return rejected("image id", ruleID)
+	case !textRE.MatchString(i.DisplayName):
+		return rejected("display name", ruleText)
+	case !textRE.MatchString(i.Distribution):
+		return rejected("distribution", ruleText)
+	case !textRE.MatchString(i.Version):
+		return rejected("version", ruleText)
+	case i.MinDiskGiB < 1 || i.MinDiskGiB > 4096:
+		return rejected("minimum disk", ruleDisk)
+	}
+	return nil
+}
+
 func (i Image) validate() error {
 	if i.Media != "" && i.Media != MediaDisk && i.Media != MediaISO {
 		return ErrCatalog
 	}
+	if err := i.validateOperatorFields(); err != nil {
+		return err
+	}
 	if i.IsISO() {
 		// Installation media: no cloud-init, no login user, never "qualified" (a real-host boot of a cloud image is what qualification means).
-		if !imageIDRE.MatchString(i.ID) || !textRE.MatchString(i.DisplayName) || !textRE.MatchString(i.Distribution) || !textRE.MatchString(i.Version) ||
-			i.Architecture != "x86_64" || i.Format != "iso" || !fingerprintRE.MatchString(i.SHA256) || i.File != i.SHA256+".iso" ||
-			i.SizeBytes <= 0 || i.MinDiskGiB < 1 || i.MinDiskGiB > 4096 || i.CloudInit || i.LoginUser != "" || i.Evidence != "" {
+		if i.Architecture != "x86_64" || i.Format != "iso" || !fingerprintRE.MatchString(i.SHA256) || i.File != i.SHA256+".iso" ||
+			i.SizeBytes <= 0 || i.CloudInit || i.LoginUser != "" || i.Evidence != "" {
 			return ErrCatalog
 		}
 		if i.State != StateVerified && i.State != StateDisabled {
-			return ErrCatalog
+			return rejected("state", "installation media can only be verified or disabled")
 		}
 		return nil
 	}
-	if !imageIDRE.MatchString(i.ID) || !textRE.MatchString(i.DisplayName) || !textRE.MatchString(i.Distribution) || !textRE.MatchString(i.Version) ||
-		i.Architecture != "x86_64" || i.Format != "qcow2" || !fingerprintRE.MatchString(i.SHA256) || i.File != i.SHA256+".qcow2" ||
-		i.SizeBytes <= 0 || i.MinDiskGiB < 1 || i.MinDiskGiB > 4096 || !loginUserRE.MatchString(i.LoginUser) {
+	if !loginUserRE.MatchString(i.LoginUser) {
+		return rejected("login user", ruleLogin)
+	}
+	if i.Architecture != "x86_64" || i.Format != "qcow2" || !fingerprintRE.MatchString(i.SHA256) || i.File != i.SHA256+".qcow2" || i.SizeBytes <= 0 {
 		return ErrCatalog
 	}
 	switch i.State {
 	case StateRegistered, StateDisabled:
 	case StateVerified, StateQualified:
 		if !i.CloudInit {
-			return ErrCatalog
+			return rejected("state", "verified and qualified images must support cloud-init")
 		}
 	default:
 		return ErrCatalog
 	}
-	if (i.State == StateQualified) != (i.Evidence != "") || (i.Evidence != "" && !textRE.MatchString(i.Evidence)) {
-		return ErrCatalog
+	if (i.State == StateQualified) != (i.Evidence != "") {
+		return rejected("evidence", "give a reference to the qualification record for a qualified image, and only then")
+	}
+	if i.Evidence != "" && !textRE.MatchString(i.Evidence) {
+		return rejected("evidence", ruleText)
 	}
 	return nil
 }
