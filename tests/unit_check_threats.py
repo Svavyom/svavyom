@@ -548,7 +548,7 @@ class Rules(unittest.TestCase):
     def test_planned_owner_must_be_open(self):
         for status in ("verified", "done", None):
             with self.subTest(status=status):
-                stories = dict(owner_stories(), **{"M1-E04-S04": status})
+                stories = dict(owner_stories(), **{"M0-E01-S06": status})  # the story that owns the threats awaiting runtime evidence (stage 1)
                 self.assertIn("THREAT_UNOWNED", codes(run_check(self.docs, stories=stories)))
         docs = copy.deepcopy(self.docs)
         threat(docs, "T-API-S")["owner_story"] = "not-a-story"
