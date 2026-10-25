@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"strings"
 	"testing"
 
@@ -112,5 +113,88 @@ func TestTwoMediaAreObservedAndEjectedByName(t *testing.T) {
 	}
 	if strings.Count(r.domainXML("web-1"), "device='cdrom'") != 1 { // the cloud-init seed only
 		t.Fatalf("only the seed CD remains:\n%s", r.domainXML("web-1"))
+	}
+}
+
+// DR-031 slice 2: a second medium is attached through the API, never boots, and the third is refused.
+func TestASecondMediumIsAttachedAndTheThirdIsRefused(t *testing.T) {
+	r := newCRig(t, true)
+	for _, id := range []string{"tools-iso", "drivers-iso", "other-iso"} {
+		r.registerISO(id)
+	}
+	b := signedIn(t, r.env)
+	r.await(b, opID(t, r.post(b, r.createBody("web-1", r.key, nil))), "succeeded")
+
+	// the driver medium first (just attached), then an installer that would boot: refused, whichever order
+	r.await(b, opID(t, r.attach(b, "web-1", "drivers-iso", "disk", "k-s1")), "succeeded")
+	if rep := r.attach(b, "web-1", "tools-iso", "cdrom", "k-s2"); rep.status != 400 {
+		t.Errorf("a second medium never boots: %d %s", rep.status, rep.body)
+	}
+	if rep := r.attach(b, "web-1", "drivers-iso", "disk", "k-s3"); rep.status != 409 {
+		t.Errorf("the same medium again: %d %s", rep.status, rep.body)
+	}
+	r.await(b, opID(t, r.submitAs(b, "eject_iso", "VM", "web-1")), "succeeded")
+
+	// the installer first (boots), then the driver medium only attached
+	r.await(b, opID(t, r.attach(b, "web-1", "tools-iso", "cdrom", "k-s4")), "succeeded")
+	r.await(b, opID(t, r.attach(b, "web-1", "drivers-iso", "disk", "k-s5")), "succeeded")
+	v := readVMMedia(t, b, "web-1")
+	if len(v.Observed.ISOs) != 2 || v.Observed.ISOs[0] != "tools-iso" || v.Observed.ISOs[1] != "drivers-iso" || v.Observed.ISO == nil || *v.Observed.ISO != "tools-iso" {
+		t.Fatalf("two media, the installer boots: %+v", v.Observed)
+	}
+	if hasAction(v.Allowed, "iso_attach") || hasAction(v.Allowed, "rescue") || !hasAction(v.Allowed, "eject_iso") {
+		t.Fatalf("a third is not offered, nor rescue; eject is: %v", v.Allowed)
+	}
+	x := r.domainXML("web-1")
+	if strings.Count(x, "<boot order='1'/>") != 1 || strings.Count(x, "<boot order=") != 2 || strings.Count(x, "device='cdrom'") != 3 {
+		t.Fatalf("the seed and two media, one of them booting first:\n%s", x)
+	}
+	for name, c := range map[string]struct {
+		body   string
+		status int
+	}{
+		"a third medium":        {`{"type":"iso_attach","kind":"VM","id":"web-1","idempotency_key":"k-s6","params":{"image_id":"other-iso","boot":"disk"}}`, 409},
+		"rescue with two media": {`{"type":"rescue","kind":"VM","id":"web-1","idempotency_key":"k-s7","params":{"image_id":"other-iso"}}`, 409},
+	} {
+		if rep := r.post(b, c.body); rep.status != c.status {
+			t.Errorf("%s: %d, want %d: %s", name, rep.status, c.status, rep.body)
+		}
+	}
+	// a viewer cannot attach; a running VM refuses
+	if rep := r.post(r.asRole("vera", auth.RoleViewer), `{"type":"iso_attach","kind":"VM","id":"web-1","idempotency_key":"k-s8","params":{"image_id":"other-iso","boot":"disk"}}`); rep.status != 403 {
+		t.Errorf("a viewer cannot attach: %d", rep.status)
+	}
+	// eject the installer by name: the driver medium stays and nothing boots from a CD
+	r.await(b, opID(t, r.post(b, r.ejectBody("web-1", "k-s9", `{"image_id":"tools-iso"}`))), "succeeded")
+	if v = readVMMedia(t, b, "web-1"); len(v.Observed.ISOs) != 1 || v.Observed.ISOs[0] != "drivers-iso" || !hasAction(v.Allowed, "iso_attach") {
+		t.Fatalf("one left, attach offered again: %+v %v", v.Observed, v.Allowed)
+	}
+	r.await(b, opID(t, r.submitAs(b, "start", "VM", "web-1")), "succeeded")
+	if rep := r.attach(b, "web-1", "other-iso", "disk", "k-s10"); rep.status != 409 {
+		t.Errorf("a running VM: %d %s", rep.status, rep.body)
+	}
+}
+
+// A repeat of an attach that already worked (an unknown outcome followed by a retry) finds the work done: the helper-level operation is idempotent.
+func TestAttachingTheSecondMediumTwiceChangesNothing(t *testing.T) {
+	r := newCRig(t, true)
+	for _, id := range []string{"tools-iso", "drivers-iso"} {
+		r.registerISO(id)
+	}
+	b := signedIn(t, r.env)
+	r.await(b, opID(t, r.post(b, r.createBody("web-1", r.key, nil))), "succeeded")
+	r.await(b, opID(t, r.attach(b, "web-1", "tools-iso", "cdrom", "k-i1")), "succeeded")
+	r.await(b, opID(t, r.attach(b, "web-1", "drivers-iso", "disk", "k-i2")), "succeeded")
+	before := r.domainXML("web-1")
+	c, err := provision.LoadTrustedCatalog(provision.DevPolicy(), r.catDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	im, _ := c.Get("drivers-iso")
+	if err := provision.ISOAttach(context.Background(), r.sim, c, "web-1", "drivers-iso", im.SHA256, "disk", nil); err != nil {
+		t.Fatalf("the repeat: %v", err)
+	}
+	if r.domainXML("web-1") != before {
+		t.Fatal("the repeat changed the definition")
 	}
 }

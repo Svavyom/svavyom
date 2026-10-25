@@ -177,3 +177,29 @@ func ISODiskXML(path, dev string) (string, error) {
 
 // StepISOEjected is reported once the media is out of the definition.
 const StepISOEjected = "iso-ejected"
+
+// attachedMedium is one installation medium a definition carries.
+type attachedMedium struct{ sha, path, dev string }
+
+// attachedMedia returns every installation medium of a definition, in document order (ISODisk returns the first only).
+func attachedMedia(x string) []attachedMedium {
+	var d struct {
+		Disks []struct {
+			sourceDiskDoc
+			Target struct {
+				Dev string `xml:"dev,attr"`
+			} `xml:"target"`
+		} `xml:"devices>disk"`
+	}
+	if len(x) > 1<<20 || xml.Unmarshal([]byte(x), &d) != nil {
+		return nil
+	}
+	var out []attachedMedium
+	for _, disk := range d.Disks {
+		if isISODisk(disk.sourceDiskDoc) {
+			s, _ := ISOFileSHA256(filepath.Base(disk.Source.File))
+			out = append(out, attachedMedium{sha: s, path: disk.Source.File, dev: disk.Target.Dev})
+		}
+	}
+	return out
+}

@@ -40,7 +40,7 @@ func redefine(ctx context.Context, ops HostOps, before DomainInfo, op, y string,
 
 func mapDeviceErr(op string, err error) error {
 	switch {
-	case errors.Is(err, ErrISOPresent), errors.Is(err, ErrRescued), errors.Is(err, ErrNoGraphics):
+	case errors.Is(err, ErrISOPresent), errors.Is(err, ErrRescued), errors.Is(err, ErrNoGraphics), errors.Is(err, ErrTooManyMedia):
 		return typedWhy(hypervisor.Conflict, op, err.Error())
 	case errors.Is(err, ErrBoot), errors.Is(err, ErrBacking), errors.Is(err, ErrMediaAmbiguous):
 		return typed(hypervisor.Validation, op)
@@ -101,7 +101,7 @@ func ISOAttach(ctx context.Context, ops HostOps, cat *Catalog, name, imageID, sh
 	if err != nil {
 		return mapDeviceErr("iso_attach", err)
 	}
-	if err := redefine(ctx, ops, d, "iso_attach", y, func(a DomainInfo) bool { return a.ISO == sha }); err != nil {
+	if err := redefine(ctx, ops, d, "iso_attach", y, func(a DomainInfo) bool { return sameSet(a.ISOs, append(append([]string(nil), d.ISOs...), sha)) }); err != nil {
 		return err
 	}
 	hook(StepISOAttached)
@@ -151,6 +151,27 @@ func without(list []string, s string) []string {
 		}
 	}
 	return out
+}
+
+// sameSet reports whether two lists hold the same distinct strings, in any order (the order of media follows the guest target, which the host chooses).
+func sameSet(a, b []string) bool {
+	in := map[string]bool{}
+	for _, s := range a {
+		in[s] = true
+	}
+	want := map[string]bool{}
+	for _, s := range b {
+		want[s] = true
+	}
+	if len(in) != len(want) {
+		return false
+	}
+	for s := range want {
+		if !in[s] {
+			return false
+		}
+	}
+	return true
 }
 
 // sameList reports whether two lists hold the same strings in the same order (nil and empty are the same).

@@ -63,6 +63,23 @@ describe("installation media, the graphical console and rescue on the VM page", 
     expect(Object.keys(posts[0]!.params as object).sort()).toEqual(["boot", "image_id"]);
   });
 
+  it("attaches a second medium: no boot choice, the attached one is not offered, the request says disk (DR-031)", async () => {
+    const DRIVERS: Image = { ...ISO, id: "drivers-iso", name: "Driver disc" };
+    images = [DISK, ISO, DRIVERS];
+    machine = stopped(["start", "delete", "eject_iso", "iso_attach"], { iso: "alpine-iso", isos: ["alpine-iso"] });
+    render(<Root />);
+    expect(screen.queryByRole("button", { name: "Start rescue mode for web-1" })).toBeNull();
+    await userEvent.click(await screen.findByRole("button", { name: "Attach installation media to web-1" }));
+    const media = (await screen.findByLabelText("Media")) as HTMLSelectElement;
+    await waitFor(() => expect(Array.from(media.options).map((o) => o.value)).toEqual(["drivers-iso"])); // not the one already attached
+    expect(screen.queryByLabelText("Boot")).toBeNull();
+    expect(screen.getByText(/A second medium is only attached.*it does not boot/)).toBeTruthy();
+    expect(await axeViolations(document.body)).toEqual([]);
+    await userEvent.click(screen.getByRole("button", { name: "Attach the media" }));
+    await waitFor(() => expect(posts).toHaveLength(1));
+    expect(posts[0]).toMatchObject({ type: "iso_attach", kind: "VM", id: "web-1", params: { image_id: "drivers-iso", boot: "disk" } });
+  });
+
   it("starts rescue mode with the chosen ISO and nothing else", async () => {
     machine = stopped(["start", "delete", "iso_attach", "rescue"]);
     render(<Root />);

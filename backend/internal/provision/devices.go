@@ -21,6 +21,8 @@ const (
 // Errors of the device transformations (none carries caller input).
 var (
 	ErrISOPresent = fmt.Errorf("provision: installation media is already attached")
+	// ErrTooManyMedia: the definition carries more than MaxMedia installation media (a CD added by hand); operations on its media are refused (DR-031).
+	ErrTooManyMedia = fmt.Errorf("provision: the definition carries more than two installation media")
 	// ErrMediaAmbiguous: two media are attached and the request did not say which one (DR-031).
 	ErrMediaAmbiguous = fmt.Errorf("provision: two installation media are attached; name the one to remove")
 	ErrRescued        = fmt.Errorf("provision: the VM is in rescue mode")
@@ -188,8 +190,10 @@ func normalizeBoot(x string) string {
 	return x[:loc[0]] + sec + x[loc[1]:]
 }
 
-// AttachISOXML adds the installation media at path to the definition as a read-only CD on the first free SATA target. boot is BootCDROM (the VM boots
-// from it next time) or BootDisk (it is just attached). Media already attached from the same path is success; other media is ErrISOPresent.
+// AttachISOXML adds the installation medium at path to the definition as a read-only CD on the first free SATA target (DR-031). boot is BootCDROM (the VM
+// boots from it next time) or BootDisk (it is just attached). The medium already attached from the same path is success with nothing changed. A VM carries at
+// most MaxMedia media: the second is only attached, it never boots (BootCDROM is ErrBoot), and a third is ErrISOPresent. A definition that already has more than
+// MaxMedia (a CD added by hand) is ErrTooManyMedia.
 func AttachISOXML(x, path, boot string) (string, error) {
 	if boot != BootCDROM && boot != BootDisk {
 		return "", ErrBoot
@@ -197,11 +201,23 @@ func AttachISOXML(x, path, boot string) (string, error) {
 	if _, err := ISODiskXML(path, "sda"); err != nil {
 		return "", ErrBacking
 	}
-	if _, have, _, ok := ISODisk(x); ok {
-		if have == path {
+	if RescueISO(x) != "" {
+		return "", ErrRescued // leave rescue mode first
+	}
+	media := attachedMedia(x)
+	if len(media) > MaxMedia {
+		return "", ErrTooManyMedia
+	}
+	for _, m := range media {
+		if m.path == path {
 			return x, nil
 		}
+	}
+	switch {
+	case len(media) >= MaxMedia:
 		return "", ErrISOPresent
+	case len(media) == 1 && boot != BootDisk:
+		return "", ErrBoot // a second medium never boots; eject the first to boot from this one
 	}
 	dev, err := nextCDDev(x)
 	if err != nil {
@@ -228,6 +244,9 @@ func RemoveISOXML(x, sha string) (string, bool, error) {
 	type found struct {
 		start, end int
 		sha        string
+	}
+	if len(attachedMedia(x)) > MaxMedia {
+		return "", false, ErrTooManyMedia
 	}
 	var media []found
 	for _, loc := range diskRE.FindAllStringIndex(x, -1) {

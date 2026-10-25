@@ -129,3 +129,64 @@ func TestUnrescueRemovesOnlyTheRescueMedium(t *testing.T) {
 		t.Fatalf("only the rescue medium is removed: %+v", pd)
 	}
 }
+
+// DR-031 slice 2: the attach matrix of the refinement (3.1) and the refusal of a definition with more than two media.
+func TestAttachAMediumMatrix(t *testing.T) {
+	cloud := cloudXML(t)
+	// no medium: boots or not, as before
+	for _, boot := range []string{BootCDROM, BootDisk} {
+		y, err := AttachISOXML(cloud, mediumPath(mediumA), boot)
+		if err != nil {
+			t.Fatalf("first medium, %s: %v", boot, err)
+		}
+		if pd, _ := ParseDomain(y); len(pd.ISOs) != 1 || pd.ISOs[0] != mediumA {
+			t.Fatalf("%s: %+v", boot, pd)
+		}
+		if (boot == BootCDROM) != strings.Contains(y, "<boot order='1'/>") {
+			t.Fatalf("%s: boot order mismatch:\n%s", boot, y)
+		}
+	}
+	// the driver medium attached first (just attached), then a booting second one: refused, nothing changed
+	first, _ := AttachISOXML(cloud, mediumPath(mediumB), BootDisk)
+	if _, err := AttachISOXML(first, mediumPath(mediumA), BootCDROM); err != ErrBoot {
+		t.Fatalf("a second medium never boots, whichever order: %v", err)
+	}
+	// the installer first (boots), then the driver medium attached only
+	inst, _ := AttachISOXML(cloud, mediumPath(mediumA), BootCDROM)
+	both, err := AttachISOXML(inst, mediumPath(mediumB), BootDisk)
+	if err != nil {
+		t.Fatal(err)
+	}
+	pd, _ := ParseDomain(both)
+	if len(pd.ISOs) != 2 || pd.ISO != mediumA || strings.Count(both, "device='cdrom'") != 3 {
+		t.Fatalf("seed + two media; the installer still boots: %+v", pd)
+	}
+	for _, m := range attachedMedia(both) {
+		if !strings.Contains(both, "<source file='"+m.path+"'>\n") && !strings.Contains(both, "<source file='"+m.path+"'><seclabel model='dac' relabel='no'/>") {
+			t.Fatalf("each medium keeps the no-relabel directive: %s", m.path)
+		}
+	}
+	// the same medium again and a third
+	if same, err := AttachISOXML(both, mediumPath(mediumA), BootDisk); err != nil || same != both {
+		t.Fatalf("the same medium again changes nothing: %v", err)
+	}
+	if _, err := AttachISOXML(both, mediumPath(mediumC), BootDisk); err != ErrISOPresent {
+		t.Fatalf("a third: %v", err)
+	}
+	// a definition with more than two media is refused for attach and for eject, and left alone
+	three := withMedium(t, both, mediumC, "sdh", 0)
+	if _, err := AttachISOXML(three, mediumPath("dd44dd44dd44dd44dd44dd44dd44dd44dd44dd44dd44dd44dd44dd44dd44dd44"), BootDisk); !errors.Is(err, ErrTooManyMedia) {
+		t.Fatalf("attach with three: %v", err)
+	}
+	if _, _, err := RemoveISOXML(three, mediumA); !errors.Is(err, ErrTooManyMedia) {
+		t.Fatalf("eject with three: %v", err)
+	}
+	// in rescue mode nothing is attached
+	r, err := RescueXML(cloud, rescuePath(), rescueSum)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := AttachISOXML(r, mediumPath(mediumA), BootDisk); !errors.Is(err, ErrRescued) {
+		t.Fatalf("attach in rescue: %v", err)
+	}
+}
