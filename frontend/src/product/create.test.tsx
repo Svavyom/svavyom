@@ -178,6 +178,84 @@ describe("installation media (M6-E01-S06)", () => {
   });
 });
 
+describe("the guest type of an installation-media VM (M6-E01-S04, DR-032)", () => {
+  const CLOUD_AND_ISO = (): Image[] => [IMAGE, ISO];
+  async function atNetworkStep(images: Image[] = [ISO]) {
+    api.images = images;
+    render(<Root />);
+    await userEvent.type(await screen.findByLabelText(/^Name/), "win-1");
+    await userEvent.click(screen.getByRole("button", { name: "Continue" }));
+  }
+  const created = () => { api.ops = [operation({ id: "op-1", type: "create", resource_id: "win-1", status: "succeeded", attempts: 1, allowed_actions: [] })]; };
+
+  it("offers Linux (the default) or Windows for installation media only", async () => {
+    await atNetworkStep();
+    const radios = await screen.findAllByRole("radio");
+    expect(radios.map((r) => (r as HTMLInputElement).value)).toEqual(["linux", "windows"]);
+    expect((screen.getByRole("radio", { name: "Linux or other (default)" }) as HTMLInputElement).checked).toBe(true);
+    expect(screen.queryByText(/Windows 11 needs UEFI and a TPM/)).toBeNull();
+    expect(await axeViolations(document.body)).toEqual([]);
+    cleanup();
+    // a cloud image has no guest type to choose
+    api.images = [IMAGE];
+    render(<Root />);
+    await fill();
+    expect(screen.queryByRole("radio")).toBeNull();
+  });
+
+  it("says what Windows gets and what it does not, and sends guest_profile windows", async () => {
+    created();
+    await atNetworkStep();
+    await userEvent.click(await screen.findByRole("radio", { name: "Windows" }));
+    expect(screen.getByText(/Windows Server and older Windows clients on BIOS firmware/)).toBeTruthy();
+    expect(screen.getByText(/Windows 11 needs UEFI and a TPM and is not supported yet/)).toBeTruthy();
+    expect(screen.getByText(/virtio-win driver disc as a second installation medium/)).toBeTruthy();
+    expect(await axeViolations(document.body)).toEqual([]);
+    await userEvent.click(screen.getByRole("button", { name: "Review" }));
+    expect(await screen.findByText("Guest type")).toBeTruthy();
+    expect(screen.getByText("Windows", { selector: "dd" })).toBeTruthy();
+    await userEvent.click(screen.getByRole("button", { name: "Create VM" }));
+    expect(await screen.findByText(/follow Windows Setup in the Graphical console/, {}, { timeout: 5000 })).toBeTruthy();
+    expect(screen.getByText(/If it ignores a shutdown request during setup, use Force off/)).toBeTruthy();
+    const post = api.posts()[0]!;
+    expect(validate("SubmitOperationRequest", post.body)).toEqual({ ok: true });
+    expect(post.body.create).toMatchObject({ image_id: "windowsserver2019-iso", guest_profile: "windows" });
+    expect(Object.keys(post.body.create).sort()).toEqual(["disk_gib", "guest_profile", "image_id", "memory_mib", "vcpus"]);
+  });
+
+  it("sends no guest_profile for Linux, so that request is exactly what it always was, and no Windows text on the done screen", async () => {
+    created();
+    await atNetworkStep();
+    await userEvent.click(screen.getByRole("button", { name: "Review" }));
+    expect(await screen.findByText("Linux or other", { selector: "dd" })).toBeTruthy();
+    await userEvent.click(screen.getByRole("button", { name: "Create VM" }));
+    await screen.findByText(/then open the Graphical console to follow the installer/, {}, { timeout: 5000 });
+    expect(Object.keys(api.posts()[0]!.body.create).sort()).toEqual(["disk_gib", "image_id", "memory_mib", "vcpus"]);
+    expect(document.body.textContent).not.toMatch(/follow Windows Setup/);
+  });
+
+  it("does not send a Windows choice made for installation media once a cloud image is chosen", async () => {
+    created();
+    api.images = CLOUD_AND_ISO();
+    render(<Root />);
+    await userEvent.type(await screen.findByLabelText(/^Name/), "win-1");
+    await userEvent.selectOptions(screen.getByLabelText("Image"), "windowsserver2019-iso");
+    await userEvent.click(screen.getByRole("button", { name: "Continue" }));
+    await userEvent.click(await screen.findByRole("radio", { name: "Windows" }));
+    await userEvent.click(screen.getByRole("button", { name: "Back" }));
+    await userEvent.selectOptions(await screen.findByLabelText("Image"), "debian-13");
+    await userEvent.click(screen.getByRole("button", { name: "Continue" }));
+    expect(screen.queryByRole("radio")).toBeNull();
+    await userEvent.click(await screen.findByLabelText(/SSH public key/));
+    await userEvent.paste(KEY);
+    await userEvent.click(screen.getByRole("button", { name: "Review" }));
+    await userEvent.click(await screen.findByRole("button", { name: "Create VM" }));
+    await waitFor(() => expect(api.posts()).toHaveLength(1));
+    expect(api.posts()[0]!.body.create.guest_profile).toBeUndefined();
+    expect(api.posts()[0]!.body.create.image_id).toBe("debian-13");
+  });
+});
+
 describe("create journey", () => {
   it("reviews with a fingerprint only, submits a conformant body, then shows typed progress to a stopped VM", async () => {
     render(<Root />);

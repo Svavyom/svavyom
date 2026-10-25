@@ -189,3 +189,36 @@ test("installation media and rescue mode on a stopped VM: attach, eject, rescue,
   await expect(page.getByText(/This VM is in rescue mode/)).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Start rescue mode for resc-1" })).toBeVisible();
 });
+
+test("a Windows VM from installation media: guest type chosen in the wizard, seen on the VM page (DR-032)", async ({ page }) => {
+  const dir = "/tmp/svavyom-e2e-create-storage";
+  const iso = Buffer.alloc(32768 + 2048);
+  iso[32768] = 1;
+  iso.write("CD001", 32769);
+  iso[32768 + 6] = 1;
+  iso.write("windows-media", 32768 + 40);
+  writeFileSync(`${dir}/src/windows.iso`, iso, { mode: 0o640 });
+  execFileSync(process.env.SVAVYOM_API_BIN!, ["register-image", "--insecure-dev-single-identity", "--catalog-dir", `${dir}/images`, "--id", "windows-iso", "--display-name", "Windows installer",
+    "--distribution", "Windows", "--version", "2019", "--source", `${dir}/src/windows.iso`, "--min-disk-gib", "2", "--media", "iso"]);
+  await signIn(page);
+  await page.goto(`${BASE}/#/create`);
+  await page.getByLabel(/^Name/).fill("win-1");
+  await page.getByLabel("Image").selectOption({ label: "Windows installer (installation media)" });
+  await page.getByRole("button", { name: "Continue" }).click();
+  // the guest type is offered for installation media; Windows says what it gets and what it does not
+  await expect(page.getByRole("radio", { name: "Linux or other (default)" })).toBeChecked();
+  await page.getByRole("radio", { name: "Windows" }).check();
+  await expect(page.getByText(/Windows 11 needs UEFI and a TPM and is not supported yet/)).toBeVisible();
+  expect((await axe(page)).violations).toEqual([]);
+  await page.getByRole("button", { name: "Review" }).click();
+  await expect(page.locator("dd", { hasText: /^Windows$/ })).toBeVisible();
+  await page.getByRole("button", { name: "Create VM" }).click();
+  await expect(page.getByText("VM created (stopped)")).toBeVisible({ timeout: 30000 });
+  await expect(page.getByText(/follow Windows Setup in the Graphical console/)).toBeVisible();
+  // the VM page: its guest type, the installer, and the note about virtio volumes
+  await page.goto(`${BASE}/#/vms/win-1`);
+  await expect(page.locator("dd", { hasText: /^Windows$/ }).first()).toBeVisible();
+  await expect(page.getByRole("button", { name: "Eject Windows installer from win-1" })).toBeVisible();
+  await expect(page.getByText(/Volumes attach as virtio disks. Windows shows them only after the virtio storage driver is installed/)).toBeVisible();
+  expect((await axe(page)).violations).toEqual([]);
+});
