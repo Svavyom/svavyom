@@ -16,6 +16,18 @@ const REFUSED: Record<string, string> = {
   forbidden: "The request was refused. Reload the page and sign in again if this persists.",
 };
 
+// Wording that is specific to an operation, still from closed categories only (DR-031). Anything not listed here uses REFUSED.
+const REFUSED_BY_TYPE: Record<string, Record<string, string>> = {
+  iso_attach: {
+    conflict: "Two installation media are attached already, or this one is: eject one first, and make sure the VM is stopped and not in rescue mode.",
+    validation: "A second medium is only attached, it does not boot. Eject the first one to boot from this one.",
+  },
+  eject_iso: {
+    conflict: "That medium is no longer attached, or the VM is running or in rescue mode. Refresh and check.",
+    validation: "Two media are attached: choose which one to eject.",
+  },
+};
+
 export function useRunner(onSessionEnded: () => void, onDone: () => void) {
   const keys = useRef<Map<string, string>>(new Map());
   const [op, setOp] = useState<{ id: string; target: string } | null>(null);
@@ -38,7 +50,7 @@ export function useRunner(onSessionEnded: () => void, onDone: () => void) {
     if (r.kind === "unreachable") { setError("Svavyom could not confirm that the request arrived. Refresh to see whether it took effect; submitting again is safe."); return false; }
     if (r.category === "unauthenticated") { onSessionEnded(); return false; }
     keys.current.delete(s);
-    setError(REFUSED[r.category] ?? "The action could not be started. Try again later.");
+    setError(REFUSED_BY_TYPE[i.type]?.[r.category] ?? REFUSED[r.category] ?? "The action could not be started. Try again later.");
     return false;
   }
 

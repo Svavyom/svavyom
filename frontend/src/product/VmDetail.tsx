@@ -94,6 +94,7 @@ export function VmDetail(props: { vmId: string; refresh: number; onSessionEnded:
   const [volumes, setVolumes] = useState<Volume[]>([]);
   const [key, setKey] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
+  const [mediaNames, setMediaNames] = useState<Record<string, string>>({});
   const alive = useRef(true);
   const startKeys = useRef<Map<string, string>>(new Map());
 
@@ -223,6 +224,17 @@ export function VmDetail(props: { vmId: string; refresh: number; onSessionEnded:
 
   const role = useRole();
   const vm = vms?.find((v) => v.id === props.vmId) ?? null;
+  // The names of the attached media come from the catalog; the image id stands in until they are read (or when they cannot be).
+  const mediaKey = vm?.observed.isos.join(",") ?? "";
+  useEffect(() => {
+    if (mediaKey === "") return;
+    let live = true;
+    void read("/api/v1/images", decodeImageList).then((r) => {
+      if (live && alive.current && r.kind === "ok") setMediaNames(Object.fromEntries(r.data.items.filter((i) => i.observed.media === "iso").map((i) => [i.id, i.name])));
+    });
+    return () => { live = false; };
+  }, [mediaKey]);
+  const mediaName = (id: string) => mediaNames[id] ?? id;
   const notReady = host ? readiness(host) : null;
   const enabled = host?.observed.creation.enabled === true;
   const unqualified = host?.observed.creation.reasons.includes("image_unqualified") === true;
@@ -281,7 +293,7 @@ export function VmDetail(props: { vmId: string; refresh: number; onSessionEnded:
               <dl>
                 <dt>State</dt><dd>{POWER_LABEL[vm.observed.power]}</dd>
                 <dt>Size</dt><dd>{vm.observed.vcpus === null || vm.observed.memory_mib === null ? "-" : `${vm.observed.vcpus} vCPU, ${vm.observed.memory_mib} MiB memory`}</dd>
-                {vm.observed.managed && vm.observed.iso !== null ? <><dt>Installation media</dt><dd>{vm.observed.iso}{vm.observed.power === "stopped" ? "" : " (stop the VM to eject it)"}</dd></> : null}
+                {vm.observed.managed && vm.observed.isos.length > 0 ? <><dt>Installation media</dt><dd>{vm.observed.isos.map(mediaName).join(", ")}{vm.observed.power === "stopped" ? "" : " (stop the VM to eject it)"}</dd></> : null}
                 <dt>Memory in use</dt><dd>{vm.observed.usage.state === "available" && vm.observed.usage.memory_used_mib !== null && vm.observed.usage.memory_used_mib > 0 ? `${vm.observed.usage.memory_used_mib} MiB` : "-"}</dd>
                 <dt>Disk activity</dt><dd>{vm.observed.usage.state === "available" && vm.observed.usage.disk_kib_s !== null ? formatRate(vm.observed.usage.disk_kib_s) : "-"}</dd>
                 <dt>Network traffic</dt><dd>{vm.observed.usage.state === "available" && vm.observed.usage.net_kib_s !== null ? formatRate(vm.observed.usage.net_kib_s) : "-"}</dd>
@@ -304,11 +316,27 @@ export function VmDetail(props: { vmId: string; refresh: number; onSessionEnded:
                 <h2 id="vm-media">Installation media and rescue</h2>
                 {vm.observed.rescue ? <StatusMessage tone="warning">This VM is in rescue mode: next time it starts it boots the rescue system, and its own disk is attached as an extra disk. Leave rescue mode when you are done.</StatusMessage> : null}
                 <dl>
-                  <dt>Installation media</dt><dd>{vm.observed.iso ?? "None attached"}</dd>
+                  <dt>Installation media</dt>
+                  <dd>
+                    {vm.observed.isos.length === 0 ? "None attached" : (
+                      <ul className="ds-list">
+                        {vm.observed.isos.map((id) => (
+                          <li key={id}>
+                            {mediaName(id)}{" "}
+                            {enabled && (vm.allowed_actions as string[]).includes("eject_iso")
+                              ? <Button size="sm" ariaLabel={`Eject ${mediaName(id)} from ${vm.name}`} disabled={!idle}
+                                  onClick={() => { void storage.run({ type: "eject_iso", kind: "VM", id: vm.id, params: { image_id: id } }); }}>Eject</Button>
+                              : null}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                    {vm.observed.isos.length > 0 && vm.observed.power !== "stopped" ? <span className="ds-muted"> (stop the VM to eject it)</span> : null}
+                  </dd>
                   <dt>Graphical console</dt><dd>{vm.observed.graphical_console === "present" ? "Available while the VM runs" : "Not enabled for this VM"}</dd>
                 </dl>
                 <p className="ds-muted">Attach an installer or a tool ISO while the VM is stopped, then start it and use the graphical console. Rescue mode boots a rescue ISO with the VM&apos;s own disk attached, for example to reset a password or repair a boot loader.</p>
-                {enabled ? <div className="ds-button-row">{manage(["graphics_enable", "iso_attach", "eject_iso", "rescue", "unrescue"])}</div> : null}
+                {enabled ? <div className="ds-button-row">{manage(["graphics_enable", "iso_attach", "rescue", "unrescue"])}</div> : null}
               </section>
             ) : null}
             <section className="ds-card" aria-labelledby="vm-volumes">
