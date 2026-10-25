@@ -143,7 +143,7 @@ func TestSnapshotStatesAreTyped(t *testing.T) {
 	if rep := r.snapshot("nope"); rep.OK || rep.Category != "not_found" {
 		t.Fatalf("missing: %+v", rep)
 	}
-	r.src.Fail = context.DeadlineExceeded
+	r.src.SetFail(context.DeadlineExceeded)
 	if rep := r.snapshot("web-1"); !rep.OK || rep.State != console.Unavailable || rep.Data != "" {
 		t.Fatalf("hypervisor unreachable must be reported as unavailable, claiming nothing else: %+v", rep)
 	}

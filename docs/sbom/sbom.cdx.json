@@ -2282,7 +2282,7 @@
    "version": "5.9.3"
   },
   {
-   "bom-ref": "pkg:npm/undici@8.11.2",
+   "bom-ref": "pkg:npm/undici@8.12.3",
    "licenses": [
     {
      "license": {
@@ -2291,13 +2291,13 @@
     }
    ],
    "name": "undici",
-   "purl": "pkg:npm/undici@8.11.2",
+   "purl": "pkg:npm/undici@8.12.3",
    "scope": "optional",
    "type": "library",
-   "version": "8.11.2"
+   "version": "8.12.3"
   },
   {
-   "bom-ref": "pkg:npm/vite@7.3.6",
+   "bom-ref": "pkg:npm/vite@7.3.7",
    "licenses": [
     {
      "license": {
@@ -2306,10 +2306,10 @@
     }
    ],
    "name": "vite",
-   "purl": "pkg:npm/vite@7.3.6",
+   "purl": "pkg:npm/vite@7.3.7",
    "scope": "optional",
    "type": "library",
-   "version": "7.3.6"
+   "version": "7.3.7"
   },
   {
    "bom-ref": "pkg:npm/vitest@5.0.3",

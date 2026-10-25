@@ -1525,22 +1525,22 @@
   {
    "determined_by": "package-lock.json licence field",
    "ecosystem": "npm",
-   "integrity": "sha512-u4UB2/IrKdU6lFxumHmmo1a3fCQO5tzQllRorfoRS63txhrB7xTpSn1PftwC4qEHkOaqP95fCWW4lJzwErwzhQ==",
+   "integrity": "sha512-+fdndUTwBP86cVjihTp21hZHo7d6oj1c/47XPA3lL8mM0XHs+C4EkcjmgRsFnFk2f/UONGDy9ItBItmXsLOQHw==",
    "license": "MIT",
    "name": "undici",
    "scope": "optional",
    "status": "approved",
-   "version": "8.11.2"
+   "version": "8.12.3"
   },
   {
    "determined_by": "package-lock.json licence field",
    "ecosystem": "npm",
-   "integrity": "sha512-4XP60spRGjSZFf1qYH+dJIkK2znL3zQfl9KkOV9MkkRR/3Dls0dxaBsQPTloEc5BLXWPL9vsOxopxyKoMmDueg==",
+   "integrity": "sha512-AHEzTORMbi7/7aXp7w7KZ5+DCUdSeLsJz0grY8xHpc9DHdYb0vQu6DqJfm2tOw3gDExNgPgnJTXxM6syYFHaCA==",
    "license": "MIT",
    "name": "vite",
    "scope": "optional",
    "status": "approved",
-   "version": "7.3.6"
+   "version": "7.3.7"
   },
   {
    "determined_by": "package-lock.json licence field",

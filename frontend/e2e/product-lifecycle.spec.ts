@@ -103,7 +103,7 @@ test("recovery view: boot output, what is known about SSH, and an interactive se
   await signIn(page, OPEN);
   await createVm(page, "con-1");
   await act(page, "Start con-1", "VM started");
-  await page.getByRole("link", { name: "Console con-1" }).click();
+  await page.getByRole("link", { name: "Console con-1", exact: true }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Console: con-1" })).toBeVisible();
   await expect(page.getByText(/rescue mode on the VM's page boots a rescue system/i)).toBeVisible();
   await expect(page.getByText(/SSH: Address 192\.168\.122\.\d+ and login user debian observed/)).toBeVisible();
