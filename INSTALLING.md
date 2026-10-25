@@ -35,6 +35,13 @@ Options you will likely want:
 * `--enable-nightly-boot HH:MM` runs a nightly check that creates, boots and deletes a disposable VM and raises an alert if it fails.
 * `--network`, `--pool` to use names other than the defaults.
 
+### Where VM disks live
+VM disks and their cloud-init seeds are kept in a libvirt **directory pool**. By default that is the pool `svavyom` on `/var/lib/svavyom/pool` (root-owned, mode 0711; only libvirt writes there, and no Svavyom service can read it). `--create-pool` defines it for you.
+
+If `/var/lib` is small, keep the disks on a larger disk instead: define your own libvirt directory pool there first, then give its name with `--pool NAME` and leave out `--create-pool` (an existing pool is used as it is and never changed). The name ends up in `/etc/svavyom/provision.json` as `pool`. `/var/lib/svavyom/pool` is then created but stays **empty**, which is expected and not an error. Check which pool is in use with `sudo virsh pool-list --all` and `grep pool /etc/svavyom/provision.json`.
+
+Images are separate: they live in `/var/lib/svavyom/images`, which is fixed.
+
 ## 4. After the install
 1. **Create the administrator** (once; the password file is yours, delete it afterwards):
    `sudo -u svavyom-api /usr/libexec/svavyom/api bootstrap-admin --db /var/lib/svavyom/api/svavyom.db --username admin < PASSWORD_FILE`
