@@ -28,10 +28,14 @@ func vmNetType(t operation.Type) bool {
 }
 
 // paramType is the set of types that carry a `params` object.
+// paramOptional reports whether the type takes parameters but may be submitted without them: eject_iso names the medium to remove, and may leave it out
+// when the VM has only one (DR-031).
+func paramOptional(t operation.Type) bool { return t == operation.EjectISO }
+
 func paramType(t operation.Type) bool {
 	switch t {
 	case operation.Resize, operation.Reinstall, operation.RestoreSnapshot, operation.DeleteSnapshot, operation.Restore,
-		operation.NetworkCreate, operation.NetworkAutostart, operation.Compute, operation.ReserveIP, operation.VolumeCreate, operation.VolumeAttach, operation.BackupExport, operation.ScheduleSet, operation.ISOAttach, operation.Rescue:
+		operation.NetworkCreate, operation.NetworkAutostart, operation.Compute, operation.ReserveIP, operation.VolumeCreate, operation.VolumeAttach, operation.BackupExport, operation.ScheduleSet, operation.ISOAttach, operation.EjectISO, operation.Rescue:
 		return true
 	}
 	return false

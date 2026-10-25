@@ -89,11 +89,11 @@ func TestAttachISOAsABootDeviceAndEjectGivesTheOriginalBack(t *testing.T) {
 	if _, err := AttachISOXML(y, "/c/store/"+strings.Repeat("0", 64)+".iso", BootDisk); err != ErrISOPresent {
 		t.Fatalf("other media while one is attached: %v", err)
 	}
-	back, had, err := RemoveISOXML(y)
+	back, had, err := RemoveISOXML(y, "")
 	if err != nil || !had || back != x {
 		t.Fatalf("eject must give back exactly the definition we started with (%v %v):\n%s", had, err, back)
 	}
-	if again, had, _ := RemoveISOXML(back); had || again != back {
+	if again, had, _ := RemoveISOXML(back, ""); had || again != back {
 		t.Fatal("no media: nothing to do")
 	}
 }
@@ -107,7 +107,7 @@ func TestAttachISOWithoutBootingFromItLeavesTheBootChoiceAlone(t *testing.T) {
 	if !strings.Contains(y, "<boot dev='hd'/>") || strings.Contains(y, "<boot order=") {
 		t.Fatalf("the VM still boots from its disk:\n%s", y)
 	}
-	if back, _, _ := RemoveISOXML(y); back != x {
+	if back, _, _ := RemoveISOXML(y, ""); back != x {
 		t.Fatal("eject is exact")
 	}
 }
@@ -123,7 +123,7 @@ func TestAttachISORefusesBadInput(t *testing.T) {
 
 func TestAnISOCreatedVMKeepsItsPerDeviceBootAfterMediaCome(t *testing.T) {
 	x := isoXML(t)
-	ejected, had, err := RemoveISOXML(x)
+	ejected, had, err := RemoveISOXML(x, "")
 	if err != nil || !had || ISOPresent(ejected) {
 		t.Fatalf("%v %v", had, err)
 	}
@@ -137,7 +137,7 @@ func TestAnISOCreatedVMKeepsItsPerDeviceBootAfterMediaCome(t *testing.T) {
 	if _, _, dev, ok := ISODisk(y); !ok || dev != "sda" {
 		t.Fatalf("the first CD slot is free again: %s", dev)
 	}
-	if back, _, _ := RemoveISOXML(y); back != ejected {
+	if back, _, _ := RemoveISOXML(y, ""); back != ejected {
 		t.Fatalf("eject is exact:\n%s", back)
 	}
 }
@@ -146,7 +146,7 @@ func TestAnISOCreatedVMKeepsItsPerDeviceBootAfterMediaCome(t *testing.T) {
 func ISOPresent(x string) bool { _, _, _, ok := ISODisk(x); return ok }
 
 func TestRescueThenUnrescueIsExactForBothKindsOfVM(t *testing.T) {
-	for name, x := range map[string]string{"cloud": cloudXML(t), "installed iso": func() string { y, _, _ := RemoveISOXML(isoXML(t)); return y }()} {
+	for name, x := range map[string]string{"cloud": cloudXML(t), "installed iso": func() string { y, _, _ := RemoveISOXML(isoXML(t), ""); return y }()} {
 		r, err := RescueXML(x, rescuePath(), rescueSum)
 		if err != nil {
 			t.Fatalf("%s: %v", name, err)

@@ -16,8 +16,22 @@ describe("validate", () => {
     expect(validate("VMList", { items: [vm({ id: "x y" })], allowed_actions: [], next_cursor: null })).toEqual({ ok: false, reason: "pattern", path: "$.items[0].id" });
   });
 
+  it("requires the list of installation media: at most two image ids (DR-031)", () => {
+    const withIsos = (isos: unknown) => { const v = vm(); return { ...v, observed: { ...v.observed, isos } }; };
+    expect(validate("VM", withIsos([]))).toEqual({ ok: true });
+    expect(validate("VM", withIsos(["tools-iso"]))).toEqual({ ok: true });
+    expect(validate("VM", withIsos(["tools-iso", "drivers-iso"]))).toEqual({ ok: true });
+    expect(validate("VM", withIsos(["a", "b", "c"])).ok).toBe(false);
+    expect(validate("VM", withIsos(["Tools"])).ok).toBe(false);
+    expect(validate("VM", withIsos([null])).ok).toBe(false);
+    expect(validate("VM", withIsos(null)).ok).toBe(false);
+    const v = vm();
+    const { isos: _omitted, ...rest } = v.observed as Record<string, unknown>;
+    expect(validate("VM", { ...v, observed: rest })).toEqual({ ok: false, reason: "required", path: "$.observed.isos" });
+  });
+
   it("date-time accepts offsets and fractions and rejects impossible dates", () => {
-    const at = (s: string) => validate("VM", { ...vm(), observed: { power: "running", last_seen_at: s, managed: false, ip_address: null, login_user: null, disk_gib: null, snapshots: [], network: null, vcpus: null, memory_mib: null, iso: null, usage: { state: "unavailable", cpu_percent: null, memory_used_mib: null, disk_kib_s: null, net_kib_s: null, history: [] }, backup: { next_run_at: null, last_run: null }, graphical_console: "absent", rescue: false } }).ok;
+    const at = (s: string) => validate("VM", { ...vm(), observed: { power: "running", last_seen_at: s, managed: false, ip_address: null, login_user: null, disk_gib: null, snapshots: [], network: null, vcpus: null, memory_mib: null, iso: null, isos: [], usage: { state: "unavailable", cpu_percent: null, memory_used_mib: null, disk_kib_s: null, net_kib_s: null, history: [] }, backup: { next_run_at: null, last_run: null }, graphical_console: "absent", rescue: false } }).ok;
     expect(at("2026-10-08T10:00:00Z")).toBe(true);
     expect(at("2026-10-08T10:00:00.5+05:30")).toBe(true);
     expect(at("2028-02-29T00:00:00Z")).toBe(true);

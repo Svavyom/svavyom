@@ -209,7 +209,11 @@ func runStorage(ctx context.Context, q Request, reply *Reply, ops provision.Host
 		}
 		return nil
 	case OpEjectISO:
-		return provision.EjectISO(ctx, ops, q.Name, hook)
+		sha := ""
+		if q.Media != nil {
+			sha = q.Media.ImageSHA256
+		}
+		return provision.EjectISO(ctx, ops, q.Name, sha, hook)
 	case OpGraphicsEnable:
 		return provision.GraphicsEnable(ctx, ops, q.Name, hook)
 	case OpUnrescue:

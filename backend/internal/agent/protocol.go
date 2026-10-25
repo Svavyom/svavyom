@@ -76,6 +76,8 @@ type Domain struct {
 	// Media is "iso" for a VM created from installation media; ISOSHA256 is the digest of the media attached now (DR-023 D3).
 	Media     string `json:"media,omitempty"`
 	ISOSHA256 string `json:"iso_sha256,omitempty"`
+	// ISOSHA256s lists every installation medium attached, in guest target order, at most two (DR-031); ISOSHA256 is the one that boots next, else the first.
+	ISOSHA256s []string `json:"iso_sha256s,omitempty"`
 	// Graphics is true when the definition has the VNC console; RescueSHA256 is the rescue media's digest while the VM is in rescue mode (DR-026).
 	Graphics     bool   `json:"graphics,omitempty"`
 	RescueSHA256 string `json:"rescue_sha256,omitempty"`
@@ -223,6 +225,9 @@ func validDetails(d Domain) bool {
 	if (d.Media != "" && d.Media != "iso") || (d.ISOSHA256 != "" && !fingerprintRE.MatchString(d.ISOSHA256)) || ((d.Media != "" || d.ISOSHA256 != "") && !d.Managed) {
 		return false
 	}
+	if !validMediaList(d) {
+		return false
+	}
 	if (d.RescueSHA256 != "" && (!fingerprintRE.MatchString(d.RescueSHA256) || d.RescueSHA256 != d.ISOSHA256)) || ((d.RescueSHA256 != "" || d.Graphics) && !d.Managed) {
 		return false // rescue mode is the attached media, and only a Svavyom VM has either
 	}
@@ -291,4 +296,30 @@ func validRequest(q Request) bool {
 		return nameRE.MatchString(q.Name)
 	}
 	return false
+}
+
+// MaxMedia is the most installation media a domain reports (DR-031).
+const MaxMedia = 2
+
+// validMediaList checks the list of attached installation media: at most MaxMedia distinct digests, only on a Svavyom VM, and consistent with the
+// single digest, which is one of them (the one that boots next, else the first).
+func validMediaList(d Domain) bool {
+	if len(d.ISOSHA256s) == 0 {
+		return true
+	}
+	if len(d.ISOSHA256s) > MaxMedia || !d.Managed {
+		return false
+	}
+	seen := map[string]bool{}
+	hasSingle := d.ISOSHA256 == ""
+	for _, s := range d.ISOSHA256s {
+		if !fingerprintRE.MatchString(s) || seen[s] {
+			return false
+		}
+		seen[s] = true
+		if s == d.ISOSHA256 {
+			hasSingle = true
+		}
+	}
+	return hasSingle && d.ISOSHA256 != ""
 }

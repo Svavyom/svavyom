@@ -12,9 +12,10 @@ import (
 
 type vmMedia struct {
 	Observed struct {
-		GraphicalConsole string  `json:"graphical_console"`
-		Rescue           bool    `json:"rescue"`
-		ISO              *string `json:"iso"`
+		GraphicalConsole string   `json:"graphical_console"`
+		Rescue           bool     `json:"rescue"`
+		ISO              *string  `json:"iso"`
+		ISOs             []string `json:"isos"`
 	} `json:"observed"`
 	Allowed []string `json:"allowed_actions"`
 }

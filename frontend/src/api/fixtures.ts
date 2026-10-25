@@ -8,7 +8,7 @@ export const NO_HOST_USAGE: Host["observed"]["usage"] = { state: "unavailable", 
 export const NO_VM_USAGE: VM["observed"]["usage"] = { state: "unavailable", cpu_percent: null, memory_used_mib: null, disk_kib_s: null, net_kib_s: null, history: [] };
 /** The size and usage fields of a VM nothing is known about. */
 export const NO_BACKUP: VM["observed"]["backup"] = { next_run_at: null, last_run: null };
-export const NO_SIZE = { vcpus: null, memory_mib: null, iso: null, usage: NO_VM_USAGE, backup: NO_BACKUP, graphical_console: "absent", rescue: false } as const;
+export const NO_SIZE = { vcpus: null, memory_mib: null, iso: null, isos: [] as string[], usage: NO_VM_USAGE, backup: NO_BACKUP, graphical_console: "absent", rescue: false } as const;
 
 export const HOST: Host = {
   id: "local", generation: 1, name: "local-host", desired: { maintenance: false },
@@ -24,7 +24,7 @@ export const HOST: Host = {
 
 export const VM_RUNNING: VM = {
   id: "vm-a", project_id: "default", generation: 3, name: "web-1", desired: { power: "running", backup_schedule: null },
-  observed: { power: "running", last_seen_at: "2026-10-08T10:00:00Z", managed: false, ip_address: null, login_user: null, disk_gib: null, snapshots: [], network: null, vcpus: null, memory_mib: null, iso: null, usage: NO_VM_USAGE, backup: NO_BACKUP, graphical_console: "absent", rescue: false }, allowed_actions: ["start", "stop", "delete"],
+  observed: { power: "running", last_seen_at: "2026-10-08T10:00:00Z", managed: false, ip_address: null, login_user: null, disk_gib: null, snapshots: [], network: null, vcpus: null, memory_mib: null, iso: null, isos: [], usage: NO_VM_USAGE, backup: NO_BACKUP, graphical_console: "absent", rescue: false }, allowed_actions: ["start", "stop", "delete"],
 };
 
 export const vm = (overrides: Partial<VM> = {}): VM => ({ ...VM_RUNNING, ...overrides });

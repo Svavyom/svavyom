@@ -69,7 +69,7 @@ func fromWire(w Domain) (hypervisor.Domain, bool) {
 	}
 	d := hypervisor.Domain{Name: w.Name, State: hypervisor.State(w.Power), VCPUs: w.VCPUs, MemoryMiB: w.MemoryMiB, UUID: w.UUID, Managed: w.Managed,
 		Fingerprint: w.Fingerprint, ImageID: w.ImageID, IPv4: w.IP, DiskBytes: w.DiskBytes, Network: w.Network, MAC: w.MAC, CPUTimeNs: w.CPUTimeNs,
-		MemUsedMiB: w.MemUsedMiB, DiskIOBytes: w.DiskIOBytes, NetIOBytes: w.NetIOBytes, DataVolumes: w.DataVolumes, Media: w.Media, ISOSHA256: w.ISOSHA256, Graphics: w.Graphics, RescueSHA256: w.RescueSHA256}
+		MemUsedMiB: w.MemUsedMiB, DiskIOBytes: w.DiskIOBytes, NetIOBytes: w.NetIOBytes, DataVolumes: w.DataVolumes, Media: w.Media, ISOSHA256: w.ISOSHA256, ISOSHA256s: w.ISOSHA256s, Graphics: w.Graphics, RescueSHA256: w.RescueSHA256}
 	for _, sn := range w.Snapshots {
 		d.Snapshots = append(d.Snapshots, hypervisor.Snapshot{ID: sn.ID, Created: sn.Created})
 	}

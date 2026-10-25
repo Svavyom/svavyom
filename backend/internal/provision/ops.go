@@ -17,6 +17,8 @@ type DomainInfo struct {
 	Data []DataDisk
 	// Media is "iso" for a VM created from installation media; ISO is the digest of the media attached now ("" when none).
 	Media, ISO string
+	// ISOs is the digest of every installation medium attached, in guest target order (DR-031); ISO is the one that boots next, else the first.
+	ISOs []string
 	// Graphics is true when the definition has a VNC console; Rescue is the digest of the rescue media while the VM is in rescue mode.
 	Graphics          bool
 	Rescue            string

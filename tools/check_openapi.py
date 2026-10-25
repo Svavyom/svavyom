@@ -71,6 +71,8 @@ DESIRED_OBSERVED = {
             "managed": (_B, None), "ip_address": ({"string", "null"}, None), "login_user": ({"string", "null"}, None),
             # DR-023 D3: the installation media attached now
             "iso": ({"string", "null"}, None),
+            # DR-031: every installation medium attached, at most two image ids in guest target order
+            "isos": ({"array"}, None),
             # DR-020: the root disk's virtual size and the VM's own snapshots (pinned in check_vm_extension)
             "disk_gib": ({"integer", "null"}, None), "snapshots": ({"array"}, None),
             # DR-021 (M3): the VM's network (pinned in check_vm_extension)

@@ -86,7 +86,7 @@ describe("installation media, the graphical console and rescue on the VM page", 
   });
 
   it("tells the person a VM is in rescue mode and lets them leave it", async () => {
-    machine = stopped(["start", "delete", "unrescue"], { rescue: true, iso: "alpine-iso" });
+    machine = stopped(["start", "delete", "unrescue"], { rescue: true, iso: "alpine-iso", isos: ["alpine-iso"] });
     render(<Root />);
     expect(await screen.findByText(/This VM is in rescue mode/)).toBeTruthy();
     expect(screen.queryByRole("button", { name: /Start rescue mode|Attach installation media/ })).toBeNull();

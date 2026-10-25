@@ -137,6 +137,8 @@ type Domain struct {
 	// Media is "iso" for a VM created from installation media; ISOSHA256 is the digest of the media attached now ("" when none) (DR-023 D3).
 	Media     string
 	ISOSHA256 string
+	// ISOSHA256s is every installation medium attached, in guest target order, at most two (DR-031); ISOSHA256 is the one that boots next, else the first.
+	ISOSHA256s []string
 	// Graphics is true when the definition carries the VNC console; RescueSHA256 is the rescue media's digest while the VM is in rescue mode (DR-026).
 	Graphics     bool
 	RescueSHA256 string
