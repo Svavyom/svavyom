@@ -77,6 +77,14 @@ func (s *Source) Remove(name string) {
 	}
 }
 
+// SetFail sets, or with nil clears, the error that makes Running, Check and Open fail. Use it rather than assigning Fail while a broker is scanning:
+// the scan reads the field under the lock.
+func (s *Source) SetFail(err error) {
+	s.mu.Lock()
+	s.Fail = err
+	s.mu.Unlock()
+}
+
 // Running implements console.Source.
 func (s *Source) Running(context.Context) ([]string, error) {
 	s.mu.Lock()
