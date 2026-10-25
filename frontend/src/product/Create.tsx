@@ -183,7 +183,7 @@ export function CreateVm(props: { onSessionEnded: () => void }) {
                 <Select label="Network" value={draft.network} onChange={set("network")} description="The default network, or a network Svavyom created that is running."
                   options={[{ value: "", label: "Default network" }, ...networks.map((n) => ({ value: n.id, label: `${n.name} (${n.observed.subnet ?? "no address range"})` }))]} />
                 {isIso ? (
-                  <StatusMessage tone="warning">This VM boots the installer from the ISO. There is no SSH key and no automatic setup: you install the system yourself, and Svavyom does not run a graphical console. The installer must be usable over the serial console, which you open from the VM&apos;s page. Eject the media afterwards so the VM boots from its disk.</StatusMessage>
+                  <StatusMessage tone="warning">This VM boots the installer from the ISO. There is no SSH key and no automatic setup: you install the system yourself. Start the VM, then follow the installer in the <strong>Graphical console</strong> on the VM&apos;s page (the serial console is also there, but many installers, Windows among them, only draw on the graphical one). Eject the media afterwards so the VM boots from its disk.</StatusMessage>
                 ) : (
                   <TextArea id="create-key" label="SSH public key" value={draft.key} onChange={set("key")}
                     description="One public key (for example the contents of id_ed25519.pub). It is the only way to sign in to the VM; passwords are disabled. Never paste a private key."
@@ -208,7 +208,7 @@ export function CreateVm(props: { onSessionEnded: () => void }) {
               <dt>Network</dt><dd>{draft.network === "" ? "Default network" : draft.network}</dd>
               <dt>SSH key</dt><dd>{isIso ? "None: the installer sets up access" : fp ?? "fingerprint unavailable"}</dd>
               <dt>Result</dt><dd>A stopped VM. Starting it is a separate step.</dd>
-              <dt>Access</dt><dd>{isIso ? "The VM starts the installer from the ISO. Svavyom does not know whether the installer offers a serial console." : imageAccessText(image?.observed.qualification ?? "verified")}</dd>
+              <dt>Access</dt><dd>{isIso ? "The VM starts the installer from the ISO. Follow it in the graphical console; the serial console helps only if the installer offers one." : imageAccessText(image?.observed.qualification ?? "verified")}</dd>
             </dl>
             <div className="ds-button-row">
               <Button variant="primary" onClick={() => { void submit(); }} pending={phase.kind === "submitting"}>Create VM</Button>
@@ -227,7 +227,13 @@ export function CreateVm(props: { onSessionEnded: () => void }) {
             {phase.op.status === "succeeded" && fp ? (
               <p>The SSH key sent to this VM is <code>{fp}</code>. Check it against your key with <code>ssh-keygen -lf your-key.pub</code>: if they differ, the VM was created with a different key than the one you meant.</p>
             ) : null}
-            <div className="ds-button-row"><Link href="#/vms">Go to the VM list</Link></div>
+            {phase.op.status === "succeeded" ? (
+              <p>The VM <strong>{phase.op.resource_id}</strong> is created but <strong>stopped</strong>: creating a VM does not start it. Open its page and choose Start{isIso ? ", then open the Graphical console to follow the installer" : ""}.</p>
+            ) : null}
+            <div className="ds-button-row">
+              {phase.op.status === "succeeded" ? <Link href={`#/vms/${phase.op.resource_id}`}>{`Open ${phase.op.resource_id}`}</Link> : null}
+              <Link href="#/vms">Go to the VM list</Link>
+            </div>
           </>
         ) : null}
       </LoadingRegion>

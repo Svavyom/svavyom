@@ -133,6 +133,51 @@ describe("create validation", () => {
   });
 });
 
+const ISO: Image = {
+  ...IMAGE, id: "windowsserver2019-iso", name: "Windows Server 2019 Eval",
+  observed: { ...IMAGE.observed, distribution: "Windows", version: "2019", login_user: null, media: "iso", qualification: "verified" },
+};
+
+describe("installation media (M6-E01-S06)", () => {
+  async function toNetworkStep() {
+    api.images = [ISO];
+    render(<Root />);
+    await userEvent.type(await screen.findByLabelText(/^Name/), "win-1");
+    await userEvent.click(screen.getByRole("button", { name: "Continue" }));
+  }
+
+  it("describes the graphical console that exists and no longer says there is none", async () => {
+    await toNetworkStep();
+    expect(await screen.findByText(/follow the installer in the/)).toBeTruthy();
+    expect(screen.getAllByText("Graphical console").length).toBeGreaterThan(0);
+    expect(document.body.textContent).not.toMatch(/does not run a graphical console/);
+    expect(document.body.textContent).not.toMatch(/must be usable over the serial console/);
+    await userEvent.click(screen.getByRole("button", { name: "Review" }));
+    expect(await screen.findByText(/Follow it in the graphical console/)).toBeTruthy();
+    expect(document.body.textContent).not.toMatch(/does not know whether the installer offers a serial console/);
+    expect(await axeViolations(document.body)).toEqual([]);
+  });
+
+  it("after create, says the VM is stopped and points to Start and the graphical console", async () => {
+    await toNetworkStep();
+    api.ops = [operation({ id: "op-1", type: "create", resource_id: "win-1", status: "succeeded", attempts: 1, allowed_actions: [] })];
+    await userEvent.click(screen.getByRole("button", { name: "Review" }));
+    await userEvent.click(await screen.findByRole("button", { name: "Create VM" }));
+    expect(await screen.findByText(/then open the Graphical console to follow the installer/, {}, { timeout: 5000 })).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Open win-1" }).getAttribute("href")).toBe("#/vms/win-1");
+  });
+
+  it("offers no 'stopped' notice or VM link when the create failed", async () => {
+    await toNetworkStep();
+    api.ops = [operation({ id: "op-1", type: "create", resource_id: "win-1", status: "failed", error_category: "conflict", attempts: 1, allowed_actions: [] })];
+    await userEvent.click(screen.getByRole("button", { name: "Review" }));
+    await userEvent.click(await screen.findByRole("button", { name: "Create VM" }));
+    await screen.findByRole("link", { name: "Go to the VM list" }, { timeout: 5000 });
+    expect(screen.queryByRole("link", { name: "Open win-1" })).toBeNull();
+    expect(document.body.textContent).not.toMatch(/creating a VM does not start it/);
+  });
+});
+
 describe("create journey", () => {
   it("reviews with a fingerprint only, submits a conformant body, then shows typed progress to a stopped VM", async () => {
     render(<Root />);
@@ -150,6 +195,11 @@ describe("create journey", () => {
     expect(post.body).toMatchObject({ type: "create", kind: "VM", id: "web-1", create: { image_id: "debian-13", vcpus: 1, memory_mib: 512, ssh_public_key: KEY.trim() } });
     expect(Object.keys(post.body.create).sort()).toEqual(["disk_gib", "image_id", "memory_mib", "ssh_public_key", "vcpus"]);
     expect(screen.getByRole("link", { name: "Go to the VM list" })).toBeTruthy();
+    // M6-E01-S06: the end of the journey says the VM is stopped and leads to the page that has Start.
+    expect(screen.getByText((_, el) => el?.tagName === "P" && /web-1 is created but stopped: creating a VM does not start it/.test(el.textContent ?? ""))).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Open web-1" }).getAttribute("href")).toBe("#/vms/web-1");
+    expect(document.body.textContent).not.toMatch(/Graphical console to follow the installer/);
+    expect(await axeViolations(document.body)).toEqual([]);
   });
 
   it("reuses the idempotency key when the same details are submitted again after an unknown outcome", async () => {
