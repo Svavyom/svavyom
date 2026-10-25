@@ -129,14 +129,20 @@ test("back up, restore as a new VM, reinstall and delete the backup", async ({ p
 test("installation media and rescue mode on a stopped VM: attach, eject, rescue, leave rescue (DR-026)", async ({ page }) => {
   // The host administrator imports the media (root, on the host): the test does the same with the API binary, against this stack's catalog.
   const dir = "/tmp/svavyom-e2e-create-storage";
-  const iso = Buffer.alloc(32768 + 2048);
-  iso[32768] = 1;
-  iso.write("CD001", 32769);
-  iso[32768 + 6] = 1;
-  iso.write("rescue-media", 32768 + 40);
-  writeFileSync(`${dir}/src/rescue.iso`, iso, { mode: 0o640 });
-  execFileSync(process.env.SVAVYOM_API_BIN!, ["register-image", "--insecure-dev-single-identity", "--catalog-dir", `${dir}/images`, "--id", "rescue-iso", "--display-name", "Rescue ISO",
-    "--distribution", "Alpine", "--version", "3.20", "--source", `${dir}/src/rescue.iso`, "--min-disk-gib", "2", "--media", "iso"]);
+  const isoFile = (label: string) => {
+    const iso = Buffer.alloc(32768 + 2048);
+    iso[32768] = 1;
+    iso.write("CD001", 32769);
+    iso[32768 + 6] = 1;
+    iso.write(label, 32768 + 40);
+    return iso;
+  };
+  writeFileSync(`${dir}/src/rescue.iso`, isoFile("rescue-media"), { mode: 0o640 });
+  writeFileSync(`${dir}/src/drivers.iso`, isoFile("driver-media"), { mode: 0o640 });
+  for (const [id, name, file] of [["rescue-iso", "Rescue ISO", "rescue.iso"], ["drivers-iso", "Driver disc", "drivers.iso"]]) {
+    execFileSync(process.env.SVAVYOM_API_BIN!, ["register-image", "--insecure-dev-single-identity", "--catalog-dir", `${dir}/images`, "--id", id, "--display-name", name,
+      "--distribution", "Alpine", "--version", "3.20", "--source", `${dir}/src/${file}`, "--min-disk-gib", "2", "--media", "iso"]);
+  }
   await signIn(page);
   await createVm(page, "resc-1");
   await expect(page.getByRole("button", { name: "Attach installation media to resc-1" })).toBeVisible();
@@ -150,7 +156,25 @@ test("installation media and rescue mode on a stopped VM: attach, eject, rescue,
   await page.getByRole("button", { name: "Refresh" }).click();
   await expect(page.locator("main")).toContainText("rescue-iso");
   await expect(page.getByRole("button", { name: "Start rescue mode for resc-1" })).toHaveCount(0); // media is attached: eject first
-  await act(page, "Eject installation media of resc-1", /Installation media ejected/);
+  // a second medium (DR-031): no boot choice, the first one is not offered again, each medium has its own eject button
+  await page.getByRole("button", { name: "Attach installation media to resc-1" }).click();
+  await expect(page.getByLabel("Boot")).toHaveCount(0);
+  await expect(page.getByText(/A second medium is only attached/)).toBeVisible();
+  expect(await page.getByLabel("Media").locator("option").allTextContents()).toEqual(["Driver disc"]);
+  await page.getByRole("dialog").getByRole("button", { name: "Attach the media" }).click();
+  await expect(page.getByText(/Media attached/)).toBeVisible({ timeout: 30000 });
+  await page.getByRole("button", { name: "Refresh" }).click();
+  await expect(page.getByRole("button", { name: "Eject Rescue ISO from resc-1" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Eject Driver disc from resc-1" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Attach installation media to resc-1" })).toHaveCount(0); // two is the most
+  expect((await axe(page)).violations).toEqual([]);
+  await act(page, "Eject Driver disc from resc-1", /Installation media ejected/);
+  await page.getByRole("button", { name: "Refresh" }).click();
+  await expect(page.getByRole("button", { name: "Eject Driver disc from resc-1" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Attach installation media to resc-1" })).toBeVisible();
+  await act(page, "Eject Rescue ISO from resc-1", /Installation media ejected/);
+  await page.getByRole("button", { name: "Refresh" }).click();
+  await expect(page.getByText("None attached")).toBeVisible();
   // rescue mode: set, seen, left
   await page.getByRole("button", { name: "Start rescue mode for resc-1" }).click();
   await page.getByRole("dialog").getByRole("button", { name: "Start rescue mode" }).click();
