@@ -77,7 +77,8 @@ type Storage interface {
 	VolumeDetach(ctx context.Context, name string) error
 	VolumeDelete(ctx context.Context, name string) error
 	// EjectISO removes the installation media of a stopped VM (DR-023 D3).
-	EjectISO(ctx context.Context, name string) error
+	// p.ImageID and p.ImageSHA256 name the medium to remove, or are empty when the VM has one (DR-031).
+	EjectISO(ctx context.Context, name string, p Params) error
 	// GraphicsEnable gives a stopped VM the graphical console devices; ISOAttach attaches catalog installation media (p.ImageID, p.ImageSHA256, p.Boot);
 	// Rescue boots the VM from rescue media with its own disk kept, and Unrescue puts the definition back (DR-026).
 	GraphicsEnable(ctx context.Context, name string) error
@@ -463,7 +464,7 @@ func (m *Manager) execute(ctx context.Context, op Operation) error {
 	case BackupExport:
 		return m.storage("backup_export", func(st Storage) error { return st.BackupExport(ctx, op.ResourceID, op.Params.TargetID) })
 	case EjectISO:
-		return m.storage("eject_iso", func(st Storage) error { return st.EjectISO(ctx, op.ResourceID) })
+		return m.storage("eject_iso", func(st Storage) error { return st.EjectISO(ctx, op.ResourceID, op.Params) })
 	case GraphicsEnable:
 		return m.storage("graphics_enable", func(st Storage) error { return st.GraphicsEnable(ctx, op.ResourceID) })
 	case ISOAttach:

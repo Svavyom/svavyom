@@ -60,8 +60,10 @@ type vmObserved struct {
 	Managed    bool    `json:"managed"`
 	IPAddress  *string `json:"ip_address"`
 	LoginUser  *string `json:"login_user"`
-	// ISO is the id of the installation media attached now (DR-023 D3); null when none, or when the catalog no longer names it.
+	// ISO is the id of the installation medium that boots next, else the first attached (DR-031); null when none, or when the catalog no longer names it.
 	ISO *string `json:"iso"`
+	// ISOs is the id of every installation medium attached, in guest target order, at most two (DR-031); a medium the catalog no longer names is left out. Never null.
+	ISOs []string `json:"isos"`
 	// DiskGiB is the root disk's virtual size (null for a VM Svavyom does not manage); Snapshots are the VM's own (M2).
 	DiskGiB   *int           `json:"disk_gib"`
 	Snapshots []snapshotJSON `json:"snapshots"`
@@ -144,6 +146,13 @@ func (h *Handler) toVM(d hypervisor.Domain, seen time.Time, logins map[string]st
 	if id, ok := vc.isos[d.ISOSHA256]; ok && d.ISOSHA256 != "" {
 		v.Observed.ISO = &id
 	}
+	if d.Managed {
+		for _, sha := range d.ISOSHA256s {
+			if id, ok := vc.isos[sha]; ok {
+				v.Observed.ISOs = append(v.Observed.ISOs, id)
+			}
+		}
+	}
 	if d.Managed && d.DiskBytes > 0 {
 		g := int(d.DiskBytes >> 30)
 		v.Observed.DiskGiB = &g
@@ -203,7 +212,7 @@ func toVMJSON(d hypervisor.Domain, seen time.Time) vmJSON {
 		power = "unknown"
 	}
 	return vmJSON{ID: d.Name, ProjectID: defaultProject, Generation: 1, Name: d.Name,
-		Desired: vmDesired{Power: desired}, Observed: vmObserved{Power: power, LastSeenAt: seen.UTC().Format(time.RFC3339), Snapshots: []snapshotJSON{}},
+		Desired: vmDesired{Power: desired}, Observed: vmObserved{Power: power, LastSeenAt: seen.UTC().Format(time.RFC3339), Snapshots: []snapshotJSON{}, ISOs: []string{}},
 		Allowed: []string{}}
 }
 

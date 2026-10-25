@@ -193,7 +193,8 @@ func (q Request) Valid() bool {
 		return false
 	}
 	extra := q.DiskGiB != 0 || q.ID != "" || q.Reinstall != nil || q.Restore != nil || q.Net != nil || q.VM != "" || q.Media != nil
-	if q.Media != nil && q.Op != OpISOAttach && q.Op != OpRescue {
+	extraButMedia := q.DiskGiB != 0 || q.ID != "" || q.Reinstall != nil || q.Restore != nil || q.Net != nil || q.VM != ""
+	if q.Media != nil && q.Op != OpISOAttach && q.Op != OpRescue && q.Op != OpEjectISO {
 		return false
 	}
 	vm := provision.VMNameRE.MatchString(q.Name)
@@ -203,7 +204,11 @@ func (q Request) Valid() bool {
 		return q.Name == "" && q.Provision == nil && !extra
 	case OpProvision:
 		return q.Name == "" && q.Provision != nil && q.Provision.ValidateAnyMedia() == nil && !extra
-	case OpStart, OpStop, OpReboot, OpForceOff, OpDelete, OpEjectISO, OpGraphicsEnable, OpUnrescue:
+	case OpEjectISO:
+		// Optionally names the medium to remove (DR-031); never a boot choice.
+		m := q.Media
+		return vm && q.Provision == nil && !extraButMedia && (m == nil || (imageIDOK(m.ImageID) && sha256OK(m.ImageSHA256) && m.Boot == ""))
+	case OpStart, OpStop, OpReboot, OpForceOff, OpDelete, OpGraphicsEnable, OpUnrescue:
 		return vm && q.Provision == nil && !extra
 	case OpISOAttach, OpRescue:
 		m := q.Media

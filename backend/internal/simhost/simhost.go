@@ -159,7 +159,7 @@ func (h *Host) LookupDomain(_ context.Context, name string) (provision.DomainInf
 	}
 	info := provision.DomainInfo{Name: name, UUID: d.UUID, Fingerprint: d.Fingerprint, Managed: d.Managed, Running: d.Running, Root: d.Root, Seed: d.Seed, XML: d.XML, VCPUs: d.VCPUs, MemoryMiB: d.MemoryMiB, ImageID: d.Image}
 	if pd, err := provision.ParseDomain(d.XML); err == nil {
-		info.Data, info.Media, info.ISO, info.Graphics, info.Rescue = pd.Data, pd.Media, pd.ISO, pd.Graphics, pd.Rescue
+		info.Data, info.Media, info.ISO, info.ISOs, info.Graphics, info.Rescue = pd.Data, pd.Media, pd.ISO, pd.ISOs, pd.Graphics, pd.Rescue
 	}
 	return info, nil
 }
@@ -364,7 +364,7 @@ func toDomain(st *State, name string, d Domain) hypervisor.Domain {
 			for _, dd := range pd.Data {
 				out.DataVolumes = append(out.DataVolumes, dd.Volume)
 			}
-			out.Media, out.ISOSHA256 = pd.Media, pd.ISO
+			out.Media, out.ISOSHA256, out.ISOSHA256s = pd.Media, pd.ISO, pd.ISOs
 			out.Graphics, out.RescueSHA256 = pd.Graphics, pd.Rescue
 		}
 	}

@@ -146,6 +146,17 @@ func NewParamsPreparer(cat func() (*provision.Catalog, error)) func(operation.Ty
 			}
 			p.SSHPublicKey = k.Authorized
 		}
+		if t == operation.EjectISO && p.ImageID != "" {
+			c, err := cat()
+			if err != nil {
+				return err
+			}
+			im, ok := c.Get(p.ImageID) // any state: a medium whose image was disabled must still be removable
+			if !ok || !im.IsISO() {
+				return errors.New("image")
+			}
+			p.ImageSHA256 = im.SHA256
+		}
 		if t == operation.ISOAttach || t == operation.Rescue {
 			c, err := cat()
 			if err != nil {
@@ -228,8 +239,29 @@ func (h *Handler) storagePrechecks(w http.ResponseWriter, r *http.Request, b sub
 			}
 		}
 	case operation.EjectISO:
-		if d.ISOSHA256 == "" || d.RescueSHA256 != "" {
+		if (d.ISOSHA256 == "" && len(d.ISOSHA256s) == 0) || d.RescueSHA256 != "" {
 			h.reject(w, categoryConflict) // there is no installation media to eject, or the VM is in rescue mode (leave it with unrescue)
+			return false
+		}
+		if id := req.Params.ImageID; id != "" {
+			attached, isISO := false, false
+			ids := h.isoImages()
+			for _, name := range ids {
+				isISO = isISO || name == id
+			}
+			for _, sha := range d.ISOSHA256s {
+				attached = attached || ids[sha] == id
+			}
+			if !isISO {
+				h.reject(w, categoryValidation) // not an installation medium of this catalog
+				return false
+			}
+			if !attached {
+				h.reject(w, categoryConflict) // the named medium is not attached (a repeated eject that already worked is the operation manager's, not this check's)
+				return false
+			}
+		} else if len(d.ISOSHA256s) > 1 {
+			h.reject(w, categoryValidation) // two media are attached: say which one to remove (DR-031)
 			return false
 		}
 	case operation.GraphicsEnable:

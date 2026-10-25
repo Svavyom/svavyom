@@ -131,8 +131,14 @@ func (c *Client) Resize(ctx context.Context, name string, diskGiB int) error {
 	return err
 }
 
-// EjectISO removes the installation media of the named stopped VM.
-func (c *Client) EjectISO(ctx context.Context, name string) error { return c.vm(ctx, OpEjectISO, name) }
+// EjectISO removes an installation medium of the named stopped VM: the one m names, or (m nil) the only one it has (DR-031).
+func (c *Client) EjectISO(ctx context.Context, name string, m *Media) error {
+	if m == nil {
+		return c.vm(ctx, OpEjectISO, name)
+	}
+	_, err := c.call(ctx, Request{Op: OpEjectISO, Name: name, Media: m})
+	return err
+}
 
 // GraphicsEnable gives the named stopped VM the graphical console devices; Unrescue puts a VM in rescue mode back.
 func (c *Client) GraphicsEnable(ctx context.Context, name string) error {

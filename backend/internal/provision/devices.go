@@ -2,6 +2,7 @@ package provision
 
 import (
 	"fmt"
+	"path"
 	"regexp"
 	"strings"
 )
@@ -20,10 +21,12 @@ const (
 // Errors of the device transformations (none carries caller input).
 var (
 	ErrISOPresent = fmt.Errorf("provision: installation media is already attached")
-	ErrRescued    = fmt.Errorf("provision: the VM is in rescue mode")
-	ErrNoGraphics = fmt.Errorf("provision: the VM has no graphical console")
-	ErrDefinition = fmt.Errorf("provision: the domain definition has an unexpected shape")
-	ErrBoot       = fmt.Errorf("provision: invalid boot choice")
+	// ErrMediaAmbiguous: two media are attached and the request did not say which one (DR-031).
+	ErrMediaAmbiguous = fmt.Errorf("provision: two installation media are attached; name the one to remove")
+	ErrRescued        = fmt.Errorf("provision: the VM is in rescue mode")
+	ErrNoGraphics     = fmt.Errorf("provision: the VM has no graphical console")
+	ErrDefinition     = fmt.Errorf("provision: the domain definition has an unexpected shape")
+	ErrBoot           = fmt.Errorf("provision: invalid boot choice")
 )
 
 // Boot choices of iso_attach.
@@ -218,13 +221,21 @@ func AttachISOXML(x, path, boot string) (string, error) {
 	return y, nil
 }
 
-// RemoveISOXML removes the installation media from the definition (none is success) and puts the boot choice back to the cloud-image shape when no CD boots.
-func RemoveISOXML(x string) (string, bool, error) {
+// RemoveISOXML removes one installation medium from the definition and puts the boot choice back to the cloud-image shape when no CD boots (a remaining
+// medium never inherits the boot order). sha names the medium by digest; "" means "the one the VM has": with two attached that is ErrMediaAmbiguous. A
+// medium that is not attached is success with nothing changed (had false), which keeps a repeated eject idempotent.
+func RemoveISOXML(x, sha string) (string, bool, error) {
+	type found struct {
+		start, end int
+		sha        string
+	}
+	var media []found
 	for _, loc := range diskRE.FindAllStringIndex(x, -1) {
 		var d sourceDiskDoc
 		if !strings.Contains(x[loc[0]:loc[1]], "device='cdrom'") || xmlUnmarshalDisk(x[loc[0]:loc[1]], &d) != nil || !isISODisk(d) {
 			continue
 		}
+		s, _ := ISOFileSHA256(path.Base(d.Source.File))
 		start := loc[0]
 		for start > 0 && (x[start-1] == ' ' || x[start-1] == '\t') {
 			start--
@@ -233,9 +244,26 @@ func RemoveISOXML(x string) (string, bool, error) {
 		if end < len(x) && x[end] == '\n' {
 			end++
 		}
-		return normalizeBoot(x[:start] + x[end:]), true, nil
+		media = append(media, found{start, end, s})
 	}
-	return x, false, nil
+	var pick *found
+	switch {
+	case sha != "":
+		for i := range media {
+			if media[i].sha == sha {
+				pick = &media[i]
+				break
+			}
+		}
+	case len(media) == 1:
+		pick = &media[0]
+	case len(media) > 1:
+		return "", false, ErrMediaAmbiguous
+	}
+	if pick == nil {
+		return x, false, nil
+	}
+	return normalizeBoot(x[:pick.start] + x[pick.end:]), true, nil
 }
 
 // RescueXML puts the VM in rescue mode: the rescue media is attached and boots first, with the original root disk kept as it is (the rescue system sees it
@@ -278,7 +306,7 @@ func UnrescueXML(x string) (string, bool, error) {
 		return "", false, ErrDefinition
 	}
 	y := x[:loc[0]] + rescueAttrRE.ReplaceAllString(x[loc[0]:loc[1]], "") + x[loc[1]:]
-	z, _, err := RemoveISOXML(y)
+	z, _, err := RemoveISOXML(y, RescueISO(x))
 	if err != nil {
 		return "", false, err
 	}

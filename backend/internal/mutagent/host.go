@@ -107,7 +107,12 @@ func (h *Host) BackupExport(ctx context.Context, backupID, targetID string) erro
 }
 
 // EjectISO implements operation.Storage.
-func (h *Host) EjectISO(ctx context.Context, name string) error { return h.Mut.EjectISO(ctx, name) }
+func (h *Host) EjectISO(ctx context.Context, name string, p operation.Params) error {
+	if p.ImageID == "" {
+		return h.Mut.EjectISO(ctx, name, nil)
+	}
+	return h.Mut.EjectISO(ctx, name, &Media{ImageID: p.ImageID, ImageSHA256: p.ImageSHA256})
+}
 
 // GraphicsEnable, ISOAttach, Rescue and Unrescue implement operation.Storage (DR-026).
 func (h *Host) GraphicsEnable(ctx context.Context, name string) error {

@@ -42,7 +42,7 @@ func mapDeviceErr(op string, err error) error {
 	switch {
 	case errors.Is(err, ErrISOPresent), errors.Is(err, ErrRescued), errors.Is(err, ErrNoGraphics):
 		return typedWhy(hypervisor.Conflict, op, err.Error())
-	case errors.Is(err, ErrBoot), errors.Is(err, ErrBacking):
+	case errors.Is(err, ErrBoot), errors.Is(err, ErrBacking), errors.Is(err, ErrMediaAmbiguous):
 		return typed(hypervisor.Validation, op)
 	}
 	return typed(hypervisor.HostError, op)
@@ -108,9 +108,10 @@ func ISOAttach(ctx context.Context, ops HostOps, cat *Catalog, name, imageID, sh
 	return nil
 }
 
-// EjectISO removes the installation media from the persistent definition of the STOPPED VM, so it boots from its disk. No media is success. A VM in
-// rescue mode is taken out of it with Unrescue, not by ejecting.
-func EjectISO(ctx context.Context, ops HostOps, name string, hook Hook) error {
+// EjectISO removes an installation medium from the persistent definition of the STOPPED VM, so it boots from its disk. sha names the medium by digest;
+// "" means the only one the VM has (two attached and no digest is a validation error). A medium that is not attached is success. A VM in rescue mode is
+// taken out of it with Unrescue, not by ejecting.
+func EjectISO(ctx context.Context, ops HostOps, name, sha string, hook Hook) error {
 	if hook == nil {
 		hook = func(string) {}
 	}
@@ -121,18 +122,48 @@ func EjectISO(ctx context.Context, ops HostOps, name string, hook Hook) error {
 	if d.Rescue != "" {
 		return typedWhy(hypervisor.Conflict, "eject_iso", "the VM is in rescue mode")
 	}
-	y, had, err := RemoveISOXML(d.XML)
+	y, had, err := RemoveISOXML(d.XML, sha)
 	if err != nil {
 		return mapDeviceErr("eject_iso", err)
 	}
 	if !had {
 		return nil
 	}
-	if err := redefine(ctx, ops, d, "eject_iso", y, func(a DomainInfo) bool { return a.ISO == "" }); err != nil {
+	want := d.ISOs
+	if sha != "" {
+		want = without(d.ISOs, sha)
+	} else {
+		want = nil
+	}
+	if err := redefine(ctx, ops, d, "eject_iso", y, func(a DomainInfo) bool { return sameList(a.ISOs, want) }); err != nil {
 		return err
 	}
 	hook(StepISOEjected)
 	return nil
+}
+
+// without returns list without s, in order.
+func without(list []string, s string) []string {
+	var out []string
+	for _, v := range list {
+		if v != s {
+			out = append(out, v)
+		}
+	}
+	return out
+}
+
+// sameList reports whether two lists hold the same strings in the same order (nil and empty are the same).
+func sameList(a, b []string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
 }
 
 // Rescue boots the VM from rescue media next time, with its own disk untouched; Unrescue puts the definition back.
@@ -178,7 +209,7 @@ func Unrescue(ctx context.Context, ops HostOps, name string, hook Hook) error {
 	if !changed {
 		return nil
 	}
-	if err := redefine(ctx, ops, d, "unrescue", y, func(a DomainInfo) bool { return a.Rescue == "" && a.ISO == "" }); err != nil {
+	if err := redefine(ctx, ops, d, "unrescue", y, func(a DomainInfo) bool { return a.Rescue == "" && sameList(a.ISOs, without(d.ISOs, d.Rescue)) }); err != nil {
 		return err
 	}
 	hook(StepUnrescued)

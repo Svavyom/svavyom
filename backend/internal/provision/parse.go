@@ -3,6 +3,7 @@ package provision
 import (
 	"encoding/xml"
 	"path"
+	"sort"
 	"strings"
 )
 
@@ -19,7 +20,8 @@ type Domain struct {
 	Root, Seed  string     // volume names of the first disk and of the cdrom
 	Data        []DataDisk // Svavyom data volumes attached to the definition, in document order
 	Media       string     // "iso" when the marker says the VM was created from installation media
-	ISO         string     // the SHA-256 of the installation media attached now ("" when none)
+	ISO         string     // the SHA-256 of the installation medium that boots next, else the first one attached ("" when none)
+	ISOs        []string   // the SHA-256 of every installation medium attached, in guest target order, at most MaxMedia (DR-031)
 	Network     string     // the libvirt network of the first network interface ("" when it has none)
 	MAC         string     // that interface's MAC address, lower case
 	Graphics    bool       // the definition carries a VNC graphical console (DR-026 D1)
@@ -52,6 +54,9 @@ type domainDoc struct {
 		Target struct {
 			Dev string `xml:"dev,attr"`
 		} `xml:"target"`
+		Boot struct {
+			Order string `xml:"order,attr"`
+		} `xml:"boot"`
 	} `xml:"devices>disk"`
 	Interfaces []struct {
 		Type   string `xml:"type,attr"`
@@ -128,14 +133,15 @@ func ParseDomain(x string) (Domain, error) {
 			break
 		}
 	}
+	var media []mediumDisk
 	for _, disk := range d.Disks {
 		if disk.Device == "cdrom" {
 			if out.Seed == "" {
 				out.Seed = named(disk.Source.Volume, disk.Source.File, "seed")
 			}
-			if f := disk.Source.File; out.ISO == "" && f != "" && path.IsAbs(f) && path.Clean(f) == f {
+			if f := disk.Source.File; f != "" && path.IsAbs(f) && path.Clean(f) == f {
 				if sha, ok := ISOFileSHA256(path.Base(f)); ok {
-					out.ISO = sha
+					media = append(media, mediumDisk{sha: sha, dev: disk.Target.Dev, boots: disk.Boot.Order != ""})
 				}
 			}
 		} else {
@@ -150,7 +156,38 @@ func ParseDomain(x string) (Domain, error) {
 			}
 		}
 	}
+	out.ISO, out.ISOs = summariseMedia(media)
 	return out, nil
+}
+
+// MaxMedia is the most installation media a VM carries (DR-031). A definition with more (a CD added by hand) is observed as its first MaxMedia in guest
+// target order, and operations on its media refuse it.
+const MaxMedia = 2
+
+type mediumDisk struct {
+	sha, dev string
+	boots    bool
+}
+
+// summariseMedia orders the media by guest target, keeps the first MaxMedia and names the one that boots next (else the first). Duplicates by digest are
+// kept once: the same file attached twice is one medium to the person.
+func summariseMedia(m []mediumDisk) (iso string, isos []string) {
+	sort.SliceStable(m, func(i, j int) bool { return m[i].dev < m[j].dev })
+	seen := map[string]bool{}
+	for _, d := range m {
+		if seen[d.sha] || len(isos) == MaxMedia {
+			continue
+		}
+		seen[d.sha] = true
+		isos = append(isos, d.sha)
+		if d.boots && iso == "" {
+			iso = d.sha
+		}
+	}
+	if iso == "" && len(isos) > 0 {
+		iso = isos[0]
+	}
+	return iso, isos
 }
 
 // IsPrivateIPv4Lease reports whether s is a usable observation for the IP field: a dotted-quad IPv4 address. (The API shows it

@@ -114,6 +114,9 @@ func (p Params) validFor(t Type) bool {
 		return ParamVolumeRE.MatchString(p.TargetID) && p == Params{TargetID: p.TargetID}
 	case ScheduleSet:
 		return p.validSchedule()
+	case EjectISO:
+		// image_id is optional: with one medium attached it may be left out; with two it names the one to remove (DR-031).
+		return p.IsZero() || (paramImageRE.MatchString(p.ImageID) && p == Params{ImageID: p.ImageID})
 	case ISOAttach:
 		return paramImageRE.MatchString(p.ImageID) && (p.Boot == "cdrom" || p.Boot == "disk") && p == Params{ImageID: p.ImageID, Boot: p.Boot}
 	case Rescue:
@@ -165,6 +168,9 @@ func (p Params) complete(t Type, resourceID string) bool {
 		return p.DiskGiB >= 1 && p.DiskGiB <= 4096
 	case VolumeAttach:
 		return paramNameRE.MatchString(p.VMID)
+	case EjectISO:
+		// A stored eject either names no medium or names one whose digest the server resolved.
+		return (p.ImageID == "" && p.ImageSHA256 == "") || (paramImageRE.MatchString(p.ImageID) && paramHexRE.MatchString(p.ImageSHA256))
 	case Restore:
 		return paramBackupRE.MatchString(resourceID) && paramNameRE.MatchString(p.NewName) && paramUUIDRE.MatchString(p.NewUUID) && paramHexRE.MatchString(p.NewFinger) && p.SSHPublicKey != ""
 	}

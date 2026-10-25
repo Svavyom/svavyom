@@ -42,8 +42,8 @@ func (d *directHost) BackupExport(ctx context.Context, backupID, targetID string
 	return offsite.ToHypervisorError("backup_export", d.exp.Export(ctx, backupID, targetID))
 }
 
-func (d *directHost) EjectISO(ctx context.Context, name string) error {
-	return provision.EjectISO(ctx, d.sim, name, nil)
+func (d *directHost) EjectISO(ctx context.Context, name string, p operation.Params) error {
+	return provision.EjectISO(ctx, d.sim, name, p.ImageSHA256, nil)
 }
 
 func (d *directHost) GraphicsEnable(ctx context.Context, name string) error {

@@ -194,7 +194,7 @@ func (o *Ops) LookupDomain(ctx context.Context, name string) (provision.DomainIn
 	if err != nil {
 		return provision.DomainInfo{}, mapErr("lookup", err)
 	}
-	return provision.DomainInfo{Name: pd.Name, Data: pd.Data, Media: pd.Media, ISO: pd.ISO, Graphics: pd.Graphics, Rescue: pd.Rescue, UUID: pd.UUID, Fingerprint: pd.Fingerprint, Managed: pd.Managed, Running: active, Root: pd.Root, Seed: pd.Seed, XML: x, VCPUs: pd.VCPUs, MemoryMiB: pd.MemoryMiB, ImageID: pd.ImageID}, nil
+	return provision.DomainInfo{Name: pd.Name, Data: pd.Data, Media: pd.Media, ISO: pd.ISO, ISOs: pd.ISOs, Graphics: pd.Graphics, Rescue: pd.Rescue, UUID: pd.UUID, Fingerprint: pd.Fingerprint, Managed: pd.Managed, Running: active, Root: pd.Root, Seed: pd.Seed, XML: x, VCPUs: pd.VCPUs, MemoryMiB: pd.MemoryMiB, ImageID: pd.ImageID}, nil
 }
 
 type volumeDoc struct {

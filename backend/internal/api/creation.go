@@ -462,7 +462,7 @@ func (h *Handler) submitOperation(w http.ResponseWriter, r *http.Request) {
 		h.reject(w, categoryProhibited) // every other kind and type stays closed
 		return
 	}
-	if (b.Params != nil) != paramType(typ) {
+	if (b.Params != nil) != paramType(typ) && !(b.Params == nil && paramOptional(typ)) {
 		h.reject(w, categoryValidation) // exactly the types that take parameters carry them
 		return
 	}

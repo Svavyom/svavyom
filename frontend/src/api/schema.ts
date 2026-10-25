@@ -160,6 +160,7 @@ export interface VM {
     graphical_console: "absent" | "present";
     rescue: boolean;
     iso: string | null;
+    isos: string[];
     disk_gib: number | null;
     snapshots: ({
       id: string;
@@ -2446,7 +2447,7 @@ export const SCHEMAS = {
       },
       "params": {
         "additionalProperties": false,
-        "description": "Typed inputs of a storage, recovery, network or VM-configuration operation (DR-020, DR-021); allowed only for the types that take them and forbidden otherwise. resize takes disk_gib; reinstall takes image_id and ssh_public_key; restore_snapshot and delete_snapshot take snapshot_id; restore (kind Backup) takes new_name and ssh_public_key; network_create (kind VirtualNetwork) takes subnet, dhcp_start and dhcp_end, or bridge alone for a bridge-mode network on the host bridge svavyom-ctl recorded as active (DR-024 D5); network_autostart takes autostart; compute takes vcpus and memory_mib; reserve_ip takes ip_address; volume_create (kind Volume, the id is the volume name) takes disk_gib; volume_attach takes vm_id (a Stopped Svavyom VM); volume_detach and volume_delete take none (DR-023 D2); backup_export (kind Backup) takes target_id, one of the declared off-host targets (DR-023 D4); schedule_set (kind VM) takes target_id (optional), keep_local, keep_offsite, downtime_acknowledged and either every_hours or at; schedule_clear and alert_acknowledge (kind Event) take none (DR-024); iso_attach takes image_id (a catalog ISO) and boot (cdrom or disk), rescue takes image_id, graphics_enable and unrescue take none (DR-026). No path, URL, volume name, XML or script; the server resolves digests and generates every identifier.",
+        "description": "Typed inputs of a storage, recovery, network or VM-configuration operation (DR-020, DR-021); allowed only for the types that take them and forbidden otherwise. resize takes disk_gib; reinstall takes image_id and ssh_public_key; restore_snapshot and delete_snapshot take snapshot_id; restore (kind Backup) takes new_name and ssh_public_key; network_create (kind VirtualNetwork) takes subnet, dhcp_start and dhcp_end, or bridge alone for a bridge-mode network on the host bridge svavyom-ctl recorded as active (DR-024 D5); network_autostart takes autostart; compute takes vcpus and memory_mib; reserve_ip takes ip_address; volume_create (kind Volume, the id is the volume name) takes disk_gib; volume_attach takes vm_id (a Stopped Svavyom VM); volume_detach and volume_delete take none (DR-023 D2); backup_export (kind Backup) takes target_id, one of the declared off-host targets (DR-023 D4); schedule_set (kind VM) takes target_id (optional), keep_local, keep_offsite, downtime_acknowledged and either every_hours or at; schedule_clear and alert_acknowledge (kind Event) take none (DR-024); iso_attach takes image_id (a catalog ISO) and boot (cdrom or disk), rescue takes image_id, graphics_enable and unrescue take none (DR-026); eject_iso takes image_id (optional; required when two media are attached) (DR-031). No path, URL, volume name, XML or script; the server resolves digests and generates every identifier.",
         "properties": {
           "at": {
             "maxLength": 5,
@@ -2844,13 +2845,24 @@ export const SCHEMAS = {
             "x-data-class": "operational"
           },
           "iso": {
-            "description": "The image id of the installation media attached now (DR-023 D3); null when none is attached or the catalog no longer names it.",
+            "description": "The image id of the installation medium that boots next, or else the first one attached (DR-031); null when none is attached or the catalog no longer names it. Kept for compatibility; isos is the full list.",
             "maxLength": 63,
             "pattern": "^[a-z0-9][a-z0-9._-]{0,62}$",
             "type": [
               "string",
               "null"
             ],
+            "x-data-class": "operational"
+          },
+          "isos": {
+            "description": "The image ids of every installation medium attached now, in guest target order, at most two (DR-031). A medium the catalog no longer names is left out. Empty when none is attached or the VM is not managed.",
+            "items": {
+              "maxLength": 63,
+              "pattern": "^[a-z0-9][a-z0-9._-]{0,62}$",
+              "type": "string"
+            },
+            "maxItems": 2,
+            "type": "array",
             "x-data-class": "operational"
           },
           "last_seen_at": {
@@ -3101,6 +3113,7 @@ export const SCHEMAS = {
           "ip_address",
           "login_user",
           "iso",
+          "isos",
           "disk_gib",
           "snapshots",
           "network",
