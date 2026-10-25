@@ -86,7 +86,7 @@ func TestInstallationMediaCanBeAttachedToAnyStoppedVMAndEjected(t *testing.T) {
 	before := r.domainXML("web-1")
 	r.await(b, opID(t, r.attach(b, "web-1", "tools-iso", "cdrom", "k-a1")), "succeeded")
 	v = readVMMedia(t, b, "web-1")
-	if v.Observed.ISO == nil || *v.Observed.ISO != "tools-iso" || !hasAction(v.Allowed, "eject_iso") || hasAction(v.Allowed, "iso_attach") {
+	if v.Observed.ISO == nil || *v.Observed.ISO != "tools-iso" || !hasAction(v.Allowed, "eject_iso") || !hasAction(v.Allowed, "iso_attach") || hasAction(v.Allowed, "rescue") {
 		t.Fatalf("%+v", v)
 	}
 	if x := r.domainXML("web-1"); !strings.Contains(x, "<boot order='1'/>") || strings.Contains(x, "<boot dev=") {

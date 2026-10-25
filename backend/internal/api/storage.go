@@ -270,12 +270,22 @@ func (h *Handler) storagePrechecks(w http.ResponseWriter, r *http.Request, b sub
 			return false
 		}
 	case operation.ISOAttach:
-		if d.ISOSHA256 != "" || d.RescueSHA256 != "" {
-			h.reject(w, categoryConflict) // media is attached already (eject it first), or the VM is in rescue mode
+		if len(d.ISOSHA256s) >= provision.MaxMedia || d.RescueSHA256 != "" {
+			h.reject(w, categoryConflict) // two media are attached already (eject one first), or the VM is in rescue mode
 			return false
 		}
+		if len(d.ISOSHA256s) == 1 {
+			if h.isoImages()[d.ISOSHA256s[0]] == req.Params.ImageID {
+				h.reject(w, categoryConflict) // that medium is attached already
+				return false
+			}
+			if req.Params.Boot == "cdrom" {
+				h.reject(w, categoryValidation) // a second medium is only attached: it never boots (DR-031)
+				return false
+			}
+		}
 	case operation.Rescue:
-		if d.ISOSHA256 != "" || d.RescueSHA256 != "" || !d.Graphics {
+		if d.ISOSHA256 != "" || len(d.ISOSHA256s) > 0 || d.RescueSHA256 != "" || !d.Graphics {
 			h.reject(w, categoryConflict) // needs the graphical console, no media attached and no rescue in progress
 			return false
 		}

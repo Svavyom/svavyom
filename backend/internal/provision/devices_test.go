@@ -86,8 +86,23 @@ func TestAttachISOAsABootDeviceAndEjectGivesTheOriginalBack(t *testing.T) {
 	if same, err := AttachISOXML(y, rescuePath(), BootCDROM); err != nil || same != y {
 		t.Fatal("the same media again is success and changes nothing")
 	}
-	if _, err := AttachISOXML(y, "/c/store/"+strings.Repeat("0", 64)+".iso", BootDisk); err != ErrISOPresent {
-		t.Fatalf("other media while one is attached: %v", err)
+	// a second medium is only attached: it never boots, and a third is refused (DR-031)
+	other := "/c/store/" + strings.Repeat("0", 64) + ".iso"
+	if _, err := AttachISOXML(y, other, BootCDROM); err != ErrBoot {
+		t.Fatalf("a second medium never boots: %v", err)
+	}
+	two, err := AttachISOXML(y, other, BootDisk)
+	if err != nil {
+		t.Fatalf("a second medium is attached: %v", err)
+	}
+	if pd, _ := ParseDomain(two); len(pd.ISOs) != 2 || pd.ISO != rescueSum || !strings.Contains(two, "<boot order='1'/>") || strings.Count(two, "<boot order=") != 2 {
+		t.Fatalf("the first medium still boots and the second has no boot order: %+v\n%s", pd, two)
+	}
+	if _, err := AttachISOXML(two, "/c/store/"+strings.Repeat("1", 64)+".iso", BootDisk); err != ErrISOPresent {
+		t.Fatalf("a third medium: %v", err)
+	}
+	if same, err := AttachISOXML(two, other, BootDisk); err != nil || same != two {
+		t.Fatal("the second medium again is success and changes nothing")
 	}
 	back, had, err := RemoveISOXML(y, "")
 	if err != nil || !had || back != x {
@@ -161,7 +176,7 @@ func TestRescueThenUnrescueIsExactForBothKindsOfVM(t *testing.T) {
 		if _, err := RescueXML(r, rescuePath(), rescueSum); err != ErrRescued {
 			t.Fatalf("%s: rescue twice: %v", name, err)
 		}
-		if _, err := AttachISOXML(r, "/c/store/"+strings.Repeat("0", 64)+".iso", BootDisk); err != ErrISOPresent {
+		if _, err := AttachISOXML(r, "/c/store/"+strings.Repeat("0", 64)+".iso", BootDisk); err != ErrRescued {
 			t.Fatalf("%s: other media in rescue mode: %v", name, err)
 		}
 		back, changed, err := UnrescueXML(r)

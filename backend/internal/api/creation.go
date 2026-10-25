@@ -671,11 +671,11 @@ func allowedActions(d hypervisor.Domain, nets map[string]hypervisor.Network, net
 		if !d.Graphics {
 			out = append(out, string(operation.GraphicsEnable))
 		}
-		if d.ISOSHA256 == "" && d.RescueSHA256 == "" {
-			out = append(out, string(operation.ISOAttach))
-			if d.Graphics {
-				out = append(out, string(operation.Rescue))
-			}
+		if len(d.ISOSHA256s) < provision.MaxMedia && d.RescueSHA256 == "" {
+			out = append(out, string(operation.ISOAttach)) // a second medium is allowed (DR-031); a third is not
+		}
+		if d.ISOSHA256 == "" && len(d.ISOSHA256s) == 0 && d.RescueSHA256 == "" && d.Graphics {
+			out = append(out, string(operation.Rescue)) // rescue needs no other medium
 		}
 		if d.RescueSHA256 != "" {
 			out = append(out, string(operation.Unrescue))
