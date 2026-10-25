@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "description": "M0-E01-S02 threat register: every boundary x STRIDE pair plus injection, authz_bypass (IDOR, cross-project), replay and failure-row threats. 'mitigated' only with runtime test evidence on an implemented boundary; otherwise 'planned' with an owner story or 'accepted' with an approved decision record.",
+  "description": "M0-E01-S02 threat register: every boundary x STRIDE pair plus injection, authz_bypass (IDOR, cross-project), replay and failure-row threats. 'mitigated' only with runtime test evidence on an implemented boundary; otherwise 'planned' with an owner story or 'accepted' with an approved decision record. Planned threats owned by M0-E01-S06 are not yet evidenced by a runtime test: their owning stories were delivered, but the register still cites design evidence only and the checker's runtime paths cover one boundary (see refinements/M0-E01-S06.md in the requirements repository).",
   "threats": [
     {
       "id": "T-API-S",
@@ -14,7 +14,7 @@
         "M-API-AUTHN"
       ],
       "status": "planned",
-      "owner_story": "M1-E04-S04"
+      "owner_story": "M0-E01-S06"
     },
     {
       "id": "T-API-T-INJ",
@@ -28,7 +28,7 @@
         "M-API-SCHEMA"
       ],
       "status": "planned",
-      "owner_story": "M1-E04-S04"
+      "owner_story": "M0-E01-S06"
     },
     {
       "id": "T-API-R",
@@ -42,7 +42,7 @@
         "M-API-AUDIT"
       ],
       "status": "planned",
-      "owner_story": "M1-E04-S04"
+      "owner_story": "M0-E01-S06"
     },
     {
       "id": "T-API-I",
@@ -57,7 +57,7 @@
         "M-REDACT"
       ],
       "status": "planned",
-      "owner_story": "M1-E04-S04"
+      "owner_story": "M0-E01-S06"
     },
     {
       "id": "T-API-D",
@@ -71,7 +71,7 @@
         "M-API-LISTEN"
       ],
       "status": "planned",
-      "owner_story": "M1-E04-S03"
+      "owner_story": "M0-E01-S06"
     },
     {
       "id": "T-API-E-IDOR",
@@ -86,7 +86,7 @@
         "M-API-OWN"
       ],
       "status": "planned",
-      "owner_story": "M1-E04-S04"
+      "owner_story": "M0-E01-S06"
     },
     {
       "id": "T-API-T-REPLAY",
@@ -216,7 +216,7 @@
         "M-AGENT-AUTHN"
       ],
       "status": "planned",
-      "owner_story": "M1-E02-S01"
+      "owner_story": "M0-E01-S06"
     },
     {
       "id": "T-AGENT-T-INJ",
@@ -230,7 +230,7 @@
         "M-AGENT-SCHEMA"
       ],
       "status": "planned",
-      "owner_story": "M1-E02-S01"
+      "owner_story": "M0-E01-S06"
     },
     {
       "id": "T-AGENT-R",
@@ -244,7 +244,7 @@
         "M-AGENT-AUDIT"
       ],
       "status": "planned",
-      "owner_story": "M1-E02-S01"
+      "owner_story": "M0-E01-S06"
     },
     {
       "id": "T-AGENT-I",
@@ -259,7 +259,7 @@
         "M-REDACT"
       ],
       "status": "planned",
-      "owner_story": "M1-E02-S01"
+      "owner_story": "M0-E01-S06"
     },
     {
       "id": "T-AGENT-D",
@@ -273,7 +273,7 @@
         "M-AGENT-LISTEN"
       ],
       "status": "planned",
-      "owner_story": "M1-E02-S01"
+      "owner_story": "M0-E01-S06"
     },
     {
       "id": "T-AGENT-E-IDOR",
@@ -288,7 +288,7 @@
         "M-AGENT-OWN"
       ],
       "status": "planned",
-      "owner_story": "M1-E02-S01"
+      "owner_story": "M0-E01-S06"
     },
     {
       "id": "T-AGENT-T-REPLAY",
@@ -303,7 +303,7 @@
         "M-AGENT-AUTHN"
       ],
       "status": "planned",
-      "owner_story": "M1-E02-S01"
+      "owner_story": "M0-E01-S06"
     },
     {
       "id": "T-LIBVIRT-S",
@@ -317,7 +317,7 @@
         "M-LIBVIRT-AUTHN"
       ],
       "status": "planned",
-      "owner_story": "M1-E02-S01"
+      "owner_story": "M0-E01-S06"
     },
     {
       "id": "T-LIBVIRT-T-INJ",
@@ -331,7 +331,7 @@
         "M-LIBVIRT-SCHEMA"
       ],
       "status": "planned",
-      "owner_story": "M1-E02-S02"
+      "owner_story": "M0-E01-S06"
     },
     {
       "id": "T-LIBVIRT-R",
@@ -345,7 +345,7 @@
         "M-LIBVIRT-AUDIT"
       ],
       "status": "planned",
-      "owner_story": "M1-E02-S01"
+      "owner_story": "M0-E01-S06"
     },
     {
       "id": "T-LIBVIRT-I",
@@ -360,7 +360,7 @@
         "M-REDACT"
       ],
       "status": "planned",
-      "owner_story": "M1-E02-S01"
+      "owner_story": "M0-E01-S06"
     },
     {
       "id": "T-LIBVIRT-D",
@@ -374,7 +374,7 @@
         "M-LIBVIRT-LISTEN"
       ],
       "status": "planned",
-      "owner_story": "M1-E02-S01"
+      "owner_story": "M0-E01-S06"
     },
     {
       "id": "T-LIBVIRT-E-IDOR",
@@ -389,7 +389,7 @@
         "M-LIBVIRT-OWN"
       ],
       "status": "planned",
-      "owner_story": "M1-E02-S01"
+      "owner_story": "M0-E01-S06"
     },
     {
       "id": "T-LIBVIRT-T-REPLAY",
@@ -404,7 +404,7 @@
         "M-LIBVIRT-AUTHN"
       ],
       "status": "planned",
-      "owner_story": "M1-E02-S03"
+      "owner_story": "M0-E01-S06"
     },
     {
       "id": "T-PAAS-S",
@@ -547,7 +547,7 @@
         "M-LIBVIRT-NOXML"
       ],
       "status": "planned",
-      "owner_story": "M1-E02-S02"
+      "owner_story": "M0-E01-S06"
     },
     {
       "id": "T-LIBVIRT-E-REMOTE",
@@ -562,7 +562,7 @@
         "M-LIBVIRT-AUTHN"
       ],
       "status": "planned",
-      "owner_story": "M1-E02-S01"
+      "owner_story": "M0-E01-S06"
     },
     {
       "id": "T-AGENT-E-SOCKET",
@@ -577,7 +577,7 @@
         "M-AGENT-AUTHN"
       ],
       "status": "planned",
-      "owner_story": "M1-E02-S01"
+      "owner_story": "M0-E01-S06"
     },
     {
       "id": "T-AGENT-T-SHELL",
@@ -592,7 +592,7 @@
         "M-AGENT-NOSHELL"
       ],
       "status": "planned",
-      "owner_story": "M1-E02-S01"
+      "owner_story": "M0-E01-S06"
     },
     {
       "id": "T-PAAS-T-IMAGE",
