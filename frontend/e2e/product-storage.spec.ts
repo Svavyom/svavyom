@@ -154,7 +154,7 @@ test("installation media and rescue mode on a stopped VM: attach, eject, rescue,
   await page.getByRole("dialog").getByRole("button", { name: "Attach the media" }).click();
   await expect(page.getByText(/Media attached/)).toBeVisible({ timeout: 30000 });
   await page.getByRole("button", { name: "Refresh" }).click();
-  await expect(page.locator("main")).toContainText("rescue-iso");
+  await expect(page.locator("main")).toContainText("Rescue ISO");
   await expect(page.getByRole("button", { name: "Start rescue mode for resc-1" })).toHaveCount(0); // media is attached: eject first
   // a second medium (DR-031): no boot choice, the first one is not offered again, each medium has its own eject button
   await page.getByRole("button", { name: "Attach installation media to resc-1" }).click();
