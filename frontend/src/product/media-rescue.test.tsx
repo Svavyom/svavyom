@@ -84,6 +84,23 @@ describe("installation media, the graphical console and rescue on the VM page", 
     expect(posts[0]).toMatchObject({ type: "iso_attach", kind: "VM", id: "web-1", params: { image_id: "drivers-iso", boot: "disk" } });
   });
 
+  describe("the guest type on the VM page (DR-032)", () => {
+    it("shows Windows with the virtio volume note, and Linux without it", async () => {
+      machine = stopped(["start", "delete"], { guest_profile: "windows" });
+      const view = render(<Root />);
+      expect(await screen.findByText("Guest type")).toBeTruthy();
+      expect(screen.getByText("Windows", { selector: "dd" })).toBeTruthy();
+      expect(screen.getByText(/Volumes attach as virtio disks. Windows shows them only after the virtio storage driver is installed in the VM/)).toBeTruthy();
+      expect(await axeViolations(document.body)).toEqual([]);
+      view.unmount();
+      machine = stopped(["start", "delete"]);
+      render(<Root />);
+      expect(await screen.findByText("Guest type")).toBeTruthy();
+      expect(screen.getByText("Linux", { selector: "dd" })).toBeTruthy();
+      expect(screen.queryByText(/Volumes attach as virtio disks/)).toBeNull();
+    });
+  });
+
   describe("two media on the VM page (DR-031)", () => {
     const DRIVERS: Image = { ...ISO, id: "drivers-iso", name: "Driver disc" };
     const two = (over: Partial<VM["observed"]> = {}) => stopped(["start", "delete", "eject_iso"], { iso: "alpine-iso", isos: ["alpine-iso", "drivers-iso"], ...over });

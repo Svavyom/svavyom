@@ -2,7 +2,7 @@
 // path, XML, URL or script: the server chooses the network and derives every host path itself. Create makes a STOPPED VM; Start
 // is a separate action in the VM list.
 import { useEffect, useRef, useState } from "react";
-import { Button, ErrorSummary, LoadingRegion, PageHead, Select, StatusMessage, TextArea, TextField, Link } from "../design-system";
+import { Button, ErrorSummary, LoadingRegion, PageHead, RadioGroup, Select, StatusMessage, TextArea, TextField, Link } from "../design-system";
 import { newIdempotencyKey, read } from "../api/client";
 import { decodeHost, decodeImageList, decodeNetworkList } from "../api/decoders";
 import { submitOperation } from "../api/session";
@@ -26,7 +26,7 @@ export async function keyFingerprint(key: string): Promise<string | null> {
   }
 }
 
-type Draft = { name: string; image: string; vcpus: string; memory: string; disk: string; key: string; network: string; profile: string };
+type Draft = { name: string; image: string; vcpus: string; memory: string; disk: string; key: string; network: string; profile: string; guest: string };
 type Phase = { kind: "form" } | { kind: "review" } | { kind: "submitting" } | { kind: "progress"; id: string } | { kind: "done"; op: Operation };
 
 export function CreateVm(props: { onSessionEnded: () => void }) {
@@ -35,7 +35,7 @@ export function CreateVm(props: { onSessionEnded: () => void }) {
   const [images, setImages] = useState<Image[]>([]);
   const [failed, setFailed] = useState(false);
   const [networks, setNetworks] = useState<VirtualNetwork[]>([]);
-  const [draft, setDraft] = useState<Draft>({ name: "", image: "", vcpus: "", memory: "", disk: "", key: "", network: "", profile: "custom" });
+  const [draft, setDraft] = useState<Draft>({ name: "", image: "", vcpus: "", memory: "", disk: "", key: "", network: "", profile: "custom", guest: "linux" });
   const [errors, setErrors] = useState<ReadonlyArray<{ fieldId: string; message: string }>>([]);
   const [phase, setPhase] = useState<Phase>({ kind: "form" });
   const [step, setStep] = useState<1 | 2>(1);
@@ -111,6 +111,7 @@ export function CreateVm(props: { onSessionEnded: () => void }) {
     const body: Record<string, unknown> = { vcpus: Number(draft.vcpus), memory_mib: Number(draft.memory), image_id: draft.image, disk_gib: Number(draft.disk) };
     if (!isIso) body.ssh_public_key = draft.key.trim();
     if (draft.network !== "") body.network = draft.network; // omitted = the configured default network
+    if (isIso && draft.guest === "windows") body.guest_profile = "windows"; // omitted = linux: a Linux request is exactly what it always was
     const sig = JSON.stringify([draft.name, body]);
     // One idempotency key per intent: the same key is reused when the same details are submitted again after an unknown outcome.
     if (!keyRef.current || keyRef.current.sig !== sig) keyRef.current = { sig, key: newIdempotencyKey() };
@@ -183,6 +184,16 @@ export function CreateVm(props: { onSessionEnded: () => void }) {
                 <Select label="Network" value={draft.network} onChange={set("network")} description="The default network, or a network Svavyom created that is running."
                   options={[{ value: "", label: "Default network" }, ...networks.map((n) => ({ value: n.id, label: `${n.name} (${n.observed.subnet ?? "no address range"})` }))]} />
                 {isIso ? (
+                  <RadioGroup legend="Guest type" name="guest" value={draft.guest} onChange={set("guest")}
+                    options={[{ value: "linux", label: "Linux or other (default)" }, { value: "windows", label: "Windows" }]} />
+                ) : null}
+                {isIso && draft.guest === "windows" ? (
+                  <>
+                    <StatusMessage tone="warning">Windows Server and older Windows clients on BIOS firmware. The disk and network card use drivers that Windows Setup already has. Windows 11 needs UEFI and a TPM and is not supported yet.</StatusMessage>
+                    <p className="ds-muted">After the install you can attach the virtio-win driver disc as a second installation medium from the VM page; the VM stays on the SATA disk and the e1000e network card until you change that yourself.</p>
+                  </>
+                ) : null}
+                {isIso ? (
                   <StatusMessage tone="warning">This VM boots the installer from the ISO. There is no SSH key and no automatic setup: you install the system yourself. Start the VM, then follow the installer in the <strong>Graphical console</strong> on the VM&apos;s page (the serial console is also there, but many installers, Windows among them, only draw on the graphical one). Eject the media afterwards so the VM boots from its disk.</StatusMessage>
                 ) : (
                   <TextArea id="create-key" label="SSH public key" value={draft.key} onChange={set("key")}
@@ -205,6 +216,7 @@ export function CreateVm(props: { onSessionEnded: () => void }) {
               <dt>Name</dt><dd>{draft.name}</dd>
               <dt>Image</dt><dd>{image?.name} {image ? (isIso ? "(installation media)" : `(login user ${image.observed.login_user ?? "unknown"})`) : ""}</dd>
               <dt>Size</dt><dd>{draft.vcpus} vCPU, {draft.memory} MiB memory, {draft.disk} GiB root disk</dd>
+              <dt>Guest type</dt><dd>{isIso && draft.guest === "windows" ? "Windows" : isIso ? "Linux or other" : "Linux (cloud image)"}</dd>
               <dt>Network</dt><dd>{draft.network === "" ? "Default network" : draft.network}</dd>
               <dt>SSH key</dt><dd>{isIso ? "None: the installer sets up access" : fp ?? "fingerprint unavailable"}</dd>
               <dt>Result</dt><dd>A stopped VM. Starting it is a separate step.</dd>
@@ -229,6 +241,9 @@ export function CreateVm(props: { onSessionEnded: () => void }) {
             ) : null}
             {phase.op.status === "succeeded" ? (
               <p>The VM <strong>{phase.op.resource_id}</strong> is created but <strong>stopped</strong>: creating a VM does not start it. Open its page and choose Start{isIso ? ", then open the Graphical console to follow the installer" : ""}.</p>
+            ) : null}
+            {phase.op.status === "succeeded" && isIso && draft.guest === "windows" ? (
+              <p>Start the VM, then follow Windows Setup in the Graphical console. The installation disc is the only drive Windows Setup needs. If it ignores a shutdown request during setup, use Force off.</p>
             ) : null}
             <div className="ds-button-row">
               {phase.op.status === "succeeded" ? <Link href={`#/vms/${phase.op.resource_id}`}>{`Open ${phase.op.resource_id}`}</Link> : null}

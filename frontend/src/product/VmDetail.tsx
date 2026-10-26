@@ -292,6 +292,7 @@ export function VmDetail(props: { vmId: string; refresh: number; onSessionEnded:
               <h2 id="vm-details">Details</h2>
               <dl>
                 <dt>State</dt><dd>{POWER_LABEL[vm.observed.power]}</dd>
+                {vm.observed.managed ? <><dt>Guest type</dt><dd>{vm.observed.guest_profile === "windows" ? "Windows" : "Linux"}</dd></> : null}
                 <dt>Size</dt><dd>{vm.observed.vcpus === null || vm.observed.memory_mib === null ? "-" : `${vm.observed.vcpus} vCPU, ${vm.observed.memory_mib} MiB memory`}</dd>
                 {vm.observed.managed && vm.observed.isos.length > 0 ? <><dt>Installation media</dt><dd>{vm.observed.isos.map(mediaName).join(", ")}{vm.observed.power === "stopped" ? "" : " (stop the VM to eject it)"}</dd></> : null}
                 <dt>Memory in use</dt><dd>{vm.observed.usage.state === "available" && vm.observed.usage.memory_used_mib !== null && vm.observed.usage.memory_used_mib > 0 ? `${vm.observed.usage.memory_used_mib} MiB` : "-"}</dd>
@@ -341,6 +342,7 @@ export function VmDetail(props: { vmId: string; refresh: number; onSessionEnded:
             ) : null}
             <section className="ds-card" aria-labelledby="vm-volumes">
               <h2 id="vm-volumes">Data volumes</h2>
+              {vm.observed.managed && vm.observed.guest_profile === "windows" ? <p className="ds-muted">Volumes attach as virtio disks. Windows shows them only after the virtio storage driver is installed in the VM.</p> : null}
               {volumes.filter((v) => v.desired.attached_to === vm.name && !v.id.endsWith("-root")).length === 0
                 ? <p>No data volumes are attached. A data volume is an extra disk you attach while the VM is stopped.</p>
                 : <ul className="ds-list">{volumes.filter((v) => v.desired.attached_to === vm.name && !v.id.endsWith("-root")).map((v) => <li key={v.id}>{v.name} <span className="ds-muted">{v.desired.size_gib} GiB</span></li>)}</ul>}
