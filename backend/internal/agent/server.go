@@ -172,7 +172,7 @@ func failure(err error) Reply {
 func toWire(d hypervisor.Domain) (Domain, bool) {
 	w := Domain{Name: d.Name, Power: string(d.State), VCPUs: d.VCPUs, MemoryMiB: d.MemoryMiB, UUID: d.UUID, Managed: d.Managed,
 		Fingerprint: d.Fingerprint, ImageID: d.ImageID, IP: d.IPv4, DiskBytes: d.DiskBytes, Network: d.Network, MAC: d.MAC, CPUTimeNs: d.CPUTimeNs,
-		MemUsedMiB: d.MemUsedMiB, DiskIOBytes: d.DiskIOBytes, NetIOBytes: d.NetIOBytes, DataVolumes: d.DataVolumes, Media: d.Media, ISOSHA256: d.ISOSHA256, ISOSHA256s: d.ISOSHA256s, Graphics: d.Graphics, RescueSHA256: d.RescueSHA256}
+		MemUsedMiB: d.MemUsedMiB, DiskIOBytes: d.DiskIOBytes, NetIOBytes: d.NetIOBytes, DataVolumes: d.DataVolumes, Media: d.Media, ISOSHA256: d.ISOSHA256, ISOSHA256s: d.ISOSHA256s, Profile: d.Profile, Graphics: d.Graphics, RescueSHA256: d.RescueSHA256}
 	for _, sn := range d.Snapshots {
 		w.Snapshots = append(w.Snapshots, Snap{ID: sn.ID, Created: sn.Created})
 	}

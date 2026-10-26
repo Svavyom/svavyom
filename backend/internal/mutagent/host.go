@@ -28,7 +28,7 @@ var _ hypervisor.Hypervisor = (*Host)(nil)
 // (no UUID, image or key) is refused.
 func (h *Host) Define(ctx context.Context, s hypervisor.DomainSpec) (hypervisor.Domain, error) {
 	ps := provision.Spec{Name: s.Name, UUID: s.UUID, Fingerprint: s.Fingerprint, VCPUs: s.VCPUs, MemoryMiB: s.MemoryMiB, ImageID: s.ImageID,
-		ImageSHA256: s.ImageSHA256, DiskGiB: s.DiskGiB, SSHPublicKey: s.SSHPublicKey, Network: s.Network}
+		ImageSHA256: s.ImageSHA256, DiskGiB: s.DiskGiB, SSHPublicKey: s.SSHPublicKey, Network: s.Network, Profile: s.Profile}
 	if err := h.Mut.Provision(ctx, ps); err != nil {
 		return hypervisor.Domain{}, err
 	}

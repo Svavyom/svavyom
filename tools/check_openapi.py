@@ -73,6 +73,8 @@ DESIRED_OBSERVED = {
             "iso": ({"string", "null"}, None),
             # DR-031: every installation medium attached, at most two image ids in guest target order
             "isos": ({"array"}, None),
+            # DR-032: the hardware profile the VM was created with
+            "guest_profile": _e("linux", "windows"),
             # DR-020: the root disk's virtual size and the VM's own snapshots (pinned in check_vm_extension)
             "disk_gib": ({"integer", "null"}, None), "snapshots": ({"array"}, None),
             # DR-021 (M3): the VM's network (pinned in check_vm_extension)
@@ -565,12 +567,16 @@ CREATE_FIELDS = {"vcpus": ("integer", 1, 64), "memory_mib": ("integer", 64, 1048
 
 
 def create_shape_ok(node):
-    """The `create` object of SubmitOperationRequest (DR-016): five typed inputs, closed, bounded; nothing path-, URL- or XML-like."""
+    """The `create` object of SubmitOperationRequest (DR-016): typed inputs, closed, bounded; nothing path-, URL- or XML-like."""
     node = as_dict(node)
     props = as_dict(node.get("properties"))
     if node.get("type") != "object" or node.get("additionalProperties") is not False \
-            or set(props) != set(CREATE_FIELDS) | {"image_id", "ssh_public_key", "network"} or set(node.get("required") or []) != set(props) - {"network", "ssh_public_key"}:
+            or set(props) != set(CREATE_FIELDS) | {"image_id", "ssh_public_key", "network", "guest_profile"} \
+            or set(node.get("required") or []) != set(props) - {"network", "ssh_public_key", "guest_profile"}:
         return False
+    profile = as_dict(props["guest_profile"])
+    if profile.get("type") != "string" or profile.get("enum") != ["linux", "windows"]:
+        return False  # DR-032: a closed choice of two hardware profiles
     for name, (typ, lo, hi) in CREATE_FIELDS.items():
         p = as_dict(props[name])
         if p.get("type") != typ or p.get("minimum") != lo or p.get("maximum") != hi:

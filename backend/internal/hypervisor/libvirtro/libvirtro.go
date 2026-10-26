@@ -152,7 +152,7 @@ func describe(conn *libvirt.Connect, dom *libvirt.Domain, name string, st libvir
 		for _, dd := range pd.Data {
 			out.DataVolumes = append(out.DataVolumes, dd.Volume)
 		}
-		out.Media, out.ISOSHA256, out.ISOSHA256s = pd.Media, pd.ISO, pd.ISOs
+		out.Media, out.ISOSHA256, out.ISOSHA256s, out.Profile = pd.Media, pd.ISO, pd.ISOs, pd.Profile
 		out.Graphics, out.RescueSHA256 = pd.Graphics, pd.Rescue
 	}
 	if st == libvirt.DOMAIN_RUNNING {

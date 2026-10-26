@@ -20,6 +20,7 @@ type Domain struct {
 	Root, Seed  string     // volume names of the first disk and of the cdrom
 	Data        []DataDisk // Svavyom data volumes attached to the definition, in document order
 	Media       string     // "iso" when the marker says the VM was created from installation media
+	Profile     string     // "windows" when the marker says so (DR-032); "" is linux, the profile of every VM that records none
 	ISO         string     // the SHA-256 of the installation medium that boots next, else the first one attached ("" when none)
 	ISOs        []string   // the SHA-256 of every installation medium attached, in guest target order, at most MaxMedia (DR-031)
 	Network     string     // the libvirt network of the first network interface ("" when it has none)
@@ -103,6 +104,9 @@ func ParseDomain(x string) (Domain, error) {
 			out.Managed, out.Fingerprint, out.ImageID = true, attr["fingerprint"], attr["image"]
 			if attr["media"] == MediaISO {
 				out.Media = MediaISO
+			}
+			if attr["profile"] == ProfileWindows {
+				out.Profile = ProfileWindows // only the one non-default profile is recorded; anything else reads as linux
 			}
 			if fingerprintRE.MatchString(attr["rescue"]) {
 				out.Rescue = attr["rescue"] // rescue mode is recorded on the ownership marker (DR-026 D2)

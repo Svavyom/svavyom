@@ -28,6 +28,8 @@ type CreateSpec struct {
 	SSHPublicKey   string // normalised authorized_keys form (type + base64), no options, no comment
 	SSHFingerprint string // SHA256:... of the key
 	Network        string // the single server-configured network profile
+	// Profile is the guest profile of a VM from installation media (DR-032): "windows", or "" for linux. The server normalises "linux" to "".
+	Profile string
 }
 
 // IsZero reports whether no definition was recorded.
@@ -48,6 +50,9 @@ func ComputeFingerprint(name string, c CreateSpec) string {
 		c.ImageSHA256, strconv.Itoa(c.DiskGiB), c.SSHFingerprint, c.Network} {
 		fmt.Fprintf(h, "%d:%s;", len(part), part)
 	}
+	if c.Profile != "" { // a VM without a profile keeps the fingerprint it always had
+		fmt.Fprintf(h, "%d:%s;", len("profile:"+c.Profile), "profile:"+c.Profile)
+	}
 	return hex.EncodeToString(h.Sum(nil))
 }
 
@@ -55,7 +60,7 @@ func ComputeFingerprint(name string, c CreateSpec) string {
 func (c CreateSpec) DomainSpec(name string) hypervisor.DomainSpec {
 	return hypervisor.DomainSpec{Name: name, VCPUs: c.VCPUs, MemoryMiB: c.MemoryMiB, UUID: c.UUID, Fingerprint: c.Fingerprint,
 		ImageID: c.ImageID, ImageSHA256: c.ImageSHA256, DiskGiB: c.DiskGiB, SSHPublicKey: c.SSHPublicKey,
-		SSHFingerprint: c.SSHFingerprint, Network: c.Network}
+		SSHFingerprint: c.SSHFingerprint, Network: c.Network, Profile: c.Profile}
 }
 
 // newUUID returns a random RFC 4122 version 4 UUID in canonical lower-case form.

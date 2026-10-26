@@ -107,6 +107,9 @@ func NewCreatePreparer(cat func() (*provision.Catalog, error), network string, c
 		if !contains(o.VCPUs, s.VCPUs) || !contains(o.MemoryMiB, s.MemoryMiB) || !contains(provision.DiskChoicesFor(im.MinDiskGiB, o.DiskGiB), s.DiskGiB) {
 			return errors.New("size")
 		}
+		if s.Profile != "" && !im.IsISO() {
+			return errors.New("profile for a cloud image") // the Windows profile is for installation media (DR-032)
+		}
 		if im.IsISO() { // installation media: no cloud-init, so there is no key to inject and none may be given (DR-023 D3)
 			if s.SSHPublicKey != "" {
 				return errors.New("ssh key for an ISO")
@@ -360,6 +363,8 @@ type createBody struct {
 	DiskGiB      *int    `json:"disk_gib"`
 	SSHPublicKey *string `json:"ssh_public_key"`
 	Network      *string `json:"network"`
+	// GuestProfile is the hardware profile of a VM from installation media (DR-032): "linux" (the default) or "windows".
+	GuestProfile *string `json:"guest_profile"`
 }
 
 type submitBody struct {
@@ -487,6 +492,15 @@ func (h *Handler) submitOperation(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		req.Spec = operation.CreateSpec{VCPUs: *c.VCPUs, MemoryMiB: *c.MemoryMiB, ImageID: *c.ImageID, DiskGiB: *c.DiskGiB}
+		if c.GuestProfile != nil {
+			if !provision.ValidProfile(*c.GuestProfile) || *c.GuestProfile == "" {
+				h.reject(w, categoryValidation) // closed set: linux or windows
+				return
+			}
+			if *c.GuestProfile == provision.ProfileWindows {
+				req.Spec.Profile = provision.ProfileWindows // "linux" is the default and is stored as no profile, so an explicit linux and an omitted one are the same request
+			}
+		}
 		if c.SSHPublicKey != nil {
 			req.Spec.SSHPublicKey = *c.SSHPublicKey
 		}

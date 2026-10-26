@@ -31,7 +31,7 @@ describe("validate", () => {
   });
 
   it("date-time accepts offsets and fractions and rejects impossible dates", () => {
-    const at = (s: string) => validate("VM", { ...vm(), observed: { power: "running", last_seen_at: s, managed: false, ip_address: null, login_user: null, disk_gib: null, snapshots: [], network: null, vcpus: null, memory_mib: null, iso: null, isos: [], usage: { state: "unavailable", cpu_percent: null, memory_used_mib: null, disk_kib_s: null, net_kib_s: null, history: [] }, backup: { next_run_at: null, last_run: null }, graphical_console: "absent", rescue: false } }).ok;
+    const at = (s: string) => validate("VM", { ...vm(), observed: { power: "running", last_seen_at: s, managed: false, ip_address: null, login_user: null, disk_gib: null, snapshots: [], network: null, vcpus: null, memory_mib: null, iso: null, isos: [], guest_profile: "linux", usage: { state: "unavailable", cpu_percent: null, memory_used_mib: null, disk_kib_s: null, net_kib_s: null, history: [] }, backup: { next_run_at: null, last_run: null }, graphical_console: "absent", rescue: false } }).ok;
     expect(at("2026-10-08T10:00:00Z")).toBe(true);
     expect(at("2026-10-08T10:00:00.5+05:30")).toBe(true);
     expect(at("2028-02-29T00:00:00Z")).toBe(true);

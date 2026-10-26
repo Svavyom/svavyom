@@ -425,6 +425,18 @@ WHEN NEW.id <> OLD.id OR NEW.seq <> OLD.seq OR NEW.project_id <> OLD.project_id 
   OR NEW.spec_uuid <> OLD.spec_uuid OR NEW.spec_fingerprint <> OLD.spec_fingerprint OR NEW.spec_image_id <> OLD.spec_image_id
   OR NEW.spec_image_sha256 <> OLD.spec_image_sha256 OR NEW.spec_disk_gib <> OLD.spec_disk_gib OR NEW.spec_ssh_key <> OLD.spec_ssh_key
   OR NEW.spec_ssh_fingerprint <> OLD.spec_ssh_fingerprint OR NEW.spec_network <> OLD.spec_network OR NEW.params <> OLD.params
+BEGIN SELECT RAISE(ABORT, 'operation identity is immutable'); END;`, `
+ALTER TABLE operations ADD COLUMN spec_profile TEXT NOT NULL DEFAULT '' CHECK (spec_profile IN ('', 'windows'));
+DROP TRIGGER operations_identity_immutable;
+CREATE TRIGGER operations_identity_immutable BEFORE UPDATE ON operations
+WHEN NEW.id <> OLD.id OR NEW.seq <> OLD.seq OR NEW.project_id <> OLD.project_id OR NEW.resource_kind <> OLD.resource_kind
+  OR NEW.resource_id <> OLD.resource_id OR NEW.type <> OLD.type OR NEW.idempotency_key <> OLD.idempotency_key
+  OR NEW.requested_by <> OLD.requested_by OR NEW.created_at <> OLD.created_at OR NEW.attempts < OLD.attempts
+  OR NEW.vcpus <> OLD.vcpus OR NEW.memory_mib <> OLD.memory_mib
+  OR NEW.spec_uuid <> OLD.spec_uuid OR NEW.spec_fingerprint <> OLD.spec_fingerprint OR NEW.spec_image_id <> OLD.spec_image_id
+  OR NEW.spec_image_sha256 <> OLD.spec_image_sha256 OR NEW.spec_disk_gib <> OLD.spec_disk_gib OR NEW.spec_ssh_key <> OLD.spec_ssh_key
+  OR NEW.spec_ssh_fingerprint <> OLD.spec_ssh_fingerprint OR NEW.spec_network <> OLD.spec_network OR NEW.params <> OLD.params
+  OR NEW.spec_profile <> OLD.spec_profile
 BEGIN SELECT RAISE(ABORT, 'operation identity is immutable'); END;`}
 
 // SchemaVersion is the schema version this build migrates the operation tables to.
@@ -440,7 +452,7 @@ func OpenSQLite(ctx context.Context, db *sql.DB) (*SQLiteStore, error) {
 
 const columns = `id, project_id, resource_kind, resource_id, type, status, idempotency_key, requested_by,
 	generation, attempts, error_category, created_at, updated_at, vcpus, memory_mib, unknown_outcome,
-	spec_uuid, spec_fingerprint, spec_image_id, spec_image_sha256, spec_disk_gib, spec_ssh_key, spec_ssh_fingerprint, spec_network, params`
+	spec_uuid, spec_fingerprint, spec_image_id, spec_image_sha256, spec_disk_gib, spec_ssh_key, spec_ssh_fingerprint, spec_network, params, spec_profile`
 
 type scanner interface{ Scan(...any) error }
 
@@ -455,7 +467,7 @@ func scan(r scanner) (Operation, error) {
 	if err := r.Scan(&op.ID, &op.ProjectID, &op.ResourceKind, &op.ResourceID, &typ, &status, &op.IdempotencyKey,
 		&op.RequestedBy, &op.Generation, &op.Attempts, &op.ErrorCategory, &created, &updatedAt, &op.Spec.VCPUs, &op.Spec.MemoryMiB, &unknown,
 		&op.Spec.UUID, &op.Spec.Fingerprint, &op.Spec.ImageID, &op.Spec.ImageSHA256, &op.Spec.DiskGiB, &op.Spec.SSHPublicKey,
-		&op.Spec.SSHFingerprint, &op.Spec.Network, &params); err != nil {
+		&op.Spec.SSHFingerprint, &op.Spec.Network, &params, &op.Spec.Profile); err != nil {
 		return Operation{}, err
 	}
 	p, perr := UnmarshalParams(params)
@@ -496,12 +508,12 @@ func (s *SQLiteStore) insert(op Operation, ev *AuditEvent) (Operation, bool, err
 		return Operation{}, false, internal(err)
 	}
 	defer func() { _ = tx.Rollback() }()
-	res, err := tx.ExecContext(ctx, `INSERT INTO operations (`+columns+`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+	res, err := tx.ExecContext(ctx, `INSERT INTO operations (`+columns+`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
 		ON CONFLICT (project_id, idempotency_key) DO NOTHING`,
 		op.ID, op.ProjectID, op.ResourceKind, op.ResourceID, string(op.Type), string(op.Status), op.IdempotencyKey,
 		op.RequestedBy, op.Generation, op.Attempts, op.ErrorCategory, op.CreatedAt.UnixNano(), op.UpdatedAt.UnixNano(),
 		op.Spec.VCPUs, op.Spec.MemoryMiB, b2i(op.UnknownOutcome), op.Spec.UUID, op.Spec.Fingerprint, op.Spec.ImageID,
-		op.Spec.ImageSHA256, op.Spec.DiskGiB, op.Spec.SSHPublicKey, op.Spec.SSHFingerprint, op.Spec.Network, params)
+		op.Spec.ImageSHA256, op.Spec.DiskGiB, op.Spec.SSHPublicKey, op.Spec.SSHFingerprint, op.Spec.Network, params, op.Spec.Profile)
 	if err != nil {
 		return Operation{}, false, internal(err)
 	}

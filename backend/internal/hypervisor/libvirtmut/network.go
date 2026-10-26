@@ -241,7 +241,7 @@ func (o *Ops) ListDomains(ctx context.Context) ([]provision.DomainInfo, error) {
 				if perr != nil {
 					first = hypervisor.NewError(hypervisor.HostError, "domains", "", "unreadable definition")
 				} else {
-					out = append(out, provision.DomainInfo{Name: pd.Name, Data: pd.Data, Media: pd.Media, ISO: pd.ISO, ISOs: pd.ISOs, UUID: pd.UUID, Fingerprint: pd.Fingerprint, Managed: pd.Managed, Running: active, Root: pd.Root, Seed: pd.Seed, XML: x,
+					out = append(out, provision.DomainInfo{Name: pd.Name, Data: pd.Data, Media: pd.Media, Profile: pd.Profile, ISO: pd.ISO, ISOs: pd.ISOs, UUID: pd.UUID, Fingerprint: pd.Fingerprint, Managed: pd.Managed, Running: active, Root: pd.Root, Seed: pd.Seed, XML: x,
 						VCPUs: pd.VCPUs, MemoryMiB: pd.MemoryMiB, ImageID: pd.ImageID})
 				}
 			}

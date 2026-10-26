@@ -16,6 +16,7 @@ type vmMedia struct {
 		Rescue           bool     `json:"rescue"`
 		ISO              *string  `json:"iso"`
 		ISOs             []string `json:"isos"`
+		GuestProfile     string   `json:"guest_profile"`
 	} `json:"observed"`
 	Allowed []string `json:"allowed_actions"`
 }

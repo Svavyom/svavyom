@@ -1225,7 +1225,7 @@ components:
         observed:
           type: object
           additionalProperties: false
-          required: [power, last_seen_at, managed, ip_address, login_user, iso, isos, disk_gib, snapshots, network, vcpus, memory_mib, usage, backup, graphical_console, rescue]
+          required: [power, last_seen_at, managed, ip_address, login_user, iso, isos, guest_profile, disk_gib, snapshots, network, vcpus, memory_mib, usage, backup, graphical_console, rescue]
           x-data-class: operational
           properties:
             power:
@@ -1292,6 +1292,11 @@ components:
               maxLength: 63
               x-data-class: operational
               description: The image id of the installation medium that boots next, or else the first one attached (DR-031); null when none is attached or the catalog no longer names it. Kept for compatibility; isos is the full list.
+            guest_profile:
+              type: string
+              enum: [linux, windows]
+              x-data-class: operational
+              description: The hardware profile the VM was created with (DR-032); linux for every VM that records none.
             isos:
               type: array
               maxItems: 2
@@ -2230,7 +2235,7 @@ components:
           required: [vcpus, memory_mib, image_id, disk_gib]
           x-data-class: operational
           description: >-
-            Typed inputs of a VM create (DR-016); ssh_public_key is required for a disk image and refused for installation media (DR-023 D3); the optional network (DR-021) names the configured network or an active Svavyom-managed one; required for type create and forbidden otherwise. No path, URL, XML or script.
+            Typed inputs of a VM create (DR-016); ssh_public_key is required for a disk image and refused for installation media (DR-023 D3); the optional network (DR-021) names the configured network or an active Svavyom-managed one; guest_profile (optional, linux by default) selects the hardware of a VM and is accepted as windows only when image_id names installation media (DR-032); required for type create and forbidden otherwise. No path, URL, XML or script.
             The server chooses the network, derives every host path from its own configuration and generates the VM identity.
           properties:
             vcpus:
@@ -2262,6 +2267,10 @@ components:
               type: string
               pattern: "^[A-Za-z0-9][A-Za-z0-9._-]{0,62}$"
               maxLength: 63
+              x-data-class: operational
+            guest_profile:
+              type: string
+              enum: [linux, windows]
               x-data-class: operational
         params:
           type: object

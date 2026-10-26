@@ -1,0 +1,44 @@
+<domain type='test'>
+  <name>inst-1</name>
+  <uuid>11111111-2222-4333-8444-555555555555</uuid>
+  <metadata>
+    <svavyom:managed xmlns:svavyom='https://svavyom.invalid/xml/1' version='1' uuid='11111111-2222-4333-8444-555555555555' fingerprint='cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd' image='alpine-iso' media='iso'/>
+  </metadata>
+  <memory unit='MiB'>1024</memory>
+  <currentMemory unit='MiB'>1024</currentMemory>
+  <vcpu placement='static'>2</vcpu>
+  <os>
+    <type arch='x86_64' machine='pc'>hvm</type>
+  </os>
+  <clock offset='utc'/>
+  <on_poweroff>destroy</on_poweroff>
+  <on_reboot>restart</on_reboot>
+  <on_crash>destroy</on_crash>
+  <devices>
+    <disk type='file' device='disk'>
+      <driver name='qemu' type='qcow2'/>
+      <source file='/pool/svavyom-11111111-2222-4333-8444-555555555555-root.qcow2'/>
+      <target dev='vda' bus='virtio'/>
+      <boot order='2'/>
+    </disk>
+    <disk type='file' device='cdrom'>
+      <driver name='qemu' type='raw'/>
+      <source file='/c/store/abababababababababababababababababababababababababababababababab.iso'>
+        <seclabel model='dac' relabel='no'/>
+      </source>
+      <target dev='sda' bus='sata'/>
+      <readonly/>
+      <boot order='1'/>
+    </disk>
+    <interface type='network'>
+      <source network='svavyom-nat'/>
+      <mac address='52:54:00:71:29:12'/>
+      <model type='virtio'/>
+    </interface>
+    <serial type='pty'><target port='0'/></serial>
+    <console type='pty'><target type='serial' port='0'/></console>
+    <graphics type='vnc'><listen type='none'/></graphics>
+    <video><model type='vga' vram='16384' heads='1'/></video>
+    <input type='tablet' bus='usb'/>
+  </devices>
+</domain>

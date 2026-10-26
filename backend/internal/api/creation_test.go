@@ -50,7 +50,7 @@ func (d *directHost) Define(ctx context.Context, s hypervisor.DomainSpec) (hyper
 		return hypervisor.Domain{}, hypervisor.NewError(hypervisor.HostError, "define", "", "catalog")
 	}
 	ps := provision.Spec{Name: s.Name, UUID: s.UUID, Fingerprint: s.Fingerprint, VCPUs: s.VCPUs, MemoryMiB: s.MemoryMiB, ImageID: s.ImageID, ImageSHA256: s.ImageSHA256,
-		DiskGiB: s.DiskGiB, SSHPublicKey: s.SSHPublicKey, Network: s.Network}
+		DiskGiB: s.DiskGiB, SSHPublicKey: s.SSHPublicKey, Network: s.Network, Profile: s.Profile}
 	d.mu.Lock()
 	d.defines++
 	lose := d.timeoutN > 0

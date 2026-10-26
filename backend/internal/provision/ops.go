@@ -17,6 +17,8 @@ type DomainInfo struct {
 	Data []DataDisk
 	// Media is "iso" for a VM created from installation media; ISO is the digest of the media attached now ("" when none).
 	Media, ISO string
+	// Profile is "windows" for a VM created with the Windows profile (DR-032), else "".
+	Profile string
 	// ISOs is the digest of every installation medium attached, in guest target order (DR-031); ISO is the one that boots next, else the first.
 	ISOs []string
 	// Graphics is true when the definition has a VNC console; Rescue is the digest of the rescue media while the VM is in rescue mode.
@@ -239,6 +241,9 @@ func provisionAs(ctx context.Context, ops HostOps, cfg Config, cat *Catalog, s S
 	}
 	if im.SHA256 != s.ImageSHA256 || s.DiskGiB < im.MinDiskGiB {
 		return typed(hypervisor.Conflict, "provision") // the catalog moved on since the operation was accepted
+	}
+	if s.IsWindows() && !im.IsISO() {
+		return typed(hypervisor.Validation, "provision") // the Windows profile is for installation media; a cloud image is reached with a key, not an installer
 	}
 	if im.IsISO() {
 		if opts.rootContent != nil || s.SSHPublicKey != "" {
