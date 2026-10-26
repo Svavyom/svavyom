@@ -57,7 +57,7 @@ func DomainXMLISO(cfg Config, s Spec, iso ISOImage, root VolumeSource) (string, 
 		"Type": cfg.DomainType, "Name": s.Name, "UUID": s.UUID, "Fingerprint": s.Fingerprint, "Image": s.ImageID,
 		"Memory": s.MemoryMiB, "VCPUs": s.VCPUs,
 		"Network": s.Network, "MAC": MAC(s.UUID), "NS": MetadataNamespace, "Ver": MetadataVersion, "Real": cfg.DomainType == "kvm",
-		"RootPath": root.Path, "ISOPath": iso.Path,
+		"RootPath": root.Path, "ISOPath": iso.Path, "Windows": s.IsWindows(),
 	})
 	if err != nil {
 		return "", fmt.Errorf("provision: domain template: %w", err)
@@ -75,7 +75,7 @@ var isoTemplate = template.Must(template.New("iso-domain").Funcs(template.FuncMa
   <name>{{.Name}}</name>
   <uuid>{{.UUID}}</uuid>
   <metadata>
-    <svavyom:managed xmlns:svavyom='{{.NS}}' version='{{.Ver}}' uuid='{{.UUID}}' fingerprint='{{.Fingerprint}}' image='{{.Image}}' media='iso'/>
+    <svavyom:managed xmlns:svavyom='{{.NS}}' version='{{.Ver}}' uuid='{{.UUID}}' fingerprint='{{.Fingerprint}}' image='{{.Image}}' media='iso'{{if .Windows}} profile='windows'{{end}}/>
   </metadata>
   <memory unit='MiB'>{{.Memory}}</memory>
   <currentMemory unit='MiB'>{{.Memory}}</currentMemory>
@@ -84,10 +84,16 @@ var isoTemplate = template.Must(template.New("iso-domain").Funcs(template.FuncMa
     <type arch='x86_64' machine='{{if .Real}}q35{{else}}pc{{end}}'>hvm</type>
   </os>
 {{- if .Real}}
-  <features><acpi/><apic/></features>
+  <features><acpi/><apic/>{{if .Windows}}<hyperv mode='custom'><relaxed state='on'/><vapic state='on'/><spinlocks state='on' retries='8191'/></hyperv>{{end}}</features>
   <cpu mode='host-model'/>
 {{- end}}
+{{- if and .Windows .Real}}
+  <clock offset='localtime'><timer name='hypervclock' present='yes'/></clock>
+{{- else if .Windows}}
+  <clock offset='localtime'/>
+{{- else}}
   <clock offset='utc'/>
+{{- end}}
   <on_poweroff>destroy</on_poweroff>
   <on_reboot>restart</on_reboot>
   <on_crash>destroy</on_crash>
@@ -95,7 +101,7 @@ var isoTemplate = template.Must(template.New("iso-domain").Funcs(template.FuncMa
     <disk type='file' device='disk'>
       <driver name='qemu' type='qcow2'/>
       <source file='{{xml .RootPath}}'/>
-      <target dev='vda' bus='virtio'/>
+      <target dev='{{if .Windows}}sda' bus='sata{{else}}vda' bus='virtio{{end}}'/>
       <boot order='2'/>
     </disk>
     <disk type='file' device='cdrom'>
@@ -103,14 +109,14 @@ var isoTemplate = template.Must(template.New("iso-domain").Funcs(template.FuncMa
       <source file='{{xml .ISOPath}}'>
         <seclabel model='dac' relabel='no'/>
       </source>
-      <target dev='sda' bus='sata'/>
+      <target dev='{{if .Windows}}sdb{{else}}sda{{end}}' bus='sata'/>
       <readonly/>
       <boot order='1'/>
     </disk>
     <interface type='network'>
       <source network='{{.Network}}'/>
       <mac address='{{.MAC}}'/>
-      <model type='virtio'/>
+      <model type='{{if .Windows}}e1000e{{else}}virtio{{end}}'/>
     </interface>
     <serial type='pty'><target port='0'/></serial>
     <console type='pty'><target type='serial' port='0'/></console>

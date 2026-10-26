@@ -76,6 +76,8 @@ type Domain struct {
 	// Media is "iso" for a VM created from installation media; ISOSHA256 is the digest of the media attached now (DR-023 D3).
 	Media     string `json:"media,omitempty"`
 	ISOSHA256 string `json:"iso_sha256,omitempty"`
+	// Profile is "windows" for a VM created with the Windows profile (DR-032); absent for every other VM.
+	Profile string `json:"profile,omitempty"`
 	// ISOSHA256s lists every installation medium attached, in guest target order, at most two (DR-031); ISOSHA256 is the one that boots next, else the first.
 	ISOSHA256s []string `json:"iso_sha256s,omitempty"`
 	// Graphics is true when the definition has the VNC console; RescueSHA256 is the rescue media's digest while the VM is in rescue mode (DR-026).
@@ -228,6 +230,9 @@ func validDetails(d Domain) bool {
 	if !validMediaList(d) {
 		return false
 	}
+	if !validProfile(d) {
+		return false
+	}
 	if (d.RescueSHA256 != "" && (!fingerprintRE.MatchString(d.RescueSHA256) || d.RescueSHA256 != d.ISOSHA256)) || ((d.RescueSHA256 != "" || d.Graphics) && !d.Managed) {
 		return false // rescue mode is the attached media, and only a Svavyom VM has either
 	}
@@ -322,4 +327,9 @@ func validMediaList(d Domain) bool {
 		}
 	}
 	return hasSingle && d.ISOSHA256 != ""
+}
+
+// validProfile checks the profile of a frame: absent, or "windows" on a Svavyom VM created from installation media (DR-032). "linux" is never written.
+func validProfile(d Domain) bool {
+	return d.Profile == "" || (d.Profile == "windows" && d.Managed && d.Media == "iso")
 }

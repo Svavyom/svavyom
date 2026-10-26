@@ -101,6 +101,8 @@ type DomainSpec struct {
 	SSHPublicKey   string
 	SSHFingerprint string
 	Network        string
+	// Profile is the guest profile of a VM from installation media (DR-032): "", "linux" or "windows".
+	Profile string
 }
 
 // Domain is an observed domain. VCPUs and MemoryMiB are the observed definition (the configured maximum), 0 when the
@@ -137,6 +139,8 @@ type Domain struct {
 	// Media is "iso" for a VM created from installation media; ISOSHA256 is the digest of the media attached now ("" when none) (DR-023 D3).
 	Media     string
 	ISOSHA256 string
+	// Profile is "windows" for a VM created with the Windows profile (DR-032), else "" (linux).
+	Profile string
 	// ISOSHA256s is every installation medium attached, in guest target order, at most two (DR-031); ISOSHA256 is the one that boots next, else the first.
 	ISOSHA256s []string
 	// Graphics is true when the definition carries the VNC console; RescueSHA256 is the rescue media's digest while the VM is in rescue mode (DR-026).

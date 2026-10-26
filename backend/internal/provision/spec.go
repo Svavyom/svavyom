@@ -30,6 +30,15 @@ var (
 	resourceRE    = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]{0,62}$`)
 )
 
+// Guest profiles (DR-032): the hardware a VM created from installation media gets. The empty string means linux, the profile every VM had before.
+const (
+	ProfileLinux   = "linux"
+	ProfileWindows = "windows"
+)
+
+// ValidProfile reports whether p is a profile a request may name ("" is linux).
+func ValidProfile(p string) bool { return p == "" || p == ProfileLinux || p == ProfileWindows }
+
 // Errors of the specification layer (they carry no caller input).
 var (
 	ErrInvalidSpec   = errors.New("provision: invalid specification")
@@ -52,7 +61,13 @@ type Spec struct {
 	// Media is "iso" for installation media (DR-023 D3): then there is no SSH key, no seed and no cloud-init. It is never read from a request: the
 	// step runner sets it from the catalog image the spec names, so nothing persisted has to carry it.
 	Media string `json:"-"`
+	// Profile is the guest profile (DR-032): "" or "linux" for the hardware every VM had, "windows" for a Windows installer on BIOS firmware (SATA root
+	// disk, e1000e NIC, local-time clock). It applies to installation media only; the step runner refuses "windows" for a cloud image.
+	Profile string `json:"profile,omitempty"`
 }
+
+// IsWindows reports whether the VM uses the Windows profile.
+func (s Spec) IsWindows() bool { return s.Profile == ProfileWindows }
 
 // IsISO reports whether the VM is created from installation media.
 func (s Spec) IsISO() bool { return s.Media == MediaISO }
@@ -74,7 +89,7 @@ func (s Spec) Validate() error { return s.validate(true) }
 func (s Spec) ValidateAnyMedia() error { return s.validate(false) }
 
 func (s Spec) validate(needKey bool) error {
-	if !VMNameRE.MatchString(s.Name) || !uuidRE.MatchString(s.UUID) || !fingerprintRE.MatchString(s.Fingerprint) ||
+	if !VMNameRE.MatchString(s.Name) || !uuidRE.MatchString(s.UUID) || !fingerprintRE.MatchString(s.Fingerprint) || !ValidProfile(s.Profile) ||
 		!imageIDRE.MatchString(s.ImageID) || !fingerprintRE.MatchString(s.ImageSHA256) || !resourceRE.MatchString(s.Network) ||
 		!slices.Contains(vcpuChoices, s.VCPUs) || !slices.Contains(memoryChoices, s.MemoryMiB) || !slices.Contains(diskChoices, s.DiskGiB) {
 		return ErrInvalidSpec
@@ -198,7 +213,7 @@ const (
 
 // ValidateExisting is Validate for a VM that already exists: the same grammars, the hard ceilings instead of the create-time choice lists.
 func (s Spec) ValidateExisting() error {
-	if !VMNameRE.MatchString(s.Name) || !uuidRE.MatchString(s.UUID) || !fingerprintRE.MatchString(s.Fingerprint) ||
+	if !VMNameRE.MatchString(s.Name) || !uuidRE.MatchString(s.UUID) || !fingerprintRE.MatchString(s.Fingerprint) || !ValidProfile(s.Profile) ||
 		!imageIDRE.MatchString(s.ImageID) || !fingerprintRE.MatchString(s.ImageSHA256) || !resourceRE.MatchString(s.Network) ||
 		s.VCPUs < 1 || s.VCPUs > MaxVCPUs || s.MemoryMiB < 64 || s.MemoryMiB > MaxMemoryMiB || s.DiskGiB < 1 || s.DiskGiB > MaxDiskGiB {
 		return ErrInvalidSpec

@@ -160,6 +160,7 @@ export interface VM {
     graphical_console: "absent" | "present";
     rescue: boolean;
     iso: string | null;
+    guest_profile: "linux" | "windows";
     isos: string[];
     disk_gib: number | null;
     snapshots: ({
@@ -386,6 +387,7 @@ export interface SubmitOperationRequest {
     disk_gib: number;
     ssh_public_key?: string;
     network?: string;
+    guest_profile?: "linux" | "windows";
   };
   params?: {
     disk_gib?: number;
@@ -2372,12 +2374,20 @@ export const SCHEMAS = {
     "properties": {
       "create": {
         "additionalProperties": false,
-        "description": "Typed inputs of a VM create (DR-016); ssh_public_key is required for a disk image and refused for installation media (DR-023 D3); the optional network (DR-021) names the configured network or an active Svavyom-managed one; required for type create and forbidden otherwise. No path, URL, XML or script. The server chooses the network, derives every host path from its own configuration and generates the VM identity.",
+        "description": "Typed inputs of a VM create (DR-016); ssh_public_key is required for a disk image and refused for installation media (DR-023 D3); the optional network (DR-021) names the configured network or an active Svavyom-managed one; guest_profile (optional, linux by default) selects the hardware of a VM and is accepted as windows only when image_id names installation media (DR-032); required for type create and forbidden otherwise. No path, URL, XML or script. The server chooses the network, derives every host path from its own configuration and generates the VM identity.",
         "properties": {
           "disk_gib": {
             "maximum": 4096,
             "minimum": 1,
             "type": "integer",
+            "x-data-class": "operational"
+          },
+          "guest_profile": {
+            "enum": [
+              "linux",
+              "windows"
+            ],
+            "type": "string",
             "x-data-class": "operational"
           },
           "image_id": {
@@ -2835,6 +2845,15 @@ export const SCHEMAS = {
             "type": "string",
             "x-data-class": "operational"
           },
+          "guest_profile": {
+            "description": "The hardware profile the VM was created with (DR-032); linux for every VM that records none.",
+            "enum": [
+              "linux",
+              "windows"
+            ],
+            "type": "string",
+            "x-data-class": "operational"
+          },
           "ip_address": {
             "maxLength": 15,
             "pattern": "^(?:[0-9]{1,3}\\.){3}[0-9]{1,3}$",
@@ -3114,6 +3133,7 @@ export const SCHEMAS = {
           "login_user",
           "iso",
           "isos",
+          "guest_profile",
           "disk_gib",
           "snapshots",
           "network",
