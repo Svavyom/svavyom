@@ -19,7 +19,6 @@ Limits stated with the result, not hidden: this host's clock is UTC, where libvi
 tell them apart; the proof of the clock criterion is then QEMU's own `-rtc base=localtime`. No guest agent is used: everything the guest says, it says in the one report.
 """
 import argparse
-import base64
 import datetime
 import http.server
 import json
@@ -30,6 +29,7 @@ import struct
 import subprocess
 import sys
 import threading
+from xml.sax.saxutils import escape as xml_escape
 import time
 import urllib.request
 import xml.etree.ElementTree as ET
@@ -91,8 +91,11 @@ Stop-Computer -Force
 """.replace("__URL__", report_url).strip()
 
 
-def encoded_command(script):
-    return base64.b64encode(script.encode("utf-16-le")).decode("ascii")
+SCRIPT_NAME = "svq-report.ps1"  # on the answer disk beside Autounattend.xml; keep equal to unattend.ScriptName in Go (a test checks)
+# A logon command line is limited to 259 characters: Setup refuses a longer one ("the answer file is invalid", oobeSystem). The command therefore only finds the
+# script on the removable disk and runs it.
+LOGON_COMMAND = ("powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command \"foreach ($d in [IO.DriveInfo]::GetDrives()) "
+                 "{ $f = $d.Name + '" + SCRIPT_NAME + "'; if (Test-Path $f) { & $f; break } }\"")
 
 
 def answer_file(report_url, admin_password, image_index=1, computer_name="SVQWIN", time_zone="UTC"):
@@ -107,7 +110,7 @@ def answer_file(report_url, admin_password, image_index=1, computer_name="SVQWIN
         raise ValueError("image index")
     if not re.fullmatch(r"[A-Z0-9-]{1,15}", computer_name) or not re.fullmatch(r"[A-Za-z0-9 ().,-]{1,64}", time_zone):
         raise ValueError("computer name or time zone")
-    cmd = "powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -EncodedCommand " + encoded_command(guest_script(report_url))
+    cmd = xml_escape(LOGON_COMMAND)
     ns = 'xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"'
     comp = 'processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS" ' + ns
     return f"""<?xml version="1.0" encoding="utf-8"?>
@@ -349,11 +352,21 @@ def ppm_to_png(ppm):
     return b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBBBB", w, h, 8, 2, 0, 0, 0)) + chunk(b"IDAT", zlib.compress(raw, 6)) + chunk(b"IEND", b"")
 
 
+def screenshot_png(data):
+    """What `virsh screenshot` wrote, as PNG: libvirt returns PNG for QEMU (a first run lost every screenshot by assuming PPM); a PPM is converted."""
+    if data.startswith(b"\x89PNG\r\n\x1a\n") and b"IEND" in data:
+        return data
+    return ppm_to_png(data)
+
+
 def screenshot(vm_name, out_dir, tag):
-    ppm = os.path.join(out_dir, "shot-%s.ppm" % tag)
+    ppm = os.path.join(out_dir, "shot-%s.raw" % tag)
+    # a guest display that has blanked shows black; a harmless Shift press wakes it
+    run_diag(["virsh", "-c", "qemu:///system", "send-key", vm_name, "KEY_LEFTSHIFT"], 30)
+    time.sleep(2)
     run_diag(["virsh", "-c", "qemu:///system", "screenshot", "--file", ppm, "--", vm_name], 60)
     try:
-        png = ppm_to_png(open(ppm, "rb").read())
+        png = screenshot_png(open(ppm, "rb").read())
         os.remove(ppm)
     except OSError:
         return ""
@@ -375,7 +388,8 @@ def docker_argv(stage, a, catalog_dir, gid, out_dir, answer_path=None, pool_dir=
     if pool_dir:
         run += ["-v", "%s:%s:ro" % (pool_dir, pool_dir)]
     if stage == "create":
-        run += ["-v", "%s:%s" % (LIBVIRT_RO_SOCK, LIBVIRT_RO_SOCK), "-v", "%s:/qualify/answer.xml:ro" % answer_path, "-e", "SVAVYOM_QUALIFY_ANSWER_FILE=/qualify/answer.xml"]
+        run += ["-v", "%s:%s" % (LIBVIRT_RO_SOCK, LIBVIRT_RO_SOCK), "-v", "%s:/qualify/answer.xml:ro" % answer_path, "-e", "SVAVYOM_QUALIFY_ANSWER_FILE=/qualify/answer.xml",
+                "-v", "%s:/qualify/report.ps1:ro" % os.path.join(os.path.dirname(answer_path), SCRIPT_NAME), "-e", "SVAVYOM_QUALIFY_REPORT_SCRIPT=/qualify/report.ps1"]
     else:
         run += ["-e", "SVAVYOM_QUALIFY_DOMAINS_BEFORE=" + domains_before]
     run += ["-e", "SVAVYOM_QUALIFY_WINDOWS=1", "-e", "SVAVYOM_QUALIFY_STAGE=" + stage, "-e", "SVAVYOM_QUALIFY_RUN_ID=" + a.run_id, "-e", "SVAVYOM_QUALIFY_CONFIG=/qualify/config.json",
@@ -495,6 +509,8 @@ def main(argv=None):
             fd = os.open(apath, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
             with os.fdopen(fd, "w") as f:
                 f.write(text)
+            with open(os.path.join(out_dir, SCRIPT_NAME), "w", newline="") as f:
+                f.write(guest_script(url).replace("\n", "\r\n") + "\r\n")
             rc = subprocess.run(docker_argv("create", a, catalog_dir, gid, out_dir, apath, pool_dir), check=False).returncode  # noqa: S603
             res, crit = read_stage_result(out_dir, "create")
             criteria += crit or [("real-libvirt", FAIL, "the container produced no result (exit %d)" % rc)]
@@ -524,6 +540,7 @@ def main(argv=None):
         finally:
             srv.shutdown()
             try:
+                os.remove(os.path.join(out_dir, SCRIPT_NAME))
                 os.remove(os.path.join(out_dir, "answer.xml"))  # it holds the one-off password of a VM that is about to be deleted
             except OSError:
                 pass

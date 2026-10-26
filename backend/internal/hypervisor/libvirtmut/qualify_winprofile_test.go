@@ -319,6 +319,10 @@ func TestSystemWindowsQualification(t *testing.T) {
 	if err != nil {
 		t.Fatalf("no answer file: %v", err)
 	}
+	script, err := os.ReadFile(os.Getenv("SVAVYOM_QUALIFY_REPORT_SCRIPT")) // #nosec G304 -- the orchestrator's file in this run's read-only mount
+	if err != nil {
+		t.Fatalf("no guest script: %v", err)
+	}
 
 	if bad := pol.CheckDeployment(os.Getenv("SVAVYOM_QUALIFY_CONFIG"), cfg); len(bad) > 0 {
 		rec.fail("trust-layout", "not operator-owned and read-only for the runtime identities: "+strings.Join(bad, ", "))
@@ -476,7 +480,7 @@ func TestSystemWindowsQualification(t *testing.T) {
 	// HARNESS-ONLY from here: the answer file, as a read-only removable USB disk in a pool volume of this run. It is added after the checks above, which are
 	// therefore about the Svavyom-managed definition alone; the definition checks after the run allow exactly this one extra disk.
 	scratch := t.TempDir()
-	img, err := unattend.BuildImage(answer, "UNATTEND", scratch)
+	img, err := unattend.BuildImage(answer, script, "UNATTEND", scratch)
 	if err != nil {
 		rec.fail("answer-disk", "cannot build the answer disk: "+err.Error())
 		t.Fatal(err)

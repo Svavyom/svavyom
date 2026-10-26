@@ -12,11 +12,13 @@ import (
 	"github.com/diskfs/go-diskfs/filesystem/fat32"
 )
 
+const script = "Write-Output 1\r\n"
+
 const answer = `<?xml version="1.0" encoding="utf-8"?><unattend xmlns="urn:schemas-microsoft-com:unattend"></unattend>`
 
 // Windows Setup finds the answer file only by its exact long name, so the image must hold real long-filename entries and the file must read back whole.
 func TestTheImageHoldsTheAnswerFileUnderItsLongName(t *testing.T) {
-	img, err := BuildImage([]byte(answer), "UNATTEND", t.TempDir())
+	img, err := BuildImage([]byte(answer), []byte(script), "UNATTEND", t.TempDir())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -75,6 +77,15 @@ func TestTheImageHoldsTheAnswerFileUnderItsLongName(t *testing.T) {
 	if _, err := got.ReadFrom(f); err != nil || got.String() != answer {
 		t.Fatalf("content: %q %v", got.String(), err)
 	}
+	// the guest script is on the same disk under its own long name, whole
+	g, err := fs.OpenFile(ScriptName, os.O_RDONLY)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var gs bytes.Buffer
+	if _, err := gs.ReadFrom(g); err != nil || gs.String() != script {
+		t.Fatalf("script content: %q %v", gs.String(), err)
+	}
 }
 
 func TestBuildImageRefusesWhatIsNotAnAnswerFile(t *testing.T) {
@@ -91,7 +102,7 @@ func TestBuildImageRefusesWhatIsNotAnAnswerFile(t *testing.T) {
 		"empty label": {[]byte(answer), ""},
 		"punctuation": {[]byte(answer), "UN.ATTEND"},
 	} {
-		if _, err := BuildImage(c.answer, c.label, t.TempDir()); err == nil {
+		if _, err := BuildImage(c.answer, nil, c.label, t.TempDir()); err == nil {
 			t.Errorf("%s accepted", name)
 		}
 	}

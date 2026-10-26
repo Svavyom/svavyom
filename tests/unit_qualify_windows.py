@@ -3,6 +3,7 @@ import base64
 import datetime
 import importlib.util
 import json
+import os
 import re
 import sys
 import tempfile
@@ -63,18 +64,28 @@ class AnswerFile(unittest.TestCase):
         self.assertNotRegex(x, r"DriverPaths|DriverPath|PnpCustomizationsWinPE|PnpCustomizationsNonWinPE|PathAndCredentials")
         self.assertEqual(len(t.findall(".//u:FirstLogonCommands/u:SynchronousCommand", NS)), 1)
 
-    def test_the_logon_command_carries_the_script_and_the_url_and_no_password(self):
+    def test_the_logon_command_is_short_enough_for_setup_and_runs_the_script_on_the_disk(self):
+        # a real run failed here: a 3830-character EncodedCommand made Setup say "the answer file is invalid" (oobeSystem); Windows allows 259 characters
         x = qw.answer_file(URL, PW)
         cmd = ET.fromstring(x).findtext(".//u:CommandLine", namespaces=NS)
-        self.assertLess(len(cmd), 8000, "Windows limits a command line")
-        enc = re.search(r"-EncodedCommand (\S+)$", cmd).group(1)
-        script = base64.b64decode(enc).decode("utf-16-le")
+        self.assertLess(len(cmd), 259, "Windows limits a logon command line to 259 characters")
+        self.assertIn(qw.SCRIPT_NAME, cmd)
+        self.assertNotIn("EncodedCommand", cmd)
+        self.assertNotIn(PW, cmd)
+        self.assertNotIn(URL, x, "the URL rides in the script on the disk, not in the answer file")
+        self.assertEqual(x.count(PW), 2, "the password appears exactly in the administrator and the logon account")
+
+    def test_the_guest_script_reports_what_the_criteria_need(self):
+        script = qw.guest_script(URL)
         self.assertIn(URL, script)
         self.assertIn("Stop-Computer", script)
         for need in ("Get-NetAdapter", "Get-Disk", "Get-Volume", "virtio-win-gt-x64.msi", "Invoke-RestMethod", "Get-Date"):
             self.assertIn(need, script)
         self.assertNotIn(PW, script)
-        self.assertEqual(x.count(PW), 2, "the password appears exactly in the administrator and the logon account")
+
+    def test_the_script_name_is_the_one_the_go_builder_writes(self):
+        src = open(os.path.join(os.path.dirname(__file__), "..", "backend", "internal", "qualify", "unattend", "image.go")).read()
+        self.assertIn('ScriptName = "%s"' % qw.SCRIPT_NAME, src)
 
     def test_it_refuses_what_it_cannot_make_safely(self):
         for pw in ("", "short", "has space in it 123456", "quote'inside-123456789", "<x>0123456789abcdef", "a" * 65):
@@ -192,7 +203,7 @@ class Wiring(unittest.TestCase):
         c = qw.docker_argv("create", self.args(), "/var/lib/svavyom/images", 111, "/out", "/out/answer.xml", "/mnt/pool")
         s = " ".join(c)
         for need in ("--network none", "--cap-drop ALL", "--read-only", "no-new-privileges:true", "/repo:/workspace/cloud-platform:ro", "/etc/svavyom/provision.json:/qualify/config.json:ro",
-                     "/mnt/pool:/mnt/pool:ro", "/out/answer.xml:/qualify/answer.xml:ro", "SVAVYOM_QUALIFY_WINDOWS=1", "SVAVYOM_QUALIFY_STAGE=create",
+                     "/mnt/pool:/mnt/pool:ro", "/out/answer.xml:/qualify/answer.xml:ro", "/out/svq-report.ps1:/qualify/report.ps1:ro", "SVAVYOM_QUALIFY_REPORT_SCRIPT=/qualify/report.ps1", "SVAVYOM_QUALIFY_WINDOWS=1", "SVAVYOM_QUALIFY_STAGE=create",
                      "SVAVYOM_QUALIFY_IMAGE_ID=win-iso", "SVAVYOM_QUALIFY_DRIVER_IMAGE_ID=drv-iso"):
             self.assertIn(need, s)
         self.assertNotIn("--privileged", s)
@@ -229,6 +240,13 @@ class Wiring(unittest.TestCase):
         self.assertEqual(raw, b"\x00" + bytes([255, 0, 0, 0, 255, 0]) + b"\x00" + bytes([0, 0, 255, 9, 9, 9]))
         self.assertEqual(qw.ppm_to_png(b"P5\n1 1\n255\nx"), b"")
         self.assertEqual(qw.ppm_to_png(b"P6\n9 9\n255\nshort"), b"")
+
+    def test_screenshot_png_passes_png_through_and_converts_ppm(self):
+        png = qw.ppm_to_png(b"P6\n1 1\n255\n\x01\x02\x03")
+        self.assertEqual(qw.screenshot_png(png), png)  # what virsh really writes
+        self.assertEqual(qw.screenshot_png(b"P6\n1 1\n255\n\x01\x02\x03"), png)
+        self.assertEqual(qw.screenshot_png(b"\x89PNG\r\n\x1a\ntruncated"), b"")
+        self.assertEqual(qw.screenshot_png(b""), b"")
 
     def test_python_and_go_name_the_same_criteria(self):
         """The Go stages emit the criteria this script lists; a rename on one side must fail here, not in a real-host run."""

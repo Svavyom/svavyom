@@ -19,17 +19,28 @@ import (
 // FileName is the exact name Windows Setup searches for.
 const FileName = "Autounattend.xml"
 
+// ScriptName is the guest script the answer file's one logon command finds on the same disk. A logon command line is limited to a few hundred characters,
+// far too short to carry the script itself, so the script rides on the disk and the command only runs it.
+const ScriptName = "svq-report.ps1"
+
+// MaxScript bounds the script.
+const MaxScript = 64 << 10
+
 // ImageSize is the size of the image: the smallest a FAT32 volume can reasonably be (FAT32 needs at least 65525 clusters).
 const ImageSize = 64 << 20
 
 // MaxAnswer bounds the answer file; a real one is a few KiB.
 const MaxAnswer = 256 << 10
 
-// BuildImage returns a FAT32 volume (no partition table, like a floppy or a freshly formatted stick) whose root holds the answer file as Autounattend.xml.
+// BuildImage returns a FAT32 volume (no partition table, like a floppy or a freshly formatted stick) whose root holds the answer file as Autounattend.xml and,
+// when script is not empty, the guest script as svq-report.ps1.
 // scratchDir must be a directory the caller owns; the scratch file inside it is removed before return.
-func BuildImage(answer []byte, label, scratchDir string) ([]byte, error) {
+func BuildImage(answer, script []byte, label, scratchDir string) ([]byte, error) {
 	if len(answer) == 0 || len(answer) > MaxAnswer {
 		return nil, errors.New("unattend: the answer file is empty or too large")
+	}
+	if len(script) > MaxScript {
+		return nil, errors.New("unattend: the guest script is too large")
 	}
 	if !strings.HasPrefix(strings.TrimSpace(string(answer)), "<?xml") {
 		return nil, errors.New("unattend: the answer file is not XML")
@@ -52,12 +63,24 @@ func BuildImage(answer []byte, label, scratchDir string) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("unattend: filesystem: %w", err)
 	}
-	w, err := fs.OpenFile("/"+FileName, os.O_CREATE|os.O_RDWR)
-	if err != nil {
-		return nil, fmt.Errorf("unattend: file: %w", err)
+	files := []struct {
+		name string
+		body []byte
+	}{{FileName, answer}}
+	if len(script) > 0 {
+		files = append(files, struct {
+			name string
+			body []byte
+		}{ScriptName, script})
 	}
-	if _, err := w.Write(answer); err != nil {
-		return nil, fmt.Errorf("unattend: write: %w", err)
+	for _, f := range files {
+		w, err := fs.OpenFile("/"+f.name, os.O_CREATE|os.O_RDWR)
+		if err != nil {
+			return nil, fmt.Errorf("unattend: file: %w", err)
+		}
+		if _, err := w.Write(f.body); err != nil {
+			return nil, fmt.Errorf("unattend: write: %w", err)
+		}
 	}
 	if err := fs.Close(); err != nil {
 		return nil, fmt.Errorf("unattend: close: %w", err)
