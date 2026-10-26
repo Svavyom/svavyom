@@ -34,6 +34,16 @@
    "determined_by": "LICENSE",
    "ecosystem": "golang",
    "license": "BSD-3-Clause",
+   "license_text_sha256": "299a1fc082d45bf30da32952c54bff6074204b4181e2fcd977fd365b1273f9cf",
+   "name": "github.com/elliotwutingfeng/asciiset",
+   "scope": "required",
+   "status": "approved",
+   "version": "v0.0.0-20260129054604-cfde2086bc57"
+  },
+  {
+   "determined_by": "LICENSE",
+   "ecosystem": "golang",
+   "license": "BSD-3-Clause",
    "license_text_sha256": "0a8d61ed3cbfd5312326e8126c31ce9c627a283adc99131b56896d29ada04b2d",
    "name": "github.com/google/uuid",
    "scope": "required",
