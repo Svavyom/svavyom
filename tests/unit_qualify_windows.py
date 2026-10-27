@@ -195,7 +195,7 @@ class Judging(unittest.TestCase):
 
 class Wiring(unittest.TestCase):
     def args(self, **kw):
-        a = dict(repo="/repo", config="/etc/svavyom/provision.json", run_id="qr-20261026-a1b2c3", image="win-iso", driver_image="drv-iso", timeout_min=75)
+        a = dict(repo="/repo", config="/etc/svavyom/provision.json", run_id="qr-20261026-a1b2c3", image="win-iso", driver_image="drv-iso", timeout_min=75, report_port=0)
         a.update(kw)
         return SimpleNamespace(**a)
 
@@ -219,7 +219,7 @@ class Wiring(unittest.TestCase):
         with tempfile.NamedTemporaryFile() as f:
             ok = self.args(config=f.name)
             self.assertEqual(qw.validate(ok), [])
-            for kw in ({"run_id": "x"}, {"image": ""}, {"driver_image": "A/../b"}, {"driver_image": "win-iso"}, {"timeout_min": 1}, {"timeout_min": 999}, {"config": "relative.json"}):
+            for kw in ({"run_id": "x"}, {"image": ""}, {"driver_image": "A/../b"}, {"driver_image": "win-iso"}, {"timeout_min": 1}, {"timeout_min": 999}, {"report_port": 80}, {"report_port": 70000}, {"config": "relative.json"}):
                 self.assertTrue(qw.validate(self.args(**dict({"config": f.name}, **kw))), kw)
 
     def test_the_catalog_check_wants_installation_media_that_is_usable(self):

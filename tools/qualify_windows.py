@@ -218,10 +218,10 @@ def make_handler(token, report):
     return H
 
 
-def start_listener(bind, token):
-    """A threaded HTTP server on bind:<random port>; returns (server, port, report). Only POST /<token>/report is served; everything else is 404."""
+def start_listener(bind, token, port=0):
+    """A threaded HTTP server on bind:<port> (0 = a random one); returns (server, port, report). Only POST /<token>/report is served; everything else is 404."""
     report = Report()
-    srv = http.server.ThreadingHTTPServer((bind, 0), make_handler(token, report))
+    srv = http.server.ThreadingHTTPServer((bind, port), make_handler(token, report))
     srv.daemon_threads = True
     threading.Thread(target=srv.serve_forever, daemon=True).start()
     return srv, srv.server_address[1], report
@@ -243,7 +243,7 @@ def judge_guest(rep, client_ip, root_written, rtc_localtime, host_offset_s, now=
 
     if not rep:
         for cid in CRITERIA_GUEST:
-            out.append((cid, FAIL if cid == "install-completed" else NOT_RUN, "no guest report arrived" if cid == "install-completed" else "needs the guest report"))
+            out.append((cid, FAIL if cid == "install-completed" else NOT_RUN, "no guest report arrived (if the screenshots show the logon script ran, the host firewall is the usual cause: ufw drops the guest's connection to the listener; allow it with --report-port and the ufw rule the run prints)" if cid == "install-completed" else "needs the guest report"))
         return out
     osname = str(rep.get("os", ""))
     add("install-completed", "Windows Server 2019" in osname and bool(re.fullmatch(r"[0-9]{5}", str(rep.get("build", "")))),
@@ -419,6 +419,8 @@ def validate(a):
         problems.append("the installer and the driver image must differ")
     if not a.config or not os.path.isabs(a.config) or not os.path.isfile(a.config):
         problems.append("QUALIFY_CONFIG (absolute path of the provisioning config) is required")
+    if not (a.report_port == 0 or 1024 <= a.report_port <= 65535):
+        problems.append("--report-port must be 0 or from 1024 to 65535")
     if not 5 <= a.timeout_min <= 240:
         problems.append("--timeout-min must be between 5 and 240")
     return problems
@@ -450,6 +452,7 @@ def main(argv=None):
     ap.add_argument("--image-index", type=int, default=int(os.environ.get("QUALIFY_IMAGE_INDEX", "1")), help="install.wim image index (1 = Standard, Server Core, on the 2019 media)")
     ap.add_argument("--run-id", default=os.environ.get("QUALIFY_RUN_ID", ""))
     ap.add_argument("--out", default=os.environ.get("QUALIFY_OUT", "qualification-out"))
+    ap.add_argument("--report-port", type=int, default=0, help="TCP port of the report listener on the libvirt bridge (0 = random). A host firewall with default-deny input (ufw) must allow it from the bridge")
     ap.add_argument("--timeout-min", type=int, default=GUEST_TIMEOUT_MIN)
     ap.add_argument("--keep", action="store_true", help="leave the VM after the guest stage (run --stage cleanup --run-id ID later)")
     ap.add_argument("--repo", default=os.getcwd())
@@ -501,7 +504,8 @@ def main(argv=None):
             print("NOT_RUN: cannot find the host address on the libvirt network %r" % cfg.get("network"))
             return 0
         token, password = secrets.token_hex(16), new_password()
-        srv, port, report = start_listener(ip, token)
+        srv, port, report = start_listener(ip, token, a.report_port)
+        print("report listener on %s:%d; if the guest cannot reach it (ufw default-deny), allow it once with:  sudo ufw allow in on %s to %s port %d proto tcp" % (ip, port, cfg.get("network_bridge", "virbr0"), ip, port), flush=True)
         try:
             url = "http://%s:%d/%s/report" % (ip, port, token)
             text = answer_file(url, password, a.image_index)

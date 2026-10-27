@@ -253,6 +253,7 @@ QUALIFY_IMAGE ?=
 QUALIFY_SSH_KEY ?=
 QUALIFY_RUN_ID ?=
 QUALIFY_OUT ?= qualification-out
+QUALIFY_REPORT_PORT ?=
 export QUALIFY_CONFIG QUALIFY_PUBKEY QUALIFY_IMAGE QUALIFY_SSH_KEY QUALIFY_RUN_ID QUALIFY_OUT
 docker-qualify-libvirt-create: docker-image require-nonroot
 	python3 tools/qualify_create.py --stage create
@@ -290,7 +291,7 @@ docker-release: docker-image require-nonroot
 # QUALIFY_CONFIG, QUALIFY_WINDOWS_IMAGE (the registered installer id) and QUALIFY_DRIVER_IMAGE (the registered virtio-win id) are required; QUALIFY_KEEP=1 leaves the VM for
 # inspection, and `make docker-qualify-libvirt-windows-cleanup QUALIFY_RUN_ID=...` then removes it, after proving ownership. Nothing here changes the catalog or Svavyom's services.
 docker-qualify-libvirt-windows: docker-image require-nonroot
-	python3 tools/qualify_windows.py $(if $(QUALIFY_KEEP),--keep,)
+	python3 tools/qualify_windows.py $(if $(QUALIFY_KEEP),--keep,) $(if $(QUALIFY_REPORT_PORT),--report-port $(QUALIFY_REPORT_PORT),)
 
 docker-qualify-libvirt-windows-cleanup: docker-image require-nonroot
 	python3 tools/qualify_windows.py --stage cleanup
