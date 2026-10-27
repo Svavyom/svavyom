@@ -47,6 +47,21 @@
    "version": "v1.0.1"
   },
   {
+   "bom-ref": "pkg:golang/github.com/elliotwutingfeng/asciiset@v0.0.0-20260129054604-cfde2086bc57",
+   "licenses": [
+    {
+     "license": {
+      "id": "BSD-3-Clause"
+     }
+    }
+   ],
+   "name": "github.com/elliotwutingfeng/asciiset",
+   "purl": "pkg:golang/github.com/elliotwutingfeng/asciiset@v0.0.0-20260129054604-cfde2086bc57",
+   "scope": "required",
+   "type": "library",
+   "version": "v0.0.0-20260129054604-cfde2086bc57"
+  },
+  {
    "bom-ref": "pkg:golang/github.com/google/uuid@v1.6.0",
    "licenses": [
     {

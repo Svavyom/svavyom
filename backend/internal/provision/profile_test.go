@@ -43,8 +43,16 @@ func renderTest(t *testing.T, s Spec) string {
 	return x
 }
 
+// golden compares got with testdata/<name>. To regenerate the files after a deliberate change to the templates, run the tests with UPDATE_GOLDEN=1 (for example
+// `UPDATE_GOLDEN=1 go test ./internal/provision -run 'ISODefinition'`) and review the diff: it is the specification of the definitions, so a change is read, not accepted.
 func golden(t *testing.T, name, got string) {
 	t.Helper()
+	if os.Getenv("UPDATE_GOLDEN") == "1" {
+		if err := os.WriteFile("testdata/"+name, []byte(got), 0o644); err != nil { // #nosec G306 -- a non-secret test fixture
+			t.Fatal(err)
+		}
+		return
+	}
 	want, err := os.ReadFile("testdata/" + name)
 	if err != nil {
 		t.Fatal(err)

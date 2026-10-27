@@ -23,7 +23,7 @@ GATES := versions $(GO_GATES) py-check $(FE_GATES) secrets ci-policy interfaces 
 # The gates a public checkout can run on its own (no access to the separate requirements repository). `make check` is the full set.
 PUBLIC_GATES := versions go-fmt go-vet go-staticcheck go-gosec go-test go-test-libvirt go-vuln public-py fe-install fe-check fe-build fe-audit public-fe-unit fe-negative secrets ci-policy claims boundary licenses
 
-.PHONY: docker-demo-video public-fe-unit public-check public-py docker-public-check claims boundary licenses docker-qualify-libvirt-ro docker-qualify-libvirt-create docker-qualify-libvirt-lifecycle docker-qualify-libvirt-console docker-qualify-libvirt-storage docker-qualify-libvirt-network docker-qualify-libvirt-cleanup docker-release qualify-preflight check $(GATES) capability decisions fe-browser docker-fe-browser evidence-report evidence-replay require-nonroot docker-image docker-check docker-shell test-integration \
+.PHONY: docker-qualify-libvirt-windows docker-qualify-libvirt-windows-cleanup docker-demo-video public-fe-unit public-check public-py docker-public-check claims boundary licenses docker-qualify-libvirt-ro docker-qualify-libvirt-create docker-qualify-libvirt-lifecycle docker-qualify-libvirt-console docker-qualify-libvirt-storage docker-qualify-libvirt-network docker-qualify-libvirt-cleanup docker-release qualify-preflight check $(GATES) capability decisions fe-browser docker-fe-browser evidence-report evidence-replay require-nonroot docker-image docker-check docker-shell test-integration \
         test-container verify-backlog verify-linkage docker-linkage
 
 check: $(GATES)
@@ -253,6 +253,7 @@ QUALIFY_IMAGE ?=
 QUALIFY_SSH_KEY ?=
 QUALIFY_RUN_ID ?=
 QUALIFY_OUT ?= qualification-out
+QUALIFY_REPORT_PORT ?=
 export QUALIFY_CONFIG QUALIFY_PUBKEY QUALIFY_IMAGE QUALIFY_SSH_KEY QUALIFY_RUN_ID QUALIFY_OUT
 docker-qualify-libvirt-create: docker-image require-nonroot
 	python3 tools/qualify_create.py --stage create
@@ -284,6 +285,16 @@ docker-qualify-libvirt-network: docker-image require-nonroot
 RELEASE_OUT ?= release-out
 docker-release: docker-image require-nonroot
 	python3 tools/make_release.py --out "$(RELEASE_OUT)"
+
+# Real-host qualification of the Windows guest profile (M6-E01-S04, AC07; docs/QUALIFICATION-WINDOWS.md in the requirements repository). MUTATING and long (a Windows
+# install: 20 to 60 minutes): it creates ONE disposable VM from the catalog's Windows Server ISO, installs it unattended, judges what the guest reports and removes the VM.
+# QUALIFY_CONFIG, QUALIFY_WINDOWS_IMAGE (the registered installer id) and QUALIFY_DRIVER_IMAGE (the registered virtio-win id) are required; QUALIFY_KEEP=1 leaves the VM for
+# inspection, and `make docker-qualify-libvirt-windows-cleanup QUALIFY_RUN_ID=...` then removes it, after proving ownership. Nothing here changes the catalog or Svavyom's services.
+docker-qualify-libvirt-windows: docker-image require-nonroot
+	python3 tools/qualify_windows.py $(if $(QUALIFY_KEEP),--keep,) $(if $(QUALIFY_REPORT_PORT),--report-port $(QUALIFY_REPORT_PORT),)
+
+docker-qualify-libvirt-windows-cleanup: docker-image require-nonroot
+	python3 tools/qualify_windows.py --stage cleanup
 
 docker-qualify-libvirt-cleanup: docker-image require-nonroot
 	@case "$(QUALIFY_RUN_ID)" in qr-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]-[0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f]) ;; *) echo "ERROR set QUALIFY_RUN_ID=qr-YYYYMMDD-xxxxxx (printed by the create run)"; exit 2;; esac
