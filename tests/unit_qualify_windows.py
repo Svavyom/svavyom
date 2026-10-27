@@ -248,6 +248,26 @@ class Wiring(unittest.TestCase):
         self.assertEqual(qw.screenshot_png(b"\x89PNG\r\n\x1a\ntruncated"), b"")
         self.assertEqual(qw.screenshot_png(b""), b"")
 
+    def test_live_facts_survive_the_guest_powering_off(self):
+        # a real run judged root-disk-written and clock-local-time from a stopped domain (0 bytes, no QEMU process): both must be kept from while it ran
+        state = {"s": "running", "wr": 5 << 30, "rtc": True}
+        saved = (qw.domain_state, qw.root_write_bytes, qw.qemu_rtc_localtime)
+        qw.domain_state = lambda vm: state["s"]
+        qw.root_write_bytes = lambda vm: state["wr"]
+        qw.qemu_rtc_localtime = lambda vm: state["rtc"]
+        try:
+            live = qw.LiveFacts()
+            live.sample("vm")
+            state.update(s="shut off", wr=0, rtc=False)  # the guest has reported and powered off
+            live.sample("vm")
+            self.assertEqual(live.root_written, 5 << 30)
+            self.assertTrue(live.rtc_localtime)
+            nothing = qw.LiveFacts()
+            nothing.sample("vm")  # never seen running: stays at the failing values, never invented
+            self.assertEqual((nothing.root_written, nothing.rtc_localtime), (0, False))
+        finally:
+            qw.domain_state, qw.root_write_bytes, qw.qemu_rtc_localtime = saved
+
     def test_python_and_go_name_the_same_criteria(self):
         """The Go stages emit the criteria this script lists; a rename on one side must fail here, not in a real-host run."""
         go = (ROOT / "backend/internal/hypervisor/libvirtmut/qualify_winprofile_test.go").read_text()

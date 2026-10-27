@@ -331,6 +331,20 @@ def root_write_bytes(vm_name):
     return int(m.group(1)) if m else 0
 
 
+class LiveFacts:
+    """What can only be read while the VM runs: the root disk's write counter and QEMU's own command line. The guest powers itself off right after it reports, and a
+    stopped domain has neither (a real run read both afterwards and got 0 and 'not localtime'), so they are sampled while it runs and the last good values kept."""
+    def __init__(self):
+        self.root_written = 0
+        self.rtc_localtime = False
+
+    def sample(self, vm_name):
+        if domain_state(vm_name) != "running":
+            return
+        self.root_written = max(self.root_written, root_write_bytes(vm_name))
+        self.rtc_localtime = self.rtc_localtime or qemu_rtc_localtime(vm_name)
+
+
 def domain_state(vm_name):
     return run_diag(["virsh", "-r", "-c", "qemu:///system", "domstate", "--", vm_name]).strip()
 
@@ -524,8 +538,11 @@ def main(argv=None):
             if not any(st == FAIL for _, st, _ in criteria):
                 print("create stage done; waiting up to %d minutes for the guest to install and report ..." % a.timeout_min, flush=True)
                 deadline, last_shot, vm = time.time() + a.timeout_min * 60, 0, res.get("vm_name", "")
+                live = LiveFacts()
+                live.sample(vm)
                 while time.time() < deadline and report.body is None:
                     time.sleep(15)
+                    live.sample(vm)
                     if time.time() - last_shot > 300:
                         screenshot(vm, out_dir, time.strftime("%H%M%S"))
                         last_shot = time.time()
@@ -535,7 +552,7 @@ def main(argv=None):
                 if report.body is None:
                     screenshot(vm, out_dir, "final")
                 client = report.client
-                criteria += judge_guest(report.body, client, root_write_bytes(vm), qemu_rtc_localtime(vm), time.localtime().tm_gmtoff, answer_text=text)
+                criteria += judge_guest(report.body, client, live.root_written, live.rtc_localtime, time.localtime().tm_gmtoff, answer_text=text)
                 with open(os.path.join(out_dir, "guest-report.json"), "w") as f:
                     json.dump(report.body or {}, f, indent=2)
                 deadline = time.time() + 300
