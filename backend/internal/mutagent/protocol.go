@@ -107,6 +107,9 @@ type Request struct {
 	VM string `json:"vm,omitempty"`
 	// Media names the catalog ISO of iso_attach and rescue by id and digest (the helper re-verifies the file); Boot is only for iso_attach.
 	Media *Media `json:"media,omitempty"`
+	// Full asks list_backups for the complete listing (up to maxFullListedBackups) instead of the newest maxListedBackups; only list_backups takes it. The
+	// scheduler needs the complete list: a backup missing from a capped list looks gone.
+	Full bool `json:"full,omitempty"`
 }
 
 // Media is the input of iso_attach and rescue.
@@ -184,7 +187,9 @@ type Reply struct {
 	Category  string          `json:"category,omitempty"`
 	Preflight *Preflight      `json:"preflight,omitempty"`
 	Backups   []BackupSummary `json:"backups,omitempty"`
-	Stats     *Stats          `json:"stats,omitempty"`
+	// Truncated is true when the store holds more backups than the listing carries (the cap applied is the one the request asked for).
+	Truncated bool   `json:"truncated,omitempty"`
+	Stats     *Stats `json:"stats,omitempty"`
 }
 
 // Valid reports whether the request is well formed for its operation: the operation's fields in their grammars and nothing else.
@@ -194,6 +199,9 @@ func (q Request) Valid() bool {
 	}
 	extra := q.DiskGiB != 0 || q.ID != "" || q.Reinstall != nil || q.Restore != nil || q.Net != nil || q.VM != "" || q.Media != nil
 	extraButMedia := q.DiskGiB != 0 || q.ID != "" || q.Reinstall != nil || q.Restore != nil || q.Net != nil || q.VM != ""
+	if q.Full && q.Op != OpListBackups {
+		return false
+	}
 	if q.Media != nil && q.Op != OpISOAttach && q.Op != OpRescue && q.Op != OpEjectISO {
 		return false
 	}
