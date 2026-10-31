@@ -348,7 +348,11 @@ func (s *Store) Verify(id string) (*Backup, error) {
 	if !idRE.MatchString(id) {
 		return nil, ErrNotFound
 	}
-	dir := s.path(id)
+	return verifyDir(s.path(id), id)
+}
+
+// verifyDir is Verify for the backup id held in dir, wherever dir is (a finished backup, or an import's partial directory before it is made visible).
+func verifyDir(dir, id string) (*Backup, error) {
 	fi, err := os.Lstat(dir)
 	if errors.Is(err, os.ErrNotExist) {
 		return nil, ErrNotFound
@@ -537,7 +541,7 @@ func (s *Store) ImportFrom(id string, needBytes int64, fetch func(name string, w
 		}
 		lim := int64(64 << 10)
 		if name == RootFile {
-			lim = 1 << 46
+			lim = needBytes + importSlackBytes // the size the target reported, plus a little: a hostile or broken target cannot stream past it
 		}
 		werr := fetch(name, &limitWriter{w: f, left: lim})
 		serr := f.Sync()
@@ -546,12 +550,12 @@ func (s *Store) ImportFrom(id string, needBytes int64, fetch func(name string, w
 			return fail(ErrStore)
 		}
 	}
+	// Verified in full while it is still a ".partial-" directory (which List ignores), and only then made visible: a backup that is listed has been checked.
+	if _, err := verifyDir(tmp, id); err != nil {
+		return fail(ErrCorrupt)
+	}
 	if err := os.Rename(tmp, s.path(id)); err != nil {
 		return fail(ErrStore)
-	}
-	if _, err := s.Verify(id); err != nil { // a copy that does not check out is not kept
-		_ = removeTree(s.path(id))
-		return ErrCorrupt
 	}
 	if d, err := os.Open(s.dir); err == nil {
 		_ = d.Sync()
@@ -559,6 +563,9 @@ func (s *Store) ImportFrom(id string, needBytes int64, fetch func(name string, w
 	}
 	return nil
 }
+
+// importSlackBytes is how far past the expected size of the root copy an import accepts before it gives up.
+const importSlackBytes = 64 << 10
 
 // limitWriter fails once more than left bytes would be written, so a hostile or broken source cannot fill the disk past the expected size.
 type limitWriter struct {
