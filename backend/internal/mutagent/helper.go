@@ -141,8 +141,25 @@ func isStorageOp(op string) bool {
 	return false
 }
 
-// maxListedBackups bounds the list_backups reply (newest first).
-const maxListedBackups = 100
+// maxListedBackups bounds the ordinary list_backups reply (newest first); maxFullListedBackups bounds the complete listing a request with Full asks for. The reply
+// says when a cap cut the list (Truncated).
+const (
+	maxListedBackups     = 100
+	maxFullListedBackups = 10000
+)
+
+// listedBackups is the reply of list_backups: the newest limit backups of l (newest first) and whether l held more.
+func listedBackups(l []backupstore.Summary, limit int) ([]BackupSummary, bool) {
+	var out []BackupSummary
+	for _, b := range l {
+		if len(out) >= limit {
+			break
+		}
+		out = append(out, BackupSummary{ID: b.Manifest.BackupID, VM: b.Manifest.VM.Name, CreatedAt: b.Manifest.CreatedAt,
+			SizeBytes: b.Manifest.Root.Size, DiskGiB: b.Manifest.VM.DiskGiB, ImageID: b.Manifest.VM.ImageID, Valid: b.Valid})
+	}
+	return out, len(l) > limit
+}
 
 // runStorage executes one M2 operation. The scratch directory, the trusted catalog and the backup store are opened here, per request, from the
 // server-owned configuration; nothing in the request names a path.
@@ -192,13 +209,11 @@ func runStorage(ctx context.Context, q Request, reply *Reply, ops provision.Host
 		if err != nil {
 			return typed(hypervisor.Unavailable, q.Op)
 		}
-		for _, b := range l {
-			if len(reply.Backups) >= maxListedBackups {
-				break
-			}
-			reply.Backups = append(reply.Backups, BackupSummary{ID: b.Manifest.BackupID, VM: b.Manifest.VM.Name, CreatedAt: b.Manifest.CreatedAt,
-				SizeBytes: b.Manifest.Root.Size, DiskGiB: b.Manifest.VM.DiskGiB, ImageID: b.Manifest.VM.ImageID, Valid: b.Valid})
+		limit := maxListedBackups
+		if q.Full {
+			limit = maxFullListedBackups
 		}
+		reply.Backups, reply.Truncated = listedBackups(l, limit)
 		return nil
 	case OpDeleteBackup:
 		if store == nil {

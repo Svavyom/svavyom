@@ -229,6 +229,13 @@ func (c *Client) ListBackups(ctx context.Context) ([]BackupSummary, error) {
 	return r.Backups, err
 }
 
+// ListBackupsComplete returns every backup in the store (newest first) and whether the store holds more than the helper's complete-listing cap (truncated).
+// Anything that decides from absence (the scheduler's retention) must refuse to act on a truncated list.
+func (c *Client) ListBackupsComplete(ctx context.Context) ([]BackupSummary, bool, error) {
+	r, err := c.call(ctx, Request{Op: OpListBackups, Full: true})
+	return r.Backups, r.Truncated, err
+}
+
 // Stats returns the pool and backup-store facts.
 func (c *Client) Stats(ctx context.Context) (Stats, error) {
 	r, err := c.call(ctx, Request{Op: OpStats})

@@ -40,9 +40,14 @@ type BackupInfo struct {
 	Valid     bool
 }
 
+// ErrIncomplete is what World.Backups returns when it cannot list every backup in the store (the listing was cut off). Retention decides from absence
+// ("not listed, so gone"), so it must never act on a list that may be missing backups: it forgets and prunes nothing and tries again on the next tick.
+var ErrIncomplete = errors.New("the backup listing is incomplete")
+
 // World is the read side and the off-host side the scheduler works with.
 type World interface {
 	VM(ctx context.Context, name string) (VMState, error)
+	// Backups lists every backup in the store, or fails (ErrIncomplete when the store holds more than a listing can carry).
 	Backups(ctx context.Context) ([]BackupInfo, error)
 	// Copies maps a backup id to the targets that hold a verified copy (nil when off-host copies are not configured).
 	Copies(ctx context.Context) (map[string][]string, error)
@@ -438,6 +443,9 @@ func (s *Scheduler) retention(ctx context.Context, r Run) bool {
 	}
 	listed, err := s.World.Backups(ctx)
 	if err != nil {
+		if errors.Is(err, ErrIncomplete) {
+			s.logf("schedule: retention for " + r.VM + " waits: the backup listing is incomplete (nothing is forgotten or deleted on a partial list)")
+		}
 		return false
 	}
 	valid := map[string]bool{}
