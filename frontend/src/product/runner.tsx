@@ -20,7 +20,7 @@ const REFUSED: Record<string, string> = {
 const REFUSED_BY_TYPE: Record<string, Record<string, string>> = {
   iso_attach: {
     conflict: "Two installation media are attached already, or this one is: eject one first, and make sure the VM is stopped and not in rescue mode.",
-    validation: "A second medium is only attached, it does not boot. Eject the first one to boot from this one.",
+    validation: "A second medium is only attached, it does not boot. To boot from it, eject both media, then attach it again and choose to boot from it.",
   },
   eject_iso: {
     conflict: "That medium is no longer attached, or the VM is running or in rescue mode. Refresh and check.",

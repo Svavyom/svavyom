@@ -77,7 +77,8 @@ describe("installation media, the graphical console and rescue on the VM page", 
     const media = (await screen.findByLabelText("Media")) as HTMLSelectElement;
     await waitFor(() => expect(Array.from(media.options).map((o) => o.value)).toEqual(["drivers-iso"])); // not the one already attached
     expect(screen.queryByLabelText("Boot")).toBeNull();
-    expect(screen.getByText(/A second medium is only attached.*it does not boot/)).toBeTruthy();
+    expect(screen.getByText(/A second medium is only attached.*it does not boot\. To boot from it, eject both media, then attach it again/)).toBeTruthy();
+    expect(document.body.textContent).not.toMatch(/Eject the first one to boot from this one/);
     expect(await axeViolations(document.body)).toEqual([]);
     await userEvent.click(screen.getByRole("button", { name: "Attach the media" }));
     await waitFor(() => expect(posts).toHaveLength(1));
@@ -161,7 +162,7 @@ describe("installation media, the graphical console and rescue on the VM page", 
       await userEvent.click(screen.getByRole("button", { name: "Attach installation media to web-1" }));
       await screen.findByLabelText("Media");
       await userEvent.click(screen.getByRole("button", { name: "Attach the media" }));
-      expect(await screen.findByText(/A second medium is only attached, it does not boot/)).toBeTruthy();
+      expect(await screen.findByText(/A second medium is only attached, it does not boot\. To boot from it, eject both media, then attach it again/)).toBeTruthy();
       expect(document.body.textContent).not.toMatch(/Some details were not accepted/);
     });
   });
