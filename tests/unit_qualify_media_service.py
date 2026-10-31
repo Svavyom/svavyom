@@ -61,6 +61,19 @@ class Guest(unittest.TestCase):
         _, boot = q.drive_report_problems(self.OK.replace("Alpine", "Debian"), self.SIZES)
         self.assertTrue(boot)
 
+    def test_the_echo_of_the_typed_command_is_not_judged(self):
+        # a real run read the echoed command line (it named both markers) and found no drives; the output after it is what counts
+        echo = "localhost:~# echo QMEDIA-BEGIN; for d in /dev/sr*; do echo $d; done; echo QMEDIA-END\n"
+        self.assertEqual(q.drive_report_problems(echo + self.OK, self.SIZES), ([], []))
+        sees, boot = q.drive_report_problems(echo, self.SIZES)
+        self.assertTrue(sees and boot, "the echo alone must not pass")
+
+    def test_the_probe_does_not_print_its_markers_in_its_own_echo(self):
+        with open(os.path.join(ROOT, "tools", "qualify_media_service.py")) as f:
+            src = f.read()
+        self.assertIn("echo QMEDIA-BE''GIN", src)
+        self.assertIn("echo QMEDIA-E''ND", src)
+
     def test_no_markers_is_a_failure_not_a_pass(self):
         sees, boot = q.drive_report_problems("login:", self.SIZES)
         self.assertTrue(sees and boot)

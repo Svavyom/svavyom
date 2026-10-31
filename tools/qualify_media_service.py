@@ -103,7 +103,9 @@ def media_problems(xml_text, expected):
 def drive_report_problems(text, sizes_bytes, boot_banner="Alpine"):
     """From the serial text after the guest ran the probe between its markers: two optical drives whose sizes are the two media, and the booted system is the first.
     sizes_bytes: the two ISO sizes. Returns (sees_both_problems, boot_problems)."""
-    seg = text.split("QMEDIA-BEGIN", 1)[-1].split("QMEDIA-END", 1)[0] if "QMEDIA-BEGIN" in text and "QMEDIA-END" in text else ""
+    # the serial text also holds the echo of the typed command line, which names the markers too (a real run judged that echo): the probe prints its markers
+    # through shell concatenation so the echo does not contain them, and the LAST begin marker is the guest's own output
+    seg = text.rsplit("QMEDIA-BEGIN", 1)[-1].split("QMEDIA-END", 1)[0] if "QMEDIA-BEGIN" in text and "QMEDIA-END" in text.rsplit("QMEDIA-BEGIN", 1)[-1] else ""
     sees = []
     if not seg:
         return ["the probe's output markers were not seen on the serial console"], ["the probe's output markers were not seen"]
@@ -217,11 +219,13 @@ def main(argv=None):
             if ws.status == 101:
                 ws.send(b"root\n")
                 time.sleep(3)
-                probe = ("echo QMEDIA-BEGIN; for d in /dev/sr*; do echo $d SIZE=$(cat /sys/class/block/${d#/dev/}/size); done; grep ^NAME= /etc/os-release; echo QMEDIA-END\n")
+                probe = ("echo QMEDIA-BE''GIN; for d in /dev/sr*; do echo $d SIZE=$(cat /sys/class/block/${d#/dev/}/size); done; grep ^NAME= /etc/os-release; echo QMEDIA-E''ND\n")
                 ws.send(probe.encode())
                 time.sleep(6)
                 ws.close()
                 text = serial_text(api)
+                with open(os.path.join(a.out, "%s-serial.txt" % a.run_id), "w") as f:
+                    f.write(text)  # the guest's console output, as evidence of what the judge read
                 sees, boot = drive_report_problems(text, [dig[a.boot_image][1], dig[a.data_image][1]])
             else:
                 sees = boot = ["the interactive console answered %s" % ws.status]
