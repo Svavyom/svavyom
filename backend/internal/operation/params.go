@@ -79,6 +79,16 @@ func (p Params) Inputs() Params {
 	return p
 }
 
+// InputsFor is Inputs for an operation of type t. A snapshot id is server generated for a new snapshot (Snapshot) but a caller input for restoring or deleting an
+// existing one, so Inputs alone cannot clear it: a Snapshot replayed with the same idempotency key got a fresh id each time and was refused as a conflict.
+func (p Params) InputsFor(t Type) Params {
+	p = p.Inputs()
+	if t == Snapshot {
+		p.SnapshotID = ""
+	}
+	return p
+}
+
 // ValidFor reports whether a caller's parameters are acceptable for the type (the API checks this before any precheck, so a malformed request is a
 // validation error rather than whatever the host state would have said first).
 func (p Params) ValidFor(t Type) bool { return p.validFor(t) }
