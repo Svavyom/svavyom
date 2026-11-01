@@ -22,6 +22,8 @@ export const RULES: Record<string, RuleText> = {
     todo: "Open the machine's backup schedule and Activity to see the reason. The machine is started again after a failed run if it was running before." },
   nightly_boot_failed: { title: "The nightly boot check failed", detail: () => "A real virtual machine could not be started and reached last night.",
     todo: "Run the check by hand with svavyom-ctl nightly-boot and read its output. A host that cannot boot a guest cannot be relied on." },
+  audit_write_failed: { title: "A sign-in record could not be stored", detail: () => "An authentication event (a sign-in, sign-out or account change) happened but Svavyom could not write it to its audit trail.",
+    todo: "Check the free space and the health of the file system that holds /var/lib/svavyom, and read the API's log (journalctl -u svavyom-api) for the line that names the event. Until it is fixed, the audit trail is incomplete." },
 };
 
 export const unknownRule = (type: string): RuleText => ({ title: type, detail: () => "", todo: "" });

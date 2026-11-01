@@ -230,6 +230,9 @@ func userCommand(ctx context.Context, cmd string, args []string, stdin *os.File,
 
 var headerNameRE = regexp.MustCompile(`^[A-Za-z][A-Za-z0-9-]{0,63}$`)
 
+// auditFailureWindow is how long after a failed audit write the alert audit_write_failed stays raised.
+const auditFailureWindow = 15 * time.Minute
+
 func isLoopback(addr string) bool {
 	host, _, err := net.SplitHostPort(addr)
 	if err != nil {
@@ -293,7 +296,9 @@ func serve(ctx context.Context, args []string, stderr io.Writer) int {
 		return 1
 	}
 	defer func() { _ = db.Close() }()
-	svc, err := auth.New(ctx, db, auth.Config{})
+	svc, err := auth.New(ctx, db, auth.Config{AuditFailed: func(ev auth.AuditEvent) {
+		_, _ = fmt.Fprintf(stderr, "ERROR an authentication audit event could not be stored: event=%s outcome=%s (the alert audit_write_failed is raised)\n", ev.Event, ev.Outcome)
+	}})
 	if err != nil {
 		_, _ = fmt.Fprintln(stderr, "ERROR cannot initialise authentication")
 		return 1
@@ -571,7 +576,7 @@ func serve(ctx context.Context, args []string, stderr io.Writer) int {
 		deps.Schedules = schedStore
 		go sched.Run(uctx)
 	}
-	startAlerts(uctx, stderr, &deps, alertEngine, astore, alertSettings, opStore, hosts, schedStore)
+	startAlerts(uctx, stderr, &deps, alertEngine, astore, alertSettings, opStore, hosts, schedStore, func() bool { return svc.AuditWriteFailedSince(time.Now().Add(-auditFailureWindow)) })
 	var h http.Handler = api.NewHandlerWith(deps)
 	if *staticDir != "" {
 		abs, err := filepath.Abs(*staticDir)
