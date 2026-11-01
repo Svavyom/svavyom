@@ -45,6 +45,8 @@ type Config struct {
 	HashConcurrency int
 	Clock           func() time.Time
 	Audit           AuditSink
+	// Sleep waits d or until ctx ends (the slow-down of a name that failed recently, DR-038). Default: a timer. Tests inject a recorder.
+	Sleep func(ctx context.Context, d time.Duration)
 }
 
 // AuditEvent is one authentication audit record: identifiers and closed vocabulary only.
@@ -168,6 +170,16 @@ func New(ctx context.Context, db *sql.DB, cfg Config) (*Service, error) {
 	}
 	if err := cfg.Params.Validate(); err != nil {
 		return nil, err
+	}
+	if cfg.Sleep == nil {
+		cfg.Sleep = func(ctx context.Context, d time.Duration) {
+			t := time.NewTimer(d)
+			defer t.Stop()
+			select {
+			case <-t.C:
+			case <-ctx.Done():
+			}
+		}
 	}
 	if cfg.HashConcurrency <= 0 {
 		cfg.HashConcurrency = 2
@@ -495,6 +507,9 @@ func (s *Service) SignIn(ctx context.Context, username, password, source, presen
 	if wait := s.lim.check(source, userKey); wait > 0 {
 		s.emit(ctx, AuditEvent{Event: "sign_in", Outcome: "blocked", Reason: "rate_limited", Source: source})
 		return SignInResult{}, &RateLimitedError{RetryAfter: wait}
+	}
+	if d := s.lim.slow(userKey); d > 0 { // the name failed recently from somewhere: wait a little, then judge this attempt on its merits (never a refusal by itself)
+		s.cfg.Sleep(ctx, d)
 	}
 	var (
 		id       int64

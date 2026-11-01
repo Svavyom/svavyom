@@ -35,6 +35,8 @@ type rig struct {
 	db   *sql.DB
 	clk  *clock
 	svc  *Service
+	// slept records the slow-downs the service asked for (it never really waits in a test).
+	slept []time.Duration
 }
 
 func newRig(t *testing.T) *rig {
@@ -55,7 +57,8 @@ func (r *rig) open() {
 		r.t.Fatal(err)
 	}
 	r.t.Cleanup(func() { _ = db.Close() })
-	svc, err := New(context.Background(), db, Config{Params: fast, Clock: r.clk.now, IdleTimeout: 30 * time.Minute, AbsoluteTimeout: 12 * time.Hour})
+	svc, err := New(context.Background(), db, Config{Params: fast, Clock: r.clk.now, IdleTimeout: 30 * time.Minute, AbsoluteTimeout: 12 * time.Hour,
+		Sleep: func(_ context.Context, d time.Duration) { r.slept = append(r.slept, d) }})
 	if err != nil {
 		r.t.Fatal(err)
 	}
@@ -603,9 +606,9 @@ func TestRepeatedFailuresAreRateLimitedWithBackoffAndRecover(t *testing.T) {
 	if !errors.As(err, &rl) || rl.RetryAfter <= 0 || rl.RetryAfter > baseBlock {
 		t.Fatalf("blocked: %v", err)
 	}
-	// Another source cannot bypass the per-username block.
-	if _, err := r.svc.SignIn(ctx, adminName, adminPass, "192.0.2.99", ""); !errors.As(err, &rl) {
-		t.Fatalf("different source bypassed the username throttle: %v", err)
+	// A block is on the pair (user, source), not on the name alone (DR-038): the owner signing in from another address is not locked out by a stranger's failures.
+	if _, err := r.svc.SignIn(ctx, adminName, "wrong password here", "192.0.2.99", ""); !errors.Is(err, ErrInvalidCredentials) {
+		t.Fatalf("another source is judged on its own: %v", err)
 	}
 	r.clk.add(baseBlock + time.Second)
 	if _, err := r.svc.SignIn(ctx, adminName, "wrong password here", "192.0.2.1", ""); !errors.Is(err, ErrInvalidCredentials) {
