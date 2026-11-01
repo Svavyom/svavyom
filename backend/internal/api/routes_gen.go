@@ -21,7 +21,7 @@ var declaredRoutes = []declaredRoute{
 	{method: "GET", template: "/api/v1/operations", implemented: true},
 	{method: "POST", template: "/api/v1/operations", implemented: true},
 	{method: "GET", template: "/api/v1/operations/{id}", implemented: true},
-	{method: "POST", template: "/api/v1/operations/{id}/cancel", implemented: false},
+	{method: "POST", template: "/api/v1/operations/{id}/cancel", implemented: true},
 	{method: "GET", template: "/api/v1/projects", implemented: false},
 	{method: "GET", template: "/api/v1/projects/{id}", implemented: false},
 	{method: "GET", template: "/api/v1/virtual-networks", implemented: true},
