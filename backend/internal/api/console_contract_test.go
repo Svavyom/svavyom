@@ -20,8 +20,10 @@ func TestConsoleChannelContractMatchesTheImplementation(t *testing.T) {
 	}
 	var c struct {
 		Routes map[string]struct {
-			Method   string `json:"method"`
-			Path     string `json:"path"`
+			Method   string   `json:"method"`
+			Path     string   `json:"path"`
+			Auth     string   `json:"auth"`
+			Errors   []string `json:"errors"`
 			Response struct {
 				State []string `json:"state"`
 			} `json:"response"`
@@ -74,6 +76,10 @@ func TestConsoleChannelContractMatchesTheImplementation(t *testing.T) {
 	if strings.Join(got, ",") != strings.Join(states, ",") {
 		t.Errorf("serial states %v, want %v", got, states)
 	}
+	// DR-037: the serial snapshot is for operators and administrators and needs the interactive-console switch on
+	if sr := c.Routes["serial"]; !strings.Contains(sr.Auth, "operator") || !strings.Contains(sr.Auth, "switch") || !hasString(sr.Errors, "forbidden") || !hasString(sr.Errors, "prohibited") {
+		t.Errorf("serial auth %q, errors %v: the operator role, the switch, forbidden and prohibited must be stated", sr.Auth, sr.Errors)
+	}
 	if len(c.Routes["socket"].Subprotocols) != 2 || c.Routes["socket"].Subprotocols[0] != consoleProto || c.Routes["socket"].Subprotocols[1] != ticketPrefix+"<ticket>" {
 		t.Errorf("subprotocols %v", c.Routes["socket"].Subprotocols)
 	}
@@ -97,4 +103,13 @@ func TestConsoleChannelContractMatchesTheImplementation(t *testing.T) {
 func itoa(n int) string {
 	b, _ := json.Marshal(n)
 	return string(b)
+}
+
+func hasString(l []string, v string) bool {
+	for _, x := range l {
+		if x == v {
+			return true
+		}
+	}
+	return false
 }

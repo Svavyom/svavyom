@@ -162,26 +162,38 @@ func serialText(b []byte) string {
 	return out.String()
 }
 
-func (h *Handler) consoleSession(w http.ResponseWriter, r *http.Request) (user, token string, ok bool) {
+func (h *Handler) consoleSession(w http.ResponseWriter, r *http.Request) (user, token string, role auth.Role, ok bool) {
 	if h.deps.Auth == nil {
 		h.reject(w, categoryUnauthenticated)
-		return "", "", false
+		return "", "", "", false
 	}
 	sess, tok, authed, failed := h.session(r)
 	switch {
 	case failed:
 		h.reject(w, categoryUnavailable)
-		return "", "", false
+		return "", "", "", false
 	case !authed:
 		h.reject(w, categoryUnauthenticated)
-		return "", "", false
+		return "", "", "", false
 	}
-	return sess.Username, tok, true
+	return sess.Username, tok, sess.Role, true
 }
 
 func (h *Handler) serialOutput(w http.ResponseWriter, r *http.Request, vm string) {
-	user, _, ok := h.consoleSession(w, r)
+	user, _, role, ok := h.consoleSession(w, r)
 	if !ok {
+		return
+	}
+	// The boot output of a guest can hold what it printed to its login console (cloud-init output, boot-time secrets): operators and administrators only, as for the
+	// interactive console, and only while the console switch is on (DR-037; finding F-06).
+	if !role.AtLeast(auth.RoleOperator) {
+		h.audit(user, vm, "serial.refused", "role")
+		h.reject(w, categoryForbidden)
+		return
+	}
+	if !h.deps.Console.Enabled {
+		h.audit(user, vm, "serial.refused", "disabled")
+		h.reject(w, categoryProhibited)
 		return
 	}
 	if len(r.URL.Query()) != 0 {
@@ -308,7 +320,7 @@ func (h *Handler) consoleSocket(w http.ResponseWriter, r *http.Request, vm, kind
 	if kind == console.KindGraphics {
 		proto, maxMsg = graphicsProto, maxGraphicsMessage
 	}
-	user, token, ok := h.consoleSession(w, r)
+	user, token, _, ok := h.consoleSession(w, r)
 	if !ok {
 		return
 	}
