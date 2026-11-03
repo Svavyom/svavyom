@@ -176,6 +176,8 @@ type fakeWorld struct {
 	copies   map[string][]string
 	pruned   []string
 	pruneErr error
+	// backupsErr, when set, is what Backups returns (the store could not be listed completely).
+	backupsErr error
 }
 
 func (w *fakeWorld) VM(_ context.Context, n string) (VMState, error) {
@@ -186,6 +188,9 @@ func (w *fakeWorld) VM(_ context.Context, n string) (VMState, error) {
 func (w *fakeWorld) Backups(context.Context) ([]BackupInfo, error) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
+	if w.backupsErr != nil {
+		return nil, w.backupsErr
+	}
 	return append([]BackupInfo(nil), w.backups...), nil
 }
 func (w *fakeWorld) Copies(context.Context) (map[string][]string, error) {

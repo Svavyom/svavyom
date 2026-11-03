@@ -510,7 +510,27 @@ func serve(ctx context.Context, args []string, stderr io.Writer) int {
 				return api.StorageStats{PoolCapacity: st.PoolCapacity, PoolAvailable: st.PoolAvailable, PoolAllocation: st.PoolAllocation,
 					BackupsKnown: st.BackupsKnown, BackupBytes: st.BackupBytes, BackupFree: st.BackupFree, BackupTotal: st.BackupTotal, Snapshots: st.Snapshots}, err
 			}
-			sched.World = scheduleWorld{vms: deps.VMs, backups: cr.ListBackups, copies: cr.Copies, prune: offsitePrune}
+			// The scheduler decides from absence, so it gets the complete listing and an explicit error when the store holds more than that (retention then acts on nothing).
+			listAllBackups := func(c context.Context) ([]api.BackupInfo, error) {
+				rel, gerr := gated(c)
+				if gerr != nil {
+					return nil, gerr
+				}
+				defer rel()
+				l, truncated, err := mc.ListBackupsComplete(c)
+				if err != nil {
+					return nil, err
+				}
+				if truncated {
+					return nil, schedule.ErrIncomplete
+				}
+				out := make([]api.BackupInfo, 0, len(l))
+				for _, x := range l {
+					out = append(out, api.BackupInfo{ID: x.ID, VM: x.VM, CreatedAt: x.CreatedAt, SizeBytes: x.SizeBytes, DiskGiB: x.DiskGiB, ImageID: x.ImageID, Valid: x.Valid})
+				}
+				return out, nil
+			}
+			sched.World = scheduleWorld{vms: deps.VMs, backups: listAllBackups, copies: cr.Copies, prune: offsitePrune}
 			if pc.Schedule != nil {
 				sched.Disabled = pc.Schedule.Disabled
 			}
