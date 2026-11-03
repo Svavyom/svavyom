@@ -160,7 +160,7 @@ test("installation media and rescue mode on a stopped VM: attach, eject, rescue,
   await page.getByRole("button", { name: "Attach installation media to resc-1" }).click();
   await expect(page.getByLabel("Boot")).toHaveCount(0);
   await expect(page.getByText(/A second medium is only attached/)).toBeVisible();
-  expect(await page.getByLabel("Media").locator("option").allTextContents()).toEqual(["Driver disc"]);
+  await expect(page.getByLabel("Media").locator("option")).toHaveText(["Driver disc"]); // retries until the list of this dialog has been read
   await page.getByRole("dialog").getByRole("button", { name: "Attach the media" }).click();
   await expect(page.getByText(/Media attached/)).toBeVisible({ timeout: 30000 });
   await page.getByRole("button", { name: "Refresh" }).click();
