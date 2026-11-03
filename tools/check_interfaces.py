@@ -33,7 +33,7 @@ BOUNDARIES = {
                         "DELETE /api/v1/auth/session", "GET /api/v1/hosts", "GET /api/v1/hosts/{id}",
                         "GET /api/v1/vms", "GET /api/v1/vms/{id}", "GET /api/v1/images", "GET /api/v1/images/{id}",
                         "GET /api/v1/virtual-networks", "GET /api/v1/virtual-networks/{id}", "GET /api/v1/volumes", "GET /api/v1/volumes/{id}", "GET /api/v1/backups", "GET /api/v1/backups/{id}",
-                        "GET /api/v1/operations", "POST /api/v1/operations", "GET /api/v1/operations/{id}",
+                        "GET /api/v1/operations", "POST /api/v1/operations", "GET /api/v1/operations/{id}", "POST /api/v1/operations/{id}/cancel",
                         "GET /api/v1/events", "GET /api/v1/events/{id}"]},
     "api-operation-manager": {
         "security": {"transport_kind": "in_process", "listener": "none", "peer_auth": "in_process_actor_propagation",

@@ -478,7 +478,7 @@ paths:
     post:
       operationId: cancelOperation
       x-request-category: cancel_operation
-      x-implementation-status: not_implemented
+      x-implementation-status: implemented
       security: [{ownerSession: []}]
       parameters:
         - $ref: '#/components/parameters/Id'

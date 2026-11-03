@@ -220,6 +220,8 @@ func (h *Handler) serveImplemented(w http.ResponseWriter, r *http.Request, route
 		h.submitOperation(w, r)
 	case "GET /api/v1/operations/{id}":
 		h.readOperation(w, r)
+	case "POST /api/v1/operations/{id}/cancel":
+		h.cancelOperation(w, r)
 	case "GET /api/v1/events":
 		h.listEvents(w, r)
 	case "GET /api/v1/events/{id}":

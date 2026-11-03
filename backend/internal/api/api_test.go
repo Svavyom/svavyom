@@ -99,12 +99,12 @@ func TestHealthzIgnoresQueryAndStaysUnchanged(t *testing.T) {
 	}
 }
 
-// implementedRoutes is the closed set DR-015 D3 (and DR-020 D2: the Volume and Backup reads) allows to be served; everything else stays a typed rejection.
+// implementedRoutes is the closed set DR-015 D3 (and DR-020 D2: the Volume and Backup reads; DR-036: the cancel route) allows to be served; everything else stays a typed rejection.
 var implementedRoutes = map[string]bool{
 	"GET /healthz": true, "GET /api/v1/auth/session": true, "POST /api/v1/auth/session": true,
 	"DELETE /api/v1/auth/session": true, "GET /api/v1/hosts": true, "GET /api/v1/hosts/{id}": true,
 	"GET /api/v1/vms": true, "GET /api/v1/vms/{id}": true, "GET /api/v1/images": true, "GET /api/v1/images/{id}": true,
-	"GET /api/v1/operations": true, "POST /api/v1/operations": true, "GET /api/v1/operations/{id}": true,
+	"GET /api/v1/operations": true, "POST /api/v1/operations": true, "GET /api/v1/operations/{id}": true, "POST /api/v1/operations/{id}/cancel": true, // DR-036
 	"GET /api/v1/virtual-networks": true, "GET /api/v1/virtual-networks/{id}": true, "GET /api/v1/volumes": true, "GET /api/v1/volumes/{id}": true, "GET /api/v1/backups": true, "GET /api/v1/backups/{id}": true,
 	"GET /api/v1/events": true, "GET /api/v1/events/{id}": true,
 }
