@@ -217,7 +217,7 @@ func (c *consRig) open(vm string) *wsc {
 }
 
 func TestSerialOutputIsTypedBoundedAndSanitised(t *testing.T) {
-	c := newConsRig(t, false) // the interactive switch is off: reading the output does not need it
+	c := newConsRig(t, true) // reading the output needs the interactive switch on (DR-037)
 	deadline := time.Now().Add(3 * time.Second)
 	var s serialJSON
 	for time.Now().Before(deadline) {

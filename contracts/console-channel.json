@@ -4,9 +4,9 @@
   "routes": {
     "serial": {
       "method": "GET", "path": "/console/v1/vms/{id}/serial",
-      "auth": "session cookie", "query": "none",
+      "auth": "session cookie + the operator or administrator role (a viewer: forbidden) + the interactive-console switch on (off: prohibited), DR-037", "query": "none",
       "response": {"state": ["unavailable", "not_configured", "no_output", "available"], "text": "string, at most 32768 bytes of the most recent output, UTF-8, no escape sequences", "truncated": "boolean", "running": "boolean"},
-      "errors": ["unauthenticated", "validation", "not_found"]
+      "errors": ["unauthenticated", "forbidden", "prohibited", "validation", "not_found"]
     },
     "ticket": {
       "method": "POST", "path": "/console/v1/vms/{id}/tickets",

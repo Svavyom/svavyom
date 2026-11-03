@@ -72,9 +72,10 @@ export function ConsoleView(props: { vm: string; onSessionEnded: () => void }) {
   // While no interactive session is open, the boot output refreshes on its own.
   useEffect(() => {
     if (link === "open" || link === "connecting") return;
+    if (failure?.kind === "error" && (failure.category === "forbidden" || failure.category === "prohibited")) return; // a refusal does not change by itself
     const t = setInterval(() => { void load(); }, 4000);
     return () => clearInterval(t);
-  }, [link, load]);
+  }, [link, load, failure]);
 
   async function connect() {
     setNotice(null);
@@ -135,7 +136,12 @@ export function ConsoleView(props: { vm: string; onSessionEnded: () => void }) {
       <ViewHeading title={`Console: ${vm}`} />
       <p><a className="ds-link" href="#/vms">Back to virtual machines</a></p>
       {failure?.kind === "unreachable" ? <UnreachableBanner lastKnown={null} onRetry={() => { void load(); }} /> : null}
-      {failure?.kind === "error" ? <ErrorState category={failure.category} correlationId={failure.correlationId} onRetry={() => { void load(); }} /> : null}
+      {failure?.kind === "error" && (failure.category === "forbidden" || failure.category === "prohibited")
+        ? <StatusMessage tone="warning">{failure.category === "forbidden"
+          ? "Boot output is shown to operators and administrators: it can contain secrets the guest printed."
+          : "The console is switched off on this installation, so boot output is not shown."}</StatusMessage> : null}
+      {failure?.kind === "error" && failure.category !== "forbidden" && failure.category !== "prohibited"
+        ? <ErrorState category={failure.category} correlationId={failure.correlationId} onRetry={() => { void load(); }} /> : null}
       <LoadingRegion label="Console" loading={loading}>
         <section aria-label="Reaching this VM">
           <h2>Reaching this VM</h2>
