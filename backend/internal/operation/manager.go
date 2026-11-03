@@ -258,7 +258,7 @@ func (m *Manager) Submit(actor Actor, req Request) (Operation, error) {
 		return denied(storeCategory(err))
 	}
 	if !created && (op.Type != req.Type || op.ResourceKind != req.Kind || op.ResourceID != req.ResourceID ||
-		(!req.Spec.IsZero() && op.Spec.Inputs() != spec.Inputs()) || op.Params.Inputs() != params.Inputs()) { // an omitted spec matches whatever was recorded
+		(!req.Spec.IsZero() && op.Spec.Inputs() != spec.Inputs()) || op.Params.InputsFor(op.Type) != params.InputsFor(req.Type)) { // an omitted spec matches whatever was recorded
 		return denied(CatConflict)
 	}
 	if !created {
