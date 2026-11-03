@@ -12,6 +12,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 
@@ -227,6 +228,8 @@ func userCommand(ctx context.Context, cmd string, args []string, stdin *os.File,
 	return 1
 }
 
+var headerNameRE = regexp.MustCompile(`^[A-Za-z][A-Za-z0-9-]{0,63}$`)
+
 func isLoopback(addr string) bool {
 	host, _, err := net.SplitHostPort(addr)
 	if err != nil {
@@ -257,9 +260,14 @@ func serve(ctx context.Context, args []string, stderr io.Writer) int {
 	hostName := fl.String("host-name", "This host", "display name of this host")
 	cert := fl.String("tls-cert", "", "TLS certificate file")
 	key := fl.String("tls-key", "", "TLS key file")
+	proxyHeader := fl.String("proxy-address-header", "X-Forwarded-For", "with --behind-tls-proxy: the header the proxy sets to the real client address (used only for connections from loopback; the rightmost entry)")
 	proxy := fl.Bool("behind-tls-proxy", false, "a TLS-terminating reverse proxy on this host sets X-Forwarded-Proto (loopback listener only)")
 	if err := fl.Parse(args); err != nil || fl.NArg() != 0 || *dbPath == "" || (*cert == "") != (*key == "") {
 		_, _ = fmt.Fprintln(stderr, "usage: api serve --db FILE [--listen ADDR] [--static-dir DIR] [--tls-cert F --tls-key F | --behind-tls-proxy (loopback only)]")
+		return 2
+	}
+	if *proxy && !headerNameRE.MatchString(*proxyHeader) {
+		_, _ = fmt.Fprintln(stderr, "ERROR --proxy-address-header must be a header name (letters, digits and hyphens)")
 		return 2
 	}
 	tls := *cert != ""
@@ -299,6 +307,9 @@ func serve(ctx context.Context, args []string, stderr io.Writer) int {
 		return 2
 	}
 	deps := api.Deps{Auth: svc, Hosts: hosts, TrustForwardedProto: *proxy}
+	if *proxy {
+		deps.ProxyAddressHeader = *proxyHeader
+	}
 	// Alerts (DR-024 D2): the store and engine exist before the operation manager so an acknowledgement can run as an operation.
 	astore, err := alerts.OpenSQLite(ctx, db)
 	if err != nil {

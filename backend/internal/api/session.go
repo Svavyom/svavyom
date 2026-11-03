@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 	"time"
 	"unicode/utf8"
 
@@ -35,6 +36,9 @@ type Deps struct {
 	// TrustForwardedProto makes X-Forwarded-Proto: https count as HTTPS for the Secure cookie attribute. Enable it only
 	// behind a TLS-terminating proxy that sets the header; otherwise any client could influence it.
 	TrustForwardedProto bool
+	// ProxyAddressHeader, when not empty, names the header a TLS proxy on this host sets to the real client address (DR-038). It is read only for a connection that
+	// comes from a loopback address, and the rightmost entry is used (the one the proxy itself appended); otherwise the connection's own address is the client.
+	ProxyAddressHeader string
 	// Creation wires VM creation and start (DR-016). Nil keeps every creation route closed.
 	Creation *Creation
 	// Console wires the serial console route family (M1-D). Nil keeps every console route closed (not_found).
@@ -151,12 +155,40 @@ func fromSession(s auth.Session) authSession {
 	return authSession{Authenticated: true, Username: &u, ExpiresAt: &e, Role: &r}
 }
 
+// remoteHost is the address of the connection itself.
 func remoteHost(r *http.Request) string {
 	host, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {
 		return ""
 	}
 	return host
+}
+
+// clientHost is the address sign-in throttling and the audit trail attribute a request to (DR-038 D2). Behind a TLS proxy on this host every connection comes from
+// loopback, so the real client is read from the header the proxy sets, but only when it is configured, only for a loopback peer (a header on any other connection is
+// the client's own claim and is ignored), and only the rightmost entry, which the trusted proxy appended itself. Anything that is not an IP address is ignored.
+func (h *Handler) clientHost(r *http.Request) string {
+	peer := remoteHost(r)
+	if h.deps.ProxyAddressHeader == "" || peer == "" {
+		return peer
+	}
+	if ip := net.ParseIP(peer); ip == nil || !ip.IsLoopback() {
+		return peer
+	}
+	vals := r.Header.Values(h.deps.ProxyAddressHeader)
+	if len(vals) == 0 {
+		return peer
+	}
+	parts := strings.Split(strings.Join(vals, ","), ",")
+	for i := len(parts) - 1; i >= 0; i-- {
+		if p := strings.TrimSpace(parts[i]); p != "" {
+			if ip := net.ParseIP(p); ip != nil {
+				return ip.String()
+			}
+			return peer // the rightmost entry is not an address: do not look further left, that is the client's own claim
+		}
+	}
+	return peer
 }
 
 // sameOrigin is defence in depth for state-changing requests: a browser always sends Sec-Fetch-Site and, for non-GET
@@ -336,7 +368,7 @@ func (h *Handler) signIn(w http.ResponseWriter, r *http.Request) {
 	}
 	ctx, cancel := context.WithTimeout(r.Context(), signInDeadline)
 	defer cancel()
-	res, err := h.deps.Auth.SignIn(ctx, body.Username, body.Password, remoteHost(r), cookieValue(r, sessionCookieName(secure)))
+	res, err := h.deps.Auth.SignIn(ctx, body.Username, body.Password, h.clientHost(r), cookieValue(r, sessionCookieName(secure)))
 	var rl *auth.RateLimitedError
 	switch {
 	case err == nil:
