@@ -83,6 +83,7 @@ export function VmDetail(props: { vmId: string; refresh: number; onSessionEnded:
   const [confirm, setConfirm] = useState<{ vm: VM; type: Action } | null>(null);
   const [dialog, setDialog] = useState<{ vm: VM; type: "resize" | "reinstall" | "compute" | "reserve_ip" | "iso_attach" | "rescue" } | null>(null);
   const [isos, setIsos] = useState<Image[]>([]);
+  const [isosReady, setIsosReady] = useState(false); // the list belongs to the dialog that is open: until it has been read, none is shown (a list from the previous dialog could offer an attached medium)
   const [isoId, setIsoId] = useState("");
   const [boot, setBoot] = useState<"cdrom" | "disk">("cdrom");
   const [cpus, setCpus] = useState("");
@@ -161,12 +162,16 @@ export function VmDetail(props: { vmId: string; refresh: number; onSessionEnded:
     setDialog({ vm, type });
     if (type === "iso_attach" || type === "rescue") {
       setBoot("cdrom");
+      setIsos([]);
+      setIsoId("");
+      setIsosReady(false);
       const r = await read("/api/v1/images", decodeImageList);
       if (!alive.current) return;
       // A medium that is attached already is not offered again (DR-031); rescue needs none attached, so the filter changes nothing for it.
       const media = r.kind === "ok" ? r.data.items.filter((i) => i.observed.media === "iso" && !vm.observed.isos.includes(i.id)) : [];
       setIsos(media);
       setIsoId(media[0]?.id ?? "");
+      setIsosReady(true);
     }
     if (type === "reinstall") {
       const r = await read("/api/v1/images", decodeImageList);
@@ -383,7 +388,7 @@ export function VmDetail(props: { vmId: string; refresh: number; onSessionEnded:
               : dialog.vm.observed.isos.length > 0
                 ? <p>A second medium is only attached, read-only, as another CD (a driver disc, for example): it does not boot. Eject the first one to boot from this one.</p>
                 : <p>The media is attached read-only as a CD. Choose whether the VM boots from it the next time it starts (an installer) or just attaches it (a tools disc).</p>}
-            {isos.length === 0 ? <StatusMessage tone="warning">No installation media has been imported on this host yet. The host administrator imports an ISO with <code>register-image</code>.</StatusMessage> : (
+            {!isosReady ? <p role="status">Reading the installation media on this host…</p> : isos.length === 0 ? <StatusMessage tone="warning">No installation media has been imported on this host yet. The host administrator imports an ISO with <code>register-image</code>.</StatusMessage> : (
               <Select label="Media" value={isoId} onChange={setIsoId} options={isos.map((i) => ({ value: i.id, label: i.name }))} error={formError ?? undefined} />
             )}
             {dialog.type === "iso_attach" && dialog.vm.observed.isos.length === 0 ? <Select label="Boot" value={boot} onChange={(v) => setBoot(v === "disk" ? "disk" : "cdrom")} options={[{ value: "cdrom", label: "From the media next time (installer)" }, { value: "disk", label: "From the disk as before (just attach)" }]} /> : null}

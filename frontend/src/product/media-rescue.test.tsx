@@ -84,6 +84,35 @@ describe("installation media, the graphical console and rescue on the VM page", 
     expect(posts[0]).toMatchObject({ type: "iso_attach", kind: "VM", id: "web-1", params: { image_id: "drivers-iso", boot: "disk" } });
   });
 
+  it("never offers an attached medium from the list of an earlier dialog while the catalog is being read again", async () => {
+    // a flaky browser test found this: the dialog kept the previous dialog's options until the new read returned
+    const DRIVERS: Image = { ...ISO, id: "drivers-iso", name: "Driver disc" };
+    images = [DISK, ISO, DRIVERS];
+    machine = stopped(["start", "delete", "iso_attach", "rescue"]);
+    render(<Root />);
+    await userEvent.click(await screen.findByRole("button", { name: "Attach installation media to web-1" }));
+    const first = (await screen.findByLabelText("Media")) as HTMLSelectElement;
+    await waitFor(() => expect(Array.from(first.options).map((o) => o.value)).toEqual(["alpine-iso", "drivers-iso"]));
+    await userEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    // the Alpine installer is attached now, and the next read of the catalog is slow
+    machine = stopped(["start", "delete", "eject_iso", "iso_attach"], { iso: "alpine-iso", isos: ["alpine-iso"] });
+    await userEvent.click(screen.getByRole("button", { name: "Refresh" }));
+    let release: () => void = () => undefined;
+    const gate = new Promise<void>((r) => { release = r; });
+    const real = fetch as unknown as (url: string, init?: RequestInit) => Promise<Response>;
+    vi.stubGlobal("fetch", vi.fn(async (url: string, init?: RequestInit) => {
+      if (url.startsWith("/api/v1/images")) await gate;
+      return real(url, init);
+    }));
+    await userEvent.click(await screen.findByRole("button", { name: "Attach installation media to web-1" }));
+    expect(await screen.findByText(/Reading the installation media on this host/)).toBeTruthy();
+    expect(screen.queryByLabelText("Media")).toBeNull(); // no list at all, so the attached Alpine installer cannot be picked
+    expect(screen.queryByRole("option", { name: "Alpine installer" })).toBeNull();
+    release();
+    const second = (await screen.findByLabelText("Media")) as HTMLSelectElement;
+    await waitFor(() => expect(Array.from(second.options).map((o) => o.value)).toEqual(["drivers-iso"]));
+  });
+
   describe("the guest type on the VM page (DR-032)", () => {
     it("shows Windows with the virtio volume note, and Linux without it", async () => {
       machine = stopped(["start", "delete"], { guest_profile: "windows" });
