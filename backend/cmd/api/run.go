@@ -12,6 +12,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 
@@ -227,6 +228,11 @@ func userCommand(ctx context.Context, cmd string, args []string, stdin *os.File,
 	return 1
 }
 
+var headerNameRE = regexp.MustCompile(`^[A-Za-z][A-Za-z0-9-]{0,63}$`)
+
+// auditFailureWindow is how long after a failed audit write the alert audit_write_failed stays raised.
+const auditFailureWindow = 15 * time.Minute
+
 func isLoopback(addr string) bool {
 	host, _, err := net.SplitHostPort(addr)
 	if err != nil {
@@ -257,9 +263,14 @@ func serve(ctx context.Context, args []string, stderr io.Writer) int {
 	hostName := fl.String("host-name", "This host", "display name of this host")
 	cert := fl.String("tls-cert", "", "TLS certificate file")
 	key := fl.String("tls-key", "", "TLS key file")
+	proxyHeader := fl.String("proxy-address-header", "X-Forwarded-For", "with --behind-tls-proxy: the header the proxy sets to the real client address (used only for connections from loopback; the rightmost entry)")
 	proxy := fl.Bool("behind-tls-proxy", false, "a TLS-terminating reverse proxy on this host sets X-Forwarded-Proto (loopback listener only)")
 	if err := fl.Parse(args); err != nil || fl.NArg() != 0 || *dbPath == "" || (*cert == "") != (*key == "") {
 		_, _ = fmt.Fprintln(stderr, "usage: api serve --db FILE [--listen ADDR] [--static-dir DIR] [--tls-cert F --tls-key F | --behind-tls-proxy (loopback only)]")
+		return 2
+	}
+	if *proxy && !headerNameRE.MatchString(*proxyHeader) {
+		_, _ = fmt.Fprintln(stderr, "ERROR --proxy-address-header must be a header name (letters, digits and hyphens)")
 		return 2
 	}
 	tls := *cert != ""
@@ -285,7 +296,9 @@ func serve(ctx context.Context, args []string, stderr io.Writer) int {
 		return 1
 	}
 	defer func() { _ = db.Close() }()
-	svc, err := auth.New(ctx, db, auth.Config{})
+	svc, err := auth.New(ctx, db, auth.Config{AuditFailed: func(ev auth.AuditEvent) {
+		_, _ = fmt.Fprintf(stderr, "ERROR an authentication audit event could not be stored: event=%s outcome=%s (the alert audit_write_failed is raised)\n", ev.Event, ev.Outcome)
+	}})
 	if err != nil {
 		_, _ = fmt.Fprintln(stderr, "ERROR cannot initialise authentication")
 		return 1
@@ -299,6 +312,9 @@ func serve(ctx context.Context, args []string, stderr io.Writer) int {
 		return 2
 	}
 	deps := api.Deps{Auth: svc, Hosts: hosts, TrustForwardedProto: *proxy}
+	if *proxy {
+		deps.ProxyAddressHeader = *proxyHeader
+	}
 	// Alerts (DR-024 D2): the store and engine exist before the operation manager so an acknowledgement can run as an operation.
 	astore, err := alerts.OpenSQLite(ctx, db)
 	if err != nil {
@@ -510,7 +526,27 @@ func serve(ctx context.Context, args []string, stderr io.Writer) int {
 				return api.StorageStats{PoolCapacity: st.PoolCapacity, PoolAvailable: st.PoolAvailable, PoolAllocation: st.PoolAllocation,
 					BackupsKnown: st.BackupsKnown, BackupBytes: st.BackupBytes, BackupFree: st.BackupFree, BackupTotal: st.BackupTotal, Snapshots: st.Snapshots}, err
 			}
-			sched.World = scheduleWorld{vms: deps.VMs, backups: cr.ListBackups, copies: cr.Copies, prune: offsitePrune}
+			// The scheduler decides from absence, so it gets the complete listing and an explicit error when the store holds more than that (retention then acts on nothing).
+			listAllBackups := func(c context.Context) ([]api.BackupInfo, error) {
+				rel, gerr := gated(c)
+				if gerr != nil {
+					return nil, gerr
+				}
+				defer rel()
+				l, truncated, err := mc.ListBackupsComplete(c)
+				if err != nil {
+					return nil, err
+				}
+				if truncated {
+					return nil, schedule.ErrIncomplete
+				}
+				out := make([]api.BackupInfo, 0, len(l))
+				for _, x := range l {
+					out = append(out, api.BackupInfo{ID: x.ID, VM: x.VM, CreatedAt: x.CreatedAt, SizeBytes: x.SizeBytes, DiskGiB: x.DiskGiB, ImageID: x.ImageID, Valid: x.Valid})
+				}
+				return out, nil
+			}
+			sched.World = scheduleWorld{vms: deps.VMs, backups: listAllBackups, copies: cr.Copies, prune: offsitePrune}
 			if pc.Schedule != nil {
 				sched.Disabled = pc.Schedule.Disabled
 			}
@@ -540,7 +576,7 @@ func serve(ctx context.Context, args []string, stderr io.Writer) int {
 		deps.Schedules = schedStore
 		go sched.Run(uctx)
 	}
-	startAlerts(uctx, stderr, &deps, alertEngine, astore, alertSettings, opStore, hosts, schedStore)
+	startAlerts(uctx, stderr, &deps, alertEngine, astore, alertSettings, opStore, hosts, schedStore, func() bool { return svc.AuditWriteFailedSince(time.Now().Add(-auditFailureWindow)) })
 	var h http.Handler = api.NewHandlerWith(deps)
 	if *staticDir != "" {
 		abs, err := filepath.Abs(*staticDir)

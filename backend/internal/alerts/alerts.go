@@ -40,6 +40,7 @@ const (
 	RetriesExhausted   = "operation_retries_exhausted"
 	ScheduledBackup    = "scheduled_backup_failed"
 	NightlyBootFailed  = "nightly_boot_failed"
+	AuditWriteFailed   = "audit_write_failed"
 )
 
 // Limits.

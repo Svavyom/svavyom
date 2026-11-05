@@ -51,7 +51,9 @@ type Inputs struct {
 	ScheduleFailed  []string // VM names whose last scheduled backup failed
 	SchedulesKnown  bool
 	NightlyBootFail bool // the last nightly boot failed
-	HostID          string
+	// AuditWriteFailing is true when an authentication audit event could not be stored recently (DR-038, F-10).
+	AuditWriteFailing bool
+	HostID            string
 }
 
 // ResourceRef names a resource.
@@ -143,5 +145,8 @@ func (ev *Evaluator) Evaluate(in Inputs) (obs []Obs, covered []string) {
 	nb := Obs{Type: NightlyBootFailed, Kind: "Host", ResourceID: in.HostID, Severity: Warning, Active: in.NightlyBootFail, Clear: !in.NightlyBootFail}
 	obs = append(obs, nb)
 	covered = append(covered, NightlyBootFailed)
+	aw := Obs{Type: AuditWriteFailed, Kind: "Host", ResourceID: in.HostID, Severity: Critical, Active: in.AuditWriteFailing, Clear: !in.AuditWriteFailing}
+	obs = append(obs, aw)
+	covered = append(covered, AuditWriteFailed)
 	return obs, covered
 }

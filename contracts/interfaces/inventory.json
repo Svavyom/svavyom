@@ -53,6 +53,7 @@
         "GET /api/v1/operations",
         "POST /api/v1/operations",
         "GET /api/v1/operations/{id}",
+        "POST /api/v1/operations/{id}/cancel",
         "GET /api/v1/events",
         "GET /api/v1/events/{id}"
       ],

@@ -734,6 +734,54 @@ func (h *Handler) readOperation(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, toOperationJSON(op))
 }
 
+// cancelOperation answers POST /api/v1/operations/{id}/cancel (DR-036, finding F-04): an administrator frees a resource that is blocked by an operation which
+// used all its attempts (or that has not started). Only an operation that has not reached the host can be cancelled (pending, or retryable after a failure); any
+// other state is a conflict, and a repeat on a cancelled operation returns it unchanged. Cancelling runs nothing on the host and undoes nothing it may already have
+// changed. The manager records the audit event (actor, operation, the status it had; no secret).
+func (h *Handler) cancelOperation(w http.ResponseWriter, r *http.Request) {
+	cr := h.deps.Creation
+	if h.deps.Auth == nil || cr == nil {
+		h.reject(w, categoryUnauthenticated)
+		return
+	}
+	sess, _, ok, failed := h.session(r)
+	switch {
+	case failed:
+		h.reject(w, categoryUnavailable)
+		return
+	case !ok:
+		h.reject(w, categoryUnauthenticated)
+		return
+	}
+	if !h.sameOrigin(r) || !sess.CSRFMatches(r.Header.Get(csrfHeader)) {
+		h.reject(w, categoryForbidden)
+		return
+	}
+	if !sess.Role.AtLeast(auth.RoleAdmin) { // a recovery decision, not a personal one: administrators only
+		h.reject(w, categoryForbidden)
+		return
+	}
+	if !cr.Enabled || cr.Ops == nil {
+		h.reject(w, categoryProhibited)
+		return
+	}
+	if len(r.URL.Query()) != 0 || (r.ContentLength > 0 && !decodeBodyLimit(w, r, &struct{}{}, 64)) {
+		h.reject(w, categoryValidation)
+		return
+	}
+	id := strings.TrimSuffix(strings.TrimPrefix(r.URL.Path, "/api/v1/operations/"), "/cancel")
+	if !vmIDRE.MatchString(id) {
+		h.reject(w, categoryValidation)
+		return
+	}
+	op, err := cr.Ops.Cancel(operation.Actor{ID: sess.Username}, id)
+	if err != nil {
+		h.opError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, toOperationJSON(op))
+}
+
 // listOperations answers GET /api/v1/operations (DR-022): the most recent operations first, with the same limit and cursor conventions as
 // the other lists. Where creation is not enabled there are no operations, so the page is empty.
 func (h *Handler) listOperations(w http.ResponseWriter, r *http.Request) {

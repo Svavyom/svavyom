@@ -52,7 +52,7 @@ class CommittedContracts(unittest.TestCase):
         self.assertEqual(paths[0], "/healthz")
         self.assertTrue(all(p.startswith("/api/v1/") for p in paths[1:]))  # every other path is declared and not implemented
         self.assertIn("const: scaffold", text)
-        self.assertEqual(text.count("x-implementation-status: implemented"), 21)  # health, 3 session routes, 2 host reads (DR-015), 2 VM reads, 2 image reads, submit + read operation (DR-016), 2 volume + 2 backup reads (DR-020), 2 network reads (DR-021), the operations list (DR-022), the events list and read (DR-024)
+        self.assertEqual(text.count("x-implementation-status: implemented"), 22)  # health, 3 session routes, 2 host reads (DR-015), 2 VM reads, 2 image reads, submit + read operation (DR-016), 2 volume + 2 backup reads (DR-020), 2 network reads (DR-021), the operations list (DR-022), the events list and read (DR-024), the operation cancel route (DR-036)
         api_go = (ROOT / "backend" / "internal" / "api" / "api.go").read_text()
         self.assertIn('`{"status":"scaffold"}`', api_go)
         main_go = (ROOT / "backend" / "cmd" / "api" / "main.go").read_text()
@@ -60,7 +60,7 @@ class CommittedContracts(unittest.TestCase):
         self.assertEqual(load()["inventory"]["boundaries"]["browser-api"]["implemented_requests"],
                          ["GET /healthz", "GET /api/v1/auth/session", "POST /api/v1/auth/session", "DELETE /api/v1/auth/session",
                           "GET /api/v1/hosts", "GET /api/v1/hosts/{id}", "GET /api/v1/vms", "GET /api/v1/vms/{id}", "GET /api/v1/images", "GET /api/v1/images/{id}", "GET /api/v1/virtual-networks", "GET /api/v1/virtual-networks/{id}", "GET /api/v1/volumes", "GET /api/v1/volumes/{id}", "GET /api/v1/backups", "GET /api/v1/backups/{id}",
-                          "GET /api/v1/operations", "POST /api/v1/operations", "GET /api/v1/operations/{id}", "GET /api/v1/events", "GET /api/v1/events/{id}"])
+                          "GET /api/v1/operations", "POST /api/v1/operations", "GET /api/v1/operations/{id}", "POST /api/v1/operations/{id}/cancel", "GET /api/v1/events", "GET /api/v1/events/{id}"])
 
     def test_positive_fixtures_are_health_only(self):
         # Before the auth design is approved, only health may be accepted (review F9).

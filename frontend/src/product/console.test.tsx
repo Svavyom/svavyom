@@ -35,6 +35,7 @@ class FakeSocket {
 
 type Serial = { state: string; text: string; truncated: boolean; running: boolean };
 let serial: Serial;
+let serialFailure: Parameters<typeof apiError>[0] | null;
 let ticketReply: "ok" | Parameters<typeof apiError>[0];
 let machine: VM;
 const calls: Array<{ method: string; url: string; csrf: string | undefined }> = [];
@@ -50,6 +51,7 @@ beforeEach(async () => {
   FakeSocket.instances = [];
   calls.length = 0;
   serial = { state: "available", text: "[    0.1] kernel\nweb-1 login: ", truncated: false, running: true };
+  serialFailure = null;
   ticketReply = "ok";
   machine = { ...VM_RUNNING, id: "web-1", name: "web-1", observed: { ...VM_RUNNING.observed, power: "running", managed: true, ip_address: "192.168.122.23", login_user: "ubuntu", disk_gib: null, snapshots: [], network: null } };
   vi.stubGlobal("WebSocket", FakeSocket);
@@ -58,7 +60,7 @@ beforeEach(async () => {
     calls.push({ method: init.method ?? "GET", url, csrf: headers["X-CSRF-Token"] });
     if (url === "/api/v1/auth/session") return json(200, { authenticated: true, username: "admin", expires_at: "2026-10-09T08:30:00Z", role: "admin" });
     if (url === "/api/v1/vms/web-1") return json(200, machine);
-    if (url === "/console/v1/vms/web-1/serial") return json(200, serial);
+    if (url === "/console/v1/vms/web-1/serial") return serialFailure ? failure(serialFailure) : json(200, serial);
     if (url === "/console/v1/vms/web-1/tickets") return ticketReply === "ok" ? json(200, { ticket: TICKET, expires_at: "2026-10-11T09:00:30Z" }) : failure(ticketReply);
     return json(404, {});
   }));
@@ -128,6 +130,21 @@ describe("recovery view", () => {
     expect(await screen.findByText(text)).toBeTruthy();
     expect(screen.queryByLabelText("Serial boot output text")).toBeNull();
   });
+
+  it.each([
+    ["forbidden", /Boot output is shown to operators and administrators: it can contain secrets the guest printed\./],
+    ["prohibited", /The console is switched off on this installation, so boot output is not shown\./],
+  ] as const)("a refusal of the serial output (%s, DR-037) is said in fixed words, shows no output and does not poll", async (category, text) => {
+    serialFailure = category;
+    const { container } = render(<ConsoleView vm="web-1" onSessionEnded={() => {}} />);
+    expect(await screen.findByText(text)).toBeTruthy();
+    expect(screen.queryByLabelText("Serial boot output text")).toBeNull();
+    expect(screen.queryByRole("button", { name: /try again|retry/i })).toBeNull();
+    expect(await axeViolations(container)).toEqual([]);
+    const before = calls.filter((c) => c.url.endsWith("/serial")).length;
+    await new Promise((r) => setTimeout(r, 4500));
+    expect(calls.filter((c) => c.url.endsWith("/serial")).length).toBe(before); // a refusal does not change by itself: no polling
+  }, 15000);
 
   it("says when only the most recent output is shown", async () => {
     serial = { ...serial, truncated: true };

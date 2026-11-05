@@ -180,14 +180,15 @@ test("console tickets are single-use and bound to the VM and the session", async
   expect((await page.request.post(`${OPEN}/console/v1/vms/tick-1/tickets`)).status()).toBe(403);
 });
 
-test("the interactive console is off unless the operator enabled it; boot output still reads", async ({ page }) => {
+test("the interactive console is off unless the operator enabled it; so is the boot output (DR-037)", async ({ page }) => {
   await signIn(page, CLOSED);
   const csrf = (await page.request.get(`${CLOSED}/api/v1/auth/session`)).headers()["x-csrf-token"]!;
   const res = await page.request.post(`${CLOSED}/console/v1/vms/anything/tickets`, { headers: { "X-CSRF-Token": csrf } });
   expect(res.status()).toBe(422);
   expect((await res.json()).category).toBe("prohibited");
   const serial = await page.request.get(`${CLOSED}/console/v1/vms/anything/serial`);
-  expect(serial.status()).toBe(404); // an unknown VM
+  expect(serial.status()).toBe(422); // the boot output needs the same switch (DR-037 D2), whatever the VM
+  expect((await serial.json()).category).toBe("prohibited");
 });
 
 test("usage and activity: a running VM gets a CPU chart, the host a load chart, and the feed lists what was done (DR-022)", async ({ page }) => {

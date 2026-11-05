@@ -227,7 +227,7 @@ func TestEvaluateRules(t *testing.T) {
 		}
 	}
 	for _, c := range cov {
-		if c != NightlyBootFailed {
+		if c != NightlyBootFailed && c != AuditWriteFailed {
 			t.Errorf("covered without data: %s", c)
 		}
 	}
@@ -416,5 +416,27 @@ func TestOversizeBodyAndQueueBound(t *testing.T) {
 	}
 	if n.Dropped != 10 {
 		t.Fatalf("a full queue drops: %d", n.Dropped)
+	}
+}
+
+// An authentication audit event that could not be stored raises a critical host alert and clears when it stops (DR-038, finding F-10).
+func TestAuditWriteFailedAlert(t *testing.T) {
+	ev := &Evaluator{}
+	find := func(in Inputs) (Obs, bool) {
+		obs, _ := ev.Evaluate(in)
+		for _, o := range obs {
+			if o.Type == AuditWriteFailed {
+				return o, true
+			}
+		}
+		return Obs{}, false
+	}
+	o, ok := find(Inputs{HostID: "h1", AuditWriteFailing: true})
+	if !ok || !o.Active || o.Severity != Critical || o.Kind != "Host" || o.ResourceID != "h1" {
+		t.Fatalf("failing: %+v %v", o, ok)
+	}
+	o, ok = find(Inputs{HostID: "h1"})
+	if !ok || o.Active || !o.Clear {
+		t.Fatalf("not failing must clear: %+v %v", o, ok)
 	}
 }

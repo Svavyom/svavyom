@@ -4006,7 +4006,7 @@ export const ROUTES = [
     "method": "POST",
     "path": "/api/v1/operations/{id}/cancel",
     "category": "cancel_operation",
-    "implemented": false,
+    "implemented": true,
     "success": {
       "status": 200,
       "schema": "Operation"
