@@ -4,8 +4,10 @@ import (
 	"bufio"
 	"context"
 	"crypto/ed25519"
+	"crypto/sha256"
 	"crypto/x509"
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"encoding/pem"
 	"errors"
@@ -42,6 +44,10 @@ type SignatureResult struct {
 	SignedAt  string
 	Artifact  string
 	KeyDetail string
+	// ManifestSHA256 is the SHA-256 of the MANIFEST.json bytes the signature was checked over. For ed25519 those bytes are read once and verified from memory, so
+	// the caller can require that the manifest it goes on to use has this very digest (nothing can be swapped in between). For the tool-based methods it is the digest
+	// of the file as read before the tool ran.
+	ManifestSHA256 string
 }
 
 var (
@@ -90,13 +96,27 @@ func VerifySignatures(ctx context.Context, e *Env, dir string, o SignatureOption
 	if err != nil {
 		return r, errors.New("the trusted public key file cannot be read")
 	}
-	detail := ""
+	detail, manifestDigest := "", man
 	for _, f := range signedSet {
 		sig := filepath.Join(o.Dir, f+ext)
 		if _, err := readRegular(sig, 64<<10); err != nil {
 			return r, fmt.Errorf("%w: no signature file %s", errBadSig, f+ext)
 		}
-		d, err := verifyOne(ctx, e, info.Method, pubFile, o.PublicKey, sig, filepath.Join(dir, f))
+		var d string
+		var err error
+		if info.Method == "ed25519" {
+			// read once, verify the bytes in memory: what was verified is exactly what is hashed and parsed afterwards
+			msg, rerr := readRegular(filepath.Join(dir, f), 32<<20)
+			if rerr != nil {
+				return r, fmt.Errorf("%w: %s: the signed file cannot be read", errBadSig, f)
+			}
+			d, err = verifyEd25519Msg(pubFile, sig, msg)
+			if f == ManifestName {
+				manifestDigest = digestOf(msg)
+			}
+		} else {
+			d, err = verifyOne(ctx, e, info.Method, pubFile, o.PublicKey, sig, filepath.Join(dir, f))
+		}
 		if err != nil {
 			return r, fmt.Errorf("%w: %s: %s", errBadSig, f, clean(err.Error()))
 		}
@@ -108,7 +128,7 @@ func VerifySignatures(ctx context.Context, e *Env, dir string, o SignatureOption
 	if _, err := VerifyArtifact(dir); err != nil {
 		return r, err
 	}
-	return SignatureResult{Method: info.Method, SignedAt: info.SignedAt, Artifact: info.Artifact, KeyDetail: detail}, nil
+	return SignatureResult{Method: info.Method, SignedAt: info.SignedAt, Artifact: info.Artifact, KeyDetail: detail, ManifestSHA256: manifestDigest}, nil
 }
 
 func verifyOne(ctx context.Context, e *Env, method string, pub []byte, pubPath, sig, file string) (string, error) {
@@ -133,6 +153,15 @@ func verifyOne(ctx context.Context, e *Env, method string, pub []byte, pubPath, 
 
 // verifyEd25519 accepts the public key as a PEM "PUBLIC KEY" (what `openssl pkey -pubout` writes) and the signature as base64 text or as the raw 64 bytes.
 func verifyEd25519(pubFile []byte, sigPath, file string) (string, error) {
+	msg, err := readRegular(file, 32<<20)
+	if err != nil {
+		return "", errors.New("the signed file cannot be read")
+	}
+	return verifyEd25519Msg(pubFile, sigPath, msg)
+}
+
+// verifyEd25519Msg verifies the signature in sigPath over msg, which the caller read once.
+func verifyEd25519Msg(pubFile []byte, sigPath string, msg []byte) (string, error) {
 	blk, _ := pem.Decode(pubFile)
 	if blk == nil || blk.Type != "PUBLIC KEY" {
 		return "", errors.New("the public key is not a PEM public key")
@@ -152,10 +181,6 @@ func verifyEd25519(pubFile []byte, sigPath, file string) (string, error) {
 			return "", errors.New("the signature is neither raw nor base64")
 		}
 		sig = dec
-	}
-	msg, err := readRegular(file, 32<<20)
-	if err != nil {
-		return "", errors.New("the signed file cannot be read")
 	}
 	if len(sig) != ed25519.SignatureSize || !ed25519.Verify(pub, msg, sig) {
 		return "", errors.New("the signature does not match the file under this key")
@@ -232,3 +257,8 @@ func checkSums(dir string) error {
 }
 
 func fileMust(p string) string { s, _ := fileSHA256(p); return s }
+
+func digestOf(b []byte) string {
+	h := sha256.Sum256(b)
+	return hex.EncodeToString(h[:])
+}

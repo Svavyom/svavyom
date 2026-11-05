@@ -78,12 +78,14 @@ type Env struct {
 	// Getpw resolves a service user to its numeric ids and Getgr resolves a group (the real ones use os/user).
 	Getpw func(name string) (uid, gid int, err error)
 	Getgr func(name string) (gid int, err error)
+	// OwnerOf reports who owns a file (the real one reads the stat; tests replace it because a temporary directory is not root's).
+	OwnerOf func(fi fs.FileInfo) (uid int, known bool)
 }
 
 // NewEnv returns the Env of the running host.
 func NewEnv() *Env {
 	return &Env{Root: "/", Run: NewRunner(), Now: time.Now, Sleep: realSleep, Euid: os.Geteuid, Chown: os.Lchown, Lstat: os.Lstat, ReadFile: readFileBounded,
-		Statfs: statfsFree, LookPath: exec.LookPath, Dial: dialUnix, Getpw: lookupUser, Getgr: lookupGroup}
+		Statfs: statfsFree, LookPath: exec.LookPath, Dial: dialUnix, Getpw: lookupUser, Getgr: lookupGroup, OwnerOf: realOwner}
 }
 
 // P joins a standard path to the root.

@@ -51,36 +51,46 @@ var (
 // VerifyArtifact checks an artifact directory against its manifest: strict JSON, safe relative paths, regular files only (no symlink, no special file),
 // every digest and size, and no file that the manifest does not list. It reads, and changes nothing.
 func VerifyArtifact(dir string) (Manifest, error) {
+	m, _, err := VerifyArtifactDigest(dir)
+	return m, err
+}
+
+// VerifyArtifactDigest is VerifyArtifact that also returns the SHA-256 of the MANIFEST.json bytes it parsed, so a caller that authenticated the manifest some other
+// way (a signature) can require that this is the very manifest.
+func VerifyArtifactDigest(dir string) (Manifest, string, error) { return verifyArtifact(dir) }
+
+func verifyArtifact(dir string) (Manifest, string, error) {
 	var m Manifest
 	raw, err := readRegular(filepath.Join(dir, ManifestName), 4<<20)
 	if err != nil {
-		return m, fmt.Errorf("%w: no readable %s", errBadArtf, ManifestName)
+		return m, "", fmt.Errorf("%w: no readable %s", errBadArtf, ManifestName)
 	}
+	digest := digestOf(raw)
 	dec := json.NewDecoder(bytes.NewReader(raw))
 	dec.DisallowUnknownFields()
 	if err := dec.Decode(&m); err != nil || m.Schema != 1 || m.Product != "svavyom" || !versionRE.MatchString(m.Version) || len(m.Files) == 0 || len(m.Files) > 5000 {
-		return m, fmt.Errorf("%w: the manifest is malformed", errBadArtf)
+		return m, "", fmt.Errorf("%w: the manifest is malformed", errBadArtf)
 	}
 	listed := map[string]bool{ManifestName: true, "SHA256SUMS": true}
 	for _, f := range m.Files {
 		if !relPathRE.MatchString(f.Path) || strings.Contains(f.Path, "..") || !hexSHA256.MatchString(f.SHA256) || f.Size < 0 || (f.Audience != "public" && f.Audience != "private") || f.Mode&^0o777 != 0 {
-			return m, fmt.Errorf("%w: an entry of the manifest is malformed", errBadArtf)
+			return m, "", fmt.Errorf("%w: an entry of the manifest is malformed", errBadArtf)
 		}
 		if listed[f.Path] {
-			return m, fmt.Errorf("%w: duplicate or reserved entry %s", errBadArtf, f.Path)
+			return m, "", fmt.Errorf("%w: duplicate or reserved entry %s", errBadArtf, f.Path)
 		}
 		listed[f.Path] = true
 		p := filepath.Join(dir, filepath.FromSlash(f.Path))
 		fi, err := os.Lstat(p)
 		if err != nil || !fi.Mode().IsRegular() {
-			return m, fmt.Errorf("%w: %s is missing or not a regular file", errBadArtf, f.Path)
+			return m, "", fmt.Errorf("%w: %s is missing or not a regular file", errBadArtf, f.Path)
 		}
 		if fi.Size() != f.Size {
-			return m, fmt.Errorf("%w: %s has the wrong size", errBadArtf, f.Path)
+			return m, "", fmt.Errorf("%w: %s has the wrong size", errBadArtf, f.Path)
 		}
 		sum, err := fileSHA256(p)
 		if err != nil || sum != f.SHA256 {
-			return m, fmt.Errorf("%w: %s does not match its digest", errBadArtf, f.Path)
+			return m, "", fmt.Errorf("%w: %s does not match its digest", errBadArtf, f.Path)
 		}
 	}
 	var extra []string
@@ -96,17 +106,17 @@ func VerifyArtifact(dir string) (Manifest, error) {
 	})
 	if len(extra) > 0 {
 		sort.Strings(extra)
-		return m, fmt.Errorf("%w: files the manifest does not list: %s", errBadArtf, strings.Join(extra[:min(len(extra), 5)], ", "))
+		return m, "", fmt.Errorf("%w: files the manifest does not list: %s", errBadArtf, strings.Join(extra[:min(len(extra), 5)], ", "))
 	}
 	for _, b := range Binaries {
 		if !listed["bin/"+b] {
-			return m, fmt.Errorf("%w: the artifact has no bin/%s", errBadArtf, b)
+			return m, "", fmt.Errorf("%w: the artifact has no bin/%s", errBadArtf, b)
 		}
 	}
 	if err := checkAttestation(dir, m); err != nil {
-		return m, err
+		return m, "", err
 	}
-	return m, nil
+	return m, digest, nil
 }
 
 // File returns the manifest entry for path.
