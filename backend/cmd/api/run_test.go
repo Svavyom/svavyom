@@ -286,14 +286,14 @@ func TestServeSecondProcessOnSameDatabaseIsRefused(t *testing.T) {
 	defer stop()
 	// The database path of the running server is unknown here, so build a second one that holds the lock itself.
 	db := filepath.Join(t.TempDir(), "svavyom.db")
-	var errb bytes.Buffer
+	errb := &syncBuf{} // the server's goroutines (startup line, alert loop) all write to it: a plain bytes.Buffer is a data race under -race
 	ctx, cancel := context.WithCancel(context.Background())
 	done := make(chan int, 1)
 	addr := freeAddr(t)
-	go func() { done <- run(ctx, []string{"serve", "--db", db, "--listen", addr}, nil, io.Discard, &errb) }()
+	go func() { done <- run(ctx, []string{"serve", "--db", db, "--listen", addr}, nil, io.Discard, errb) }()
 	time.Sleep(300 * time.Millisecond)
-	var errb2 bytes.Buffer
-	if code := run(context.Background(), []string{"serve", "--db", db, "--listen", freeAddr(t)}, nil, io.Discard, &errb2); code != 1 || !strings.Contains(errb2.String(), "already in use") {
+	errb2 := &syncBuf{}
+	if code := run(context.Background(), []string{"serve", "--db", db, "--listen", freeAddr(t)}, nil, io.Discard, errb2); code != 1 || !strings.Contains(errb2.String(), "already in use") {
 		t.Fatalf("%d %q", code, errb2.String())
 	}
 	cancel()
