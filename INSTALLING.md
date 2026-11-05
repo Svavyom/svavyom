@@ -9,6 +9,8 @@ tar xzf svavyom-<version>.tar.gz && cd svavyom-<version>
 sha256sum -c SHA256SUMS                               # every file, nothing unlisted
 bin/svavyom-ctl verify-artifact .                     # the same, plus no symlink, no unexpected file
 ```
+Those two checks only compare the files with the manifest **inside** the artifact, which proves nothing about who made it. A signed release also comes with a directory of signatures (for example `sigs/`) and the maintainer's public key, whose fingerprint you compare with the one in the project README and release notes (`ci/sign/README.md`). **Verify the signature before you run anything from the artifact**, with the `svavyom-ctl` already installed on the host or with OpenSSL (steps in `ci/sign/README.md`), then pass both to `install` and `upgrade`:
+`--signatures sigs --public-key release-signing-key.pub`. Without them `install` and `upgrade` refuse the artifact. For an artifact you built or checked yourself, `--allow-unsigned` installs it only if it sits where nobody but root can change it (every directory above it and every file in it owned by root and not writable by others): copy it there first, for example `sudo install -d -m 0755 /opt/svavyom-artifacts && sudo cp -a svavyom-<version> /opt/svavyom-artifacts/ && sudo chown -R root:root /opt/svavyom-artifacts`.
 Or build it yourself from the source (`BUILDING.md`).
 
 ## 2. Prepare the host
@@ -22,9 +24,9 @@ You need: hardware virtualization enabled (VT-x/AMD-V; `/dev/kvm` present), AppA
 ## 3. Install
 Print the plan, read it, then apply:
 ```
-sudo bin/svavyom-ctl install --artifact . --create-pool --tls-self-signed HOST.example \
+sudo bin/svavyom-ctl install --artifact . --signatures SIGS --public-key release-signing-key.pub --create-pool --tls-self-signed HOST.example \
      --enable-mutation --enable-console --backup-dir /var/lib/svavyom/backups            # plan only
-sudo bin/svavyom-ctl install --artifact . --create-pool --tls-self-signed HOST.example \
+sudo bin/svavyom-ctl install --artifact . --signatures SIGS --public-key release-signing-key.pub --create-pool --tls-self-signed HOST.example \
      --enable-mutation --enable-console --backup-dir /var/lib/svavyom/backups --apply
 ```
 It creates the service accounts and directories (root-owned trust anchors, separate runtime state), installs the seven binaries into `/usr/libexec/svavyom`, the web assets into `/usr/share/svavyom/web` and five systemd units, writes `/etc/svavyom/provision.json` **only if it does not exist**, optionally creates a self-signed certificate, starts agent, mutation, offsite, console and API in that order, waits for health and validates the configuration. It never runs a service as root, never opens a firewall port, never edits libvirt security settings and never touches existing VMs, pools or networks.
@@ -53,7 +55,7 @@ Images are separate: they live in `/var/lib/svavyom/images`, which is fixed.
 5. Read `USING.md`.
 
 ## 5. Upgrade, roll back, uninstall
-* Upgrade: `sudo bin/svavyom-ctl upgrade --artifact NEW_DIR --enable-mutation --enable-console --backup-dir DIR --listen ADDR [--enable-nightly-boot HH:MM]` (plan) then `--apply`. **Repeat the options you installed with:** an omitted `--listen` falls back to the default and can leave the service unable to start; the upgrade rolls itself back if it does not become healthy. A backup of binaries, units and the database is kept for `sudo svavyom-ctl rollback [--backup ID] --apply` ([Upgrade and rollback](https://docs.svavyom.com/operations/upgrade/)). The tool refuses an older artifact.
+* Upgrade: `sudo bin/svavyom-ctl upgrade --artifact NEW_DIR --signatures SIGS --public-key release-signing-key.pub --enable-mutation --enable-console --backup-dir DIR --listen ADDR [--enable-nightly-boot HH:MM]` (plan) then `--apply`. **Repeat the options you installed with:** an omitted `--listen` falls back to the default and can leave the service unable to start; the upgrade rolls itself back if it does not become healthy. A backup of binaries, units and the database is kept for `sudo svavyom-ctl rollback [--backup ID] --apply` ([Upgrade and rollback](https://docs.svavyom.com/operations/upgrade/)). The tool refuses an older artifact.
 * Uninstall: `sudo svavyom-ctl uninstall --apply` removes the binaries, web assets and units and **keeps** configuration, database, VM disks, images and backups. `--purge --confirm-purge DELETE-SVAVYOM-DATA` also removes Svavyom's own configuration, database and service accounts. It never deletes the libvirt pool, image store, VM disks or backups.
 
 ## 6. Where things are

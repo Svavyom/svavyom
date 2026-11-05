@@ -37,7 +37,7 @@ func serverHost(t *testing.T) (*testHost, string) {
 
 func install(t *testing.T, h *testHost, listen, artifact string, extra func(*InstallOptions)) (string, error) {
 	t.Helper()
-	o := InstallOptions{Artifact: artifact, Apply: true, Listen: listen}
+	o := InstallOptions{Artifact: artifact, Apply: true, Listen: listen, AllowUnsigned: true}
 	if extra != nil {
 		extra(&o)
 	}
@@ -51,7 +51,7 @@ func TestInstallDryRunPrintsThePlanAndChangesNothing(t *testing.T) {
 	art := makeArtifact(t, "0.1.0", curSchema, nil)
 	before := snapshotTree(t, h.root)
 	var out bytes.Buffer
-	if err := Install(context.Background(), h.env, InstallOptions{Artifact: art, Listen: listen}, &out); err != nil {
+	if err := Install(context.Background(), h.env, InstallOptions{Artifact: art, Listen: listen, AllowUnsigned: true}, &out); err != nil {
 		t.Fatalf("%v\n%s", err, out.String())
 	}
 	if after := snapshotTree(t, h.root); after != before {
@@ -202,7 +202,7 @@ func TestInstallCreatesATLSPairWithTheRightModes(t *testing.T) {
 	h, _ := serverHost(t)
 	art := makeArtifact(t, "0.1.0", curSchema, nil)
 	// 0.0.0.0 with a self-signed pair: the status check cannot reach a real server, so only the files are examined (the health wait is not part of this test)
-	o := InstallOptions{Artifact: art, Apply: true, Listen: "0.0.0.0:8443", TLSSelfSigned: "svavyom.lab.example"}
+	o := InstallOptions{Artifact: art, Apply: true, Listen: "0.0.0.0:8443", TLSSelfSigned: "svavyom.lab.example", AllowUnsigned: true}
 	h.run.fail["systemctl is-active"] = false
 	var out bytes.Buffer
 	_ = Install(context.Background(), h.env, o, &out)
@@ -260,7 +260,7 @@ func openDB(t *testing.T, h *testHost) *sql.DB {
 
 func upgrade(t *testing.T, h *testHost, listen, art string, extra func(*UpgradeOptions)) (string, error) {
 	t.Helper()
-	o := UpgradeOptions{InstallOptions: InstallOptions{Artifact: art, Apply: true, Listen: listen}}
+	o := UpgradeOptions{InstallOptions: InstallOptions{Artifact: art, Apply: true, Listen: listen, AllowUnsigned: true}}
 	if extra != nil {
 		extra(&o)
 	}

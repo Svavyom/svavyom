@@ -325,10 +325,11 @@ func Upgrade(ctx context.Context, e *Env, o UpgradeOptions, w io.Writer) error {
 	if err := o.validate(); err != nil {
 		return err
 	}
-	m, err := VerifyArtifact(o.Artifact)
+	m, ta, err := e.establishTrust(ctx, o.InstallOptions, w)
 	if err != nil {
 		return err
 	}
+	o.trusted = ta
 	cur := e.installedVersion()
 	_, _ = fmt.Fprintf(w, "installed: %s   artifact: %s\n", orNone(cur), m.Version)
 	if cur == "" {
@@ -363,7 +364,7 @@ func Upgrade(ctx context.Context, e *Env, o UpgradeOptions, w io.Writer) error {
 		return err
 	})
 	p.add("stop the services in reverse order ("+strings.Join(reverse(Units), ", ")+")", func() error { return e.stopAll(ctx) })
-	p.add("refresh the account and directory definitions ("+SysusersFile+", "+TmpfilesFile+") so a service added by this release has its directories", func() error { return e.installAccounts(ctx, o.Artifact) })
+	p.add("refresh the account and directory definitions ("+SysusersFile+", "+TmpfilesFile+") so a service added by this release has its directories", func() error { return e.installAccounts(ctx, o.trusted) })
 	e.installSteps(p, m, o.InstallOptions, w)
 	p.add("start the services in order and check health (schema migrations run when the API starts)", func() error {
 		if err := e.startAll(ctx); err != nil {

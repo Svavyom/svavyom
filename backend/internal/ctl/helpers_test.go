@@ -124,7 +124,7 @@ func newHost(t *testing.T) *testHost {
 	h.run.reply["virsh -r -c qemu:///system net-info"] = "Name: default\nActive: yes\n"
 	h.run.reply["virsh -r -c qemu:///system pool-info"] = "Name: svavyom\nActive: yes\n"
 	uids := map[string][2]int{"svavyom-api": {987, 987}, "svavyom-ro": {986, 986}, "svavyom-mut": {985, 985}, "svavyom-con": {984, 984}}
-	h.env = &Env{Root: root, Run: h.run, Now: func() time.Time { return h.now }, Sleep: func(_ context.Context, d time.Duration) error { h.now = h.now.Add(d); return nil }, Euid: func() int { return 0 }, Chown: func(string, int, int) error { return nil },
+	h.env = &Env{Root: root, Run: h.run, Now: func() time.Time { return h.now }, Sleep: func(_ context.Context, d time.Duration) error { h.now = h.now.Add(d); return nil }, OwnerOf: func(fs.FileInfo) (int, bool) { return 0, true }, Euid: func() int { return 0 }, Chown: func(string, int, int) error { return nil },
 		Lstat: func(p string) (fs.FileInfo, error) {
 			if m, ok := h.devices[strings.TrimPrefix(p, root)]; ok {
 				return fakeInfo{name: filepath.Base(p), mode: m}, nil

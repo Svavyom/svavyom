@@ -50,6 +50,11 @@ type InstallOptions struct {
 	DisableNightlyBoot bool
 	// Listen is the API listen address (default 0.0.0.0:8443; it must come with TLS unless loopback).
 	Listen string
+	// Signatures and PublicKey authenticate the artifact (see trust.go); AllowUnsigned installs an unauthenticated artifact that only root can change.
+	Signatures, PublicKey string
+	AllowUnsigned         bool
+	// trusted reads the artifact's files once, against the verified manifest (set by establishTrust).
+	trusted *trustedArtifact
 }
 
 // placeholderRE matches a template placeholder such as @SVAVYOM_API_UID@ (a comment may mention the pattern, e.g. "@SVAVYOM_..._UID@", without being one).
@@ -138,10 +143,6 @@ func (d ids) subst() map[string]string {
 	}
 }
 
-func readArtifact(dir, rel string) ([]byte, error) {
-	return readRegular(filepath.Join(dir, filepath.FromSlash(rel)), 64<<20)
-}
-
 // installSteps adds the steps that put the artifact's files in place (binaries, web assets, units, drop-ins, VERSION). They are shared by install and upgrade.
 func (e *Env) installSteps(p *Plan, m Manifest, o InstallOptions, w io.Writer) {
 	p.add("install the "+fmt.Sprint(len(Binaries))+" binaries into "+LibexecDir+" (root:root 0755, replaced atomically)", func() error {
@@ -149,7 +150,7 @@ func (e *Env) installSteps(p *Plan, m Manifest, o InstallOptions, w io.Writer) {
 			return err
 		}
 		for _, b := range Binaries {
-			data, err := readArtifact(o.Artifact, "bin/"+b)
+			data, err := o.trusted.read("bin/" + b)
 			if err != nil {
 				return err
 			}
@@ -173,7 +174,7 @@ func (e *Env) installSteps(p *Plan, m Manifest, o InstallOptions, w io.Writer) {
 				continue
 			}
 			want = append(want, strings.TrimPrefix(f.Path, "web/"))
-			data, err := readArtifact(o.Artifact, f.Path)
+			data, err := o.trusted.read(f.Path)
 			if err != nil {
 				return err
 			}
@@ -196,7 +197,7 @@ func (e *Env) installSteps(p *Plan, m Manifest, o InstallOptions, w io.Writer) {
 			return err
 		}
 		for _, u := range Units {
-			tpl, err := readArtifact(o.Artifact, "packages/ubuntu/systemd/"+u+".in")
+			tpl, err := o.trusted.read("packages/ubuntu/systemd/" + u + ".in")
 			if err != nil {
 				return err
 			}
@@ -298,7 +299,7 @@ func (e *Env) dropIns(o InstallOptions) error {
 
 // renderConfig renders the provisioning configuration from the artifact's template and the options.
 func (e *Env) renderConfig(o InstallOptions, d ids) ([]byte, error) {
-	tpl, err := readArtifact(o.Artifact, "packages/ubuntu/etc/provision.json.in")
+	tpl, err := o.trusted.read("packages/ubuntu/etc/provision.json.in")
 	if err != nil {
 		return nil, err
 	}
@@ -322,10 +323,11 @@ func Install(ctx context.Context, e *Env, o InstallOptions, w io.Writer) error {
 	if err := o.validate(); err != nil {
 		return err
 	}
-	m, err := VerifyArtifact(o.Artifact)
+	m, ta, err := e.establishTrust(ctx, o, w)
 	if err != nil {
 		return err
 	}
+	o.trusted = ta
 	_, _ = fmt.Fprintf(w, "artifact: svavyom %s (%s), %d files, every digest verified\n", m.Version, m.Classification, len(m.Files))
 	if o.Apply && e.Euid() != 0 {
 		return errors.New("--apply needs root (run with sudo); the plan can be printed without it")
@@ -341,7 +343,7 @@ func Install(ctx context.Context, e *Env, o InstallOptions, w io.Writer) error {
 		}
 	}
 	p := &Plan{}
-	p.add("install the account and directory definitions ("+SysusersFile+", "+TmpfilesFile+") and create the service accounts and directories (root-owned trust anchors, separate runtime state)", func() error { return e.installAccounts(ctx, o.Artifact) })
+	p.add("install the account and directory definitions ("+SysusersFile+", "+TmpfilesFile+") and create the service accounts and directories (root-owned trust anchors, separate runtime state)", func() error { return e.installAccounts(ctx, o.trusted) })
 	e.installSteps(p, m, o, w)
 	p.add("write "+ConfigFile+" if it does not exist (an existing configuration is kept and validated, never overwritten)", func() error {
 		d, err := e.serviceIDs()
@@ -486,7 +488,7 @@ func (e *Env) createPool(ctx context.Context, o InstallOptions) error {
 		_ = out
 		return nil
 	}
-	tpl, err := readArtifact(o.Artifact, "packages/ubuntu/libvirt/pool-svavyom.xml")
+	tpl, err := o.trusted.read("packages/ubuntu/libvirt/pool-svavyom.xml")
 	if err != nil {
 		return err
 	}
@@ -506,9 +508,9 @@ func (e *Env) createPool(ctx context.Context, o InstallOptions) error {
 
 // installAccounts installs the account and directory definitions from the artifact and applies them. Install and upgrade both run it: a release
 // that adds a service (the off-host copy service) adds its directories here, and an upgrade must create them before the service starts.
-func (e *Env) installAccounts(ctx context.Context, artifact string) error {
+func (e *Env) installAccounts(ctx context.Context, ta *trustedArtifact) error {
 	for _, f := range [][2]string{{"packages/ubuntu/sysusers.d/svavyom.conf", SysusersFile}, {"packages/ubuntu/tmpfiles.d/svavyom.conf", TmpfilesFile}} {
-		data, err := readArtifact(artifact, f[0])
+		data, err := ta.read(f[0])
 		if err != nil {
 			return err
 		}

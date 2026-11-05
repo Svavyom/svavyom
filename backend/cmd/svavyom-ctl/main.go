@@ -44,6 +44,7 @@ const usage = `usage: svavyom-ctl <command> [flags]
   install          --artifact DIR [--apply] [--allow-not-ready] [--tls-self-signed HOST] [--pool P] [--network N] [--backup-dir D]
                    [--create-pool] [--enable-mutation] [--enable-console] [--listen ADDR] [--min-free-gib N]
                    [--enable-nightly-boot HH:MM | --disable-nightly-boot]
+                   [--signatures DIR --public-key FILE | --allow-unsigned]   an artifact must be signed, or (unsigned) sit where only root can change it
   upgrade          --artifact DIR [--apply] [--allow-downgrade] [install flags]
   rollback         [--backup ID|latest] [--apply] [--restore-db]
   nightly-boot                                                        root: create, boot, check and delete a disposable VM through the API; record the result
@@ -91,8 +92,9 @@ func run(ctx context.Context, e *ctl.Env, args []string, stdout, stderr io.Write
 	downgrade := fl.Bool("allow-downgrade", false, "upgrade: allow an older artifact")
 	backup := fl.String("backup", "", "rollback: backup id or latest")
 	restoreDB := fl.Bool("restore-db", false, "rollback: also restore the pre-upgrade database copy")
-	sigDir := fl.String("signatures", "", "verify-artifact: directory with the detached signatures and SIGNING-INFO.json")
-	pubKey := fl.String("public-key", "", "verify-artifact: the trusted public key file, obtained out of band")
+	sigDir := fl.String("signatures", "", "verify-artifact, install, upgrade: directory with the detached signatures and SIGNING-INFO.json")
+	pubKey := fl.String("public-key", "", "verify-artifact, install, upgrade: the trusted public key file, obtained out of band")
+	allowUnsigned := fl.Bool("allow-unsigned", false, "install, upgrade: install an artifact that has no signature (it must then sit in a directory only root can change)")
 	write := fl.Bool("write", false, "firewall-check: record the result in "+ctl.FirewallStatusFile+" (root)")
 	planID := fl.String("plan", "", "bridge apply: the plan id printed by `bridge plan`")
 	typedBridge := fl.String("confirm-bridge", "", "bridge apply, rollback, adopt: the bridge name, typed as a confirmation")
@@ -127,7 +129,7 @@ func run(ctx context.Context, e *ctl.Env, args []string, stdout, stderr io.Write
 		_, _ = fmt.Fprintln(stderr, "ERROR", err)
 		return 1
 	}
-	inst := ctl.InstallOptions{Artifact: *artifact, Apply: *apply, AllowNotReady: *allowNR, TLSSelfSigned: *tlsHost, Pool: *pool, Network: *network, BackupDir: *backupDir,
+	inst := ctl.InstallOptions{Artifact: *artifact, Signatures: *sigDir, PublicKey: *pubKey, AllowUnsigned: *allowUnsigned, Apply: *apply, AllowNotReady: *allowNR, TLSSelfSigned: *tlsHost, Pool: *pool, Network: *network, BackupDir: *backupDir,
 		CreatePool: *createPool, EnableMutation: *enMut, EnableConsole: *enCon, Listen: *listen, MinFreeGiB: *minFree, EnableNightlyBoot: *enNightly, DisableNightlyBoot: *disNightly}
 	switch cmd {
 	case "version":
