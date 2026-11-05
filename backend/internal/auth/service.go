@@ -12,6 +12,7 @@ import (
 	"regexp"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"example.invalid/dedicatedcloud/backend/internal/sqlitedb"
@@ -47,6 +48,9 @@ type Config struct {
 	Audit           AuditSink
 	// Sleep waits d or until ctx ends (the slow-down of a name that failed recently, DR-038). Default: a timer. Tests inject a recorder.
 	Sleep func(ctx context.Context, d time.Duration)
+	// AuditFailed is told when an audit event could not be stored (the event's kind and outcome only; never a value). Default: nothing. The alert
+	// audit_write_failed reads AuditWriteFailedSince as well (DR-038, finding F-10).
+	AuditFailed func(ev AuditEvent)
 }
 
 // AuditEvent is one authentication audit record: identifiers and closed vocabulary only.
@@ -56,6 +60,8 @@ type AuditEvent struct {
 	Outcome string // success, failure, blocked, revoked
 	Reason  string // closed vocabulary, never free text
 	Source  string // remote host (IP) as seen by the server, "" if unknown
+	// Username is who the event is about: the account signed in, signed out, created, changed or reset, or the name that was tried (sanitised, see auditName). "" when no user is involved.
+	Username string
 }
 
 // AuditSink receives events after they are durably stored. Implementations must not block.
@@ -102,6 +108,8 @@ type Service struct {
 	dummy  string        // hash compared when the username is unknown, so both paths cost the same
 	dmu    sync.Mutex
 	lim    *limiter
+	// auditFailedAt is when an audit event last failed to be stored (unix nanoseconds, 0 = never).
+	auditFailedAt atomic.Int64
 }
 
 var usernameRE = regexp.MustCompile(`^[a-z][a-z0-9._-]{2,31}$`)
@@ -156,7 +164,9 @@ CREATE TABLE sessions_v2 (
 INSERT INTO sessions_v2 SELECT id_hash, admin_id, created_at, last_activity, absolute_expires_at, revoked_at FROM sessions;
 DROP TABLE sessions;
 ALTER TABLE sessions_v2 RENAME TO sessions;
-CREATE INDEX sessions_admin ON sessions (admin_id);`}
+CREATE INDEX sessions_admin ON sessions (admin_id);`,
+	// Step 3 (DR-038, finding F-10): an authentication audit event names the user it is about (a sanitised closed grammar; empty where no user is involved).
+	`ALTER TABLE auth_audit ADD COLUMN username TEXT NOT NULL DEFAULT ''`}
 
 // New migrates the schema in db and returns a Service. The caller owns db.
 func New(ctx context.Context, db *sql.DB, cfg Config) (*Service, error) {
@@ -203,13 +213,46 @@ func clamp(v, def, lo, hi time.Duration) time.Duration {
 	return min(max(v, lo), hi)
 }
 
+// auditName is a username as it may appear in an audit event. A name that was only typed is attacker-controlled: it is lower-cased and cut to 64 bytes, and any
+// character outside letters, digits and . _ @ - becomes "?", so no control character, space or markup can reach the trail.
+func auditName(name string) string {
+	name = strings.ToLower(name)
+	if len(name) > 64 {
+		name = name[:64]
+	}
+	var b strings.Builder
+	for _, r := range name {
+		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') || r == '.' || r == '_' || r == '@' || r == '-' {
+			b.WriteRune(r)
+		} else {
+			b.WriteByte('?')
+		}
+	}
+	return b.String()
+}
+
 func (s *Service) emit(ctx context.Context, ev AuditEvent) {
 	ev.At = s.cfg.Clock()
-	_, err := s.db.ExecContext(ctx, `INSERT INTO auth_audit (at, event, outcome, reason, source) VALUES (?,?,?,?,?)`,
-		ev.At.UnixNano(), ev.Event, ev.Outcome, ev.Reason, ev.Source)
-	if err == nil && s.cfg.Audit != nil {
+	ev.Username = auditName(ev.Username)
+	_, err := s.db.ExecContext(ctx, `INSERT INTO auth_audit (at, event, outcome, reason, source, username) VALUES (?,?,?,?,?,?)`,
+		ev.At.UnixNano(), ev.Event, ev.Outcome, ev.Reason, ev.Source, ev.Username)
+	if err != nil {
+		// An audit event that cannot be stored must not pass unseen (DR-038, F-10): remember when, tell the operator's log, and let the alert rule read it.
+		s.auditFailedAt.Store(ev.At.UnixNano())
+		if s.cfg.AuditFailed != nil {
+			s.cfg.AuditFailed(AuditEvent{At: ev.At, Event: ev.Event, Outcome: ev.Outcome})
+		}
+		return
+	}
+	if s.cfg.Audit != nil {
 		s.cfg.Audit.Emit(ev)
 	}
+}
+
+// AuditWriteFailedSince reports whether an authentication audit event failed to be stored at or after since.
+func (s *Service) AuditWriteFailedSince(since time.Time) bool {
+	at := s.auditFailedAt.Load()
+	return at != 0 && !time.Unix(0, at).Before(since)
 }
 
 // hash runs fn while holding one of the bounded Argon2id slots.
@@ -261,13 +304,13 @@ func (s *Service) Bootstrap(ctx context.Context, username, password string) erro
 		return ErrInternal
 	}
 	if n, err := res.RowsAffected(); err != nil || n != 1 {
-		s.emit(ctx, AuditEvent{Event: "bootstrap", Outcome: "failure", Reason: "already_exists"})
+		s.emit(ctx, AuditEvent{Event: "bootstrap", Outcome: "failure", Reason: "already_exists", Username: username})
 		if err != nil {
 			return ErrInternal
 		}
 		return ErrAlreadyBootstrapped
 	}
-	s.emit(ctx, AuditEvent{Event: "bootstrap", Outcome: "success"})
+	s.emit(ctx, AuditEvent{Event: "bootstrap", Outcome: "success", Username: username})
 	return nil
 }
 
@@ -322,7 +365,7 @@ func (s *Service) SetPassword(ctx context.Context, username, password string) er
 	if err != nil || tx.Commit() != nil {
 		return ErrInternal
 	}
-	s.emit(ctx, AuditEvent{Event: "password_reset", Outcome: "success"})
+	s.emit(ctx, AuditEvent{Event: "password_reset", Outcome: "success", Username: username})
 	return nil
 }
 
@@ -361,7 +404,7 @@ func (s *Service) AddUser(ctx context.Context, username, password string, role R
 		}
 		return ErrUserExists
 	}
-	s.emit(ctx, AuditEvent{Event: "user_add", Outcome: "success", Reason: string(role)})
+	s.emit(ctx, AuditEvent{Event: "user_add", Outcome: "success", Reason: string(role), Username: username})
 	return nil
 }
 
@@ -461,7 +504,7 @@ func (s *Service) change(ctx context.Context, username, event, reason string, fn
 	if err := tx.Commit(); err != nil {
 		return ErrInternal
 	}
-	s.emit(ctx, AuditEvent{Event: event, Outcome: "success", Reason: reason})
+	s.emit(ctx, AuditEvent{Event: event, Outcome: "success", Reason: reason, Username: username})
 	return nil
 }
 
@@ -505,7 +548,7 @@ func (s *Service) SignIn(ctx context.Context, username, password, source, presen
 		userKey = userKey[:64]
 	}
 	if wait := s.lim.check(source, userKey); wait > 0 {
-		s.emit(ctx, AuditEvent{Event: "sign_in", Outcome: "blocked", Reason: "rate_limited", Source: source})
+		s.emit(ctx, AuditEvent{Event: "sign_in", Outcome: "blocked", Reason: "rate_limited", Source: source, Username: userKey})
 		return SignInResult{}, &RateLimitedError{RetryAfter: wait}
 	}
 	if d := s.lim.slow(userKey); d > 0 { // the name failed recently from somewhere: wait a little, then judge this attempt on its merits (never a refusal by itself)
@@ -535,11 +578,11 @@ func (s *Service) SignIn(ctx context.Context, username, password, source, presen
 		return SignInResult{}, ErrInternal
 	case verr != nil: // corrupted credential row: fail closed, and say so only in the audit log
 		s.lim.failure(source, userKey)
-		s.emit(ctx, AuditEvent{Event: "sign_in", Outcome: "failure", Reason: "credential_corrupt", Source: source})
+		s.emit(ctx, AuditEvent{Event: "sign_in", Outcome: "failure", Reason: "credential_corrupt", Source: source, Username: userKey})
 		return SignInResult{}, ErrInvalidCredentials
 	case !ok || !known:
 		s.lim.failure(source, userKey)
-		s.emit(ctx, AuditEvent{Event: "sign_in", Outcome: "failure", Reason: "invalid_credentials", Source: source})
+		s.emit(ctx, AuditEvent{Event: "sign_in", Outcome: "failure", Reason: "invalid_credentials", Source: source, Username: userKey})
 		return SignInResult{}, ErrInvalidCredentials
 	}
 	s.lim.success(source, userKey)
@@ -582,7 +625,7 @@ func (s *Service) startSession(ctx context.Context, adminID int64, username stri
 	if err := tx.Commit(); err != nil {
 		return SignInResult{}, ErrInternal
 	}
-	s.emit(ctx, AuditEvent{Event: "sign_in", Outcome: "success", Source: source})
+	s.emit(ctx, AuditEvent{Event: "sign_in", Outcome: "success", Source: source, Username: username})
 	return SignInResult{SessionToken: st, CSRFToken: ct, Session: Session{AdminID: adminID, Username: username, Role: role,
 		ExpiresAt: s.expiry(now, abs), csrf: ct}}, nil
 }
@@ -638,7 +681,7 @@ func (s *Service) Authenticate(ctx context.Context, token string) (Session, erro
 		// Revoke so the token can never come back to life (a clock step backwards, a later config change).
 		if res, err := s.db.ExecContext(ctx, `UPDATE sessions SET revoked_at = ? WHERE id_hash = ? AND revoked_at IS NULL`, now.UnixNano(), h); err == nil {
 			if n, _ := res.RowsAffected(); n == 1 {
-				s.emit(ctx, AuditEvent{Event: "session_expired", Outcome: "revoked", Reason: expiredBecause})
+				s.emit(ctx, AuditEvent{Event: "session_expired", Outcome: "revoked", Reason: expiredBecause, Username: username})
 			}
 		}
 		return Session{}, ErrUnauthenticated
@@ -659,13 +702,15 @@ func (s *Service) SignOut(ctx context.Context, token string) error {
 	if !ValidTokenFormat(token) {
 		return nil
 	}
+	var who string // best effort: the account the session belonged to, read before it is revoked
+	_ = s.db.QueryRowContext(ctx, `SELECT u.username FROM sessions s JOIN users u ON u.id = s.admin_id WHERE s.id_hash = ?`, tokenHash(token)).Scan(&who)
 	res, err := s.db.ExecContext(ctx, `UPDATE sessions SET revoked_at = ? WHERE id_hash = ? AND revoked_at IS NULL`,
 		s.cfg.Clock().UnixNano(), tokenHash(token))
 	if err != nil {
 		return ErrInternal
 	}
 	if n, _ := res.RowsAffected(); n == 1 {
-		s.emit(ctx, AuditEvent{Event: "sign_out", Outcome: "success"})
+		s.emit(ctx, AuditEvent{Event: "sign_out", Outcome: "success", Username: who})
 	}
 	return nil
 }
@@ -730,7 +775,7 @@ func (s *Service) dummyHash(ctx context.Context) string {
 
 // Audit returns the stored authentication audit events, oldest first (tests and the later history view).
 func (s *Service) Audit(ctx context.Context) ([]AuditEvent, error) {
-	rows, err := s.db.QueryContext(ctx, `SELECT at, event, outcome, reason, source FROM auth_audit ORDER BY seq`)
+	rows, err := s.db.QueryContext(ctx, `SELECT at, event, outcome, reason, source, username FROM auth_audit ORDER BY seq`)
 	if err != nil {
 		return nil, ErrInternal
 	}
@@ -741,7 +786,7 @@ func (s *Service) Audit(ctx context.Context) ([]AuditEvent, error) {
 			ev AuditEvent
 			at int64
 		)
-		if err := rows.Scan(&at, &ev.Event, &ev.Outcome, &ev.Reason, &ev.Source); err != nil {
+		if err := rows.Scan(&at, &ev.Event, &ev.Outcome, &ev.Reason, &ev.Source, &ev.Username); err != nil {
 			return nil, ErrInternal
 		}
 		ev.At = time.Unix(0, at).UTC()

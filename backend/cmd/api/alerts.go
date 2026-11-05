@@ -35,7 +35,9 @@ type alertSources struct {
 	SchedulesFailed func(ctx context.Context) (vms []string, ok bool)
 	// NightlyFailed reports whether the last nightly boot failed.
 	NightlyFailed func() bool
-	Now           func() time.Time
+	// AuditFailing reports whether an authentication audit event could not be stored recently.
+	AuditFailing func() bool
+	Now          func() time.Time
 }
 
 func (s alertSources) gather(ctx context.Context) alerts.Inputs {
@@ -97,6 +99,9 @@ func (s alertSources) gather(ctx context.Context) alerts.Inputs {
 	}
 	if s.NightlyFailed != nil {
 		in.NightlyBootFail = s.NightlyFailed()
+	}
+	if s.AuditFailing != nil {
+		in.AuditWriteFailing = s.AuditFailing()
 	}
 	return in
 }
@@ -247,7 +252,7 @@ func (w scheduleWorld) Prune(ctx context.Context, backup, target string) error {
 }
 
 // startAlerts wires the alert subsystem into the API and starts its loops.
-func startAlerts(ctx context.Context, stderr io.Writer, deps *api.Deps, engine *alerts.Engine, store *alerts.SQLiteStore, set *provision.AlertSettings, ops operation.Store, hosts *hostinfo.Provider, scheds *schedule.Store) {
+func startAlerts(ctx context.Context, stderr io.Writer, deps *api.Deps, engine *alerts.Engine, store *alerts.SQLiteStore, set *provision.AlertSettings, ops operation.Store, hosts *hostinfo.Provider, scheds *schedule.Store, auditFailing func() bool) {
 	view := &api.AlertsView{Source: store}
 	deps.Alerts = view
 	th := alerts.Thresholds{}
@@ -265,7 +270,7 @@ func startAlerts(ctx context.Context, stderr io.Writer, deps *api.Deps, engine *
 			}
 		}
 	}
-	src := alertSources{HostID: "local", Ops: ops, MaxAttempts: 3, VMs: deps.VMs}
+	src := alertSources{HostID: "local", Ops: ops, MaxAttempts: 3, VMs: deps.VMs, AuditFailing: auditFailing}
 	if info, err := hosts.Host(ctx); err == nil {
 		src.HostID = info.ID
 	}

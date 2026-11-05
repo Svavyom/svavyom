@@ -32,6 +32,15 @@ describe("Alerts", () => {
     expect(await axeViolations(document.body)).toEqual([]);
   });
 
+  it("says in words that a sign-in record could not be stored and what to check (audit_write_failed, DR-038)", async () => {
+    vi.stubGlobal("fetch", route([ev(1, { type: "audit_write_failed", severity: "critical", value: null })]));
+    show();
+    expect(await screen.findByText("A sign-in record could not be stored")).toBeTruthy();
+    expect(screen.getByText(/could not write it to its audit trail/)).toBeTruthy();
+    expect(screen.getByText(/journalctl -u svavyom-api/)).toBeTruthy();
+    expect(await axeViolations(document.body)).toEqual([]);
+  });
+
   it("never shows a setting: thresholds and the webhook belong to the operator", async () => {
     vi.stubGlobal("fetch", route([ev(1)], "configured"));
     show();
