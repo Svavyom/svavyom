@@ -217,7 +217,7 @@ func AttachISOXML(x, path, boot string) (string, error) {
 	case len(media) >= MaxMedia:
 		return "", ErrISOPresent
 	case len(media) == 1 && boot != BootDisk:
-		return "", ErrBoot // a second medium never boots; eject the first to boot from this one
+		return "", ErrBoot // a second medium never boots; to boot from it, eject both and attach it again as the only medium
 	}
 	dev, err := nextCDDev(x)
 	if err != nil {
