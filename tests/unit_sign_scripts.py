@@ -93,5 +93,19 @@ class Scripts(unittest.TestCase):
         self.assertNotEqual(r.returncode, 0)
 
 
+@unittest.skipUnless(have_openssl3(), "needs openssl 3.x")
+class PublishedKey(unittest.TestCase):
+    def test_the_published_key_is_an_ed25519_public_key_and_the_readme_states_its_fingerprint(self):
+        pub = ROOT / "ci" / "sign" / "release-signing-key.pub"
+        r = run(["openssl", "pkey", "-pubin", "-in", str(pub), "-noout", "-text"])
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertIn("ED25519 Public-Key", r.stdout)
+        fp = subprocess.run(["sh", "-c", "openssl pkey -pubin -in %s -pubout -outform DER | sha256sum | cut -c1-16" % pub], capture_output=True, text=True, check=True).stdout.strip()
+        readme = (ROOT / "ci" / "sign" / "README.md").read_text()
+        self.assertIn("`%s`" % fp, readme, "the README must state the fingerprint of the published key")
+        self.assertIn(pub.read_text().split("\n")[1], readme, "the README must show the same public key")
+        self.assertNotIn("PRIVATE KEY", pub.read_text())
+
+
 if __name__ == "__main__":
     unittest.main()
