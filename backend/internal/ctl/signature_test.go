@@ -12,6 +12,7 @@ import (
 	"encoding/pem"
 	"errors"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -263,4 +264,56 @@ func makeAttestedArtifact(t *testing.T, mut func(a *attestation)) string {
 		}
 		files[AttestationName], _ = json.Marshal(a)
 	})
+}
+
+// A key made by ci/sign/make-ed25519-key.sh and an artifact signed by ci/sign/sign-artifact.sh (OpenSSL, as the release owner will do it) verify with the Go verifier
+// the installer uses, and a changed file is refused. This is the interop the other tests in this file only assume.
+func TestAnArtifactSignedByTheScriptsVerifiesWithTheGoVerifier(t *testing.T) {
+	for _, tool := range []string{"openssl", "sh", "sha256sum", "base64"} {
+		if _, err := exec.LookPath(tool); err != nil {
+			t.Skipf("%s is not installed", tool)
+		}
+	}
+	if out, err := exec.Command("openssl", "version").Output(); err != nil || !strings.HasPrefix(string(out), "OpenSSL 3.") && !strings.HasPrefix(string(out), "OpenSSL 4.") && !strings.HasPrefix(string(out), "OpenSSL 5.") {
+		t.Skipf("OpenSSL 3 or later is needed: %q", out)
+	}
+	root := "../../../ci/sign/"
+	keys := t.TempDir()
+	mk := exec.Command("sh", root+"make-ed25519-key.sh", "dbscodesignkey", keys)
+	mk.Env = append(os.Environ(), "SIGN_NEW_PASSPHRASE=a test passphrase that is long enough")
+	if out, err := mk.CombinedOutput(); err != nil {
+		t.Fatalf("make-ed25519-key.sh: %v\n%s", err, out)
+	}
+	f := signedArtifact(t, nil) // an artifact with its SHA256SUMS; its own Go-made signatures are replaced below
+	sigs := t.TempDir()
+	sign := exec.Command("sh", root+"sign-artifact.sh", "ed25519", f.art, sigs)
+	sign.Env = append(os.Environ(), "SIGN_KEY_FILE="+filepath.Join(keys, "dbscodesignkey.key"), "SIGN_PASSPHRASE=a test passphrase that is long enough")
+	if out, err := sign.CombinedOutput(); err != nil {
+		t.Fatalf("sign-artifact.sh: %v\n%s", err, out)
+	}
+	e := newHost(t).env
+	opts := SignatureOptions{Dir: sigs, PublicKey: filepath.Join(keys, "dbscodesignkey.pub")}
+	res, err := VerifySignatures(context.Background(), e, f.art, opts)
+	if err != nil || res.Method != "ed25519" {
+		t.Fatalf("an artifact signed by the scripts must verify: %+v %v", res, err)
+	}
+	if err := os.WriteFile(filepath.Join(f.art, "web/index.html"), []byte("<html>changed after signing</html>"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := VerifySignatures(context.Background(), e, f.art, opts); err == nil {
+		t.Fatal("a file changed after signing was accepted")
+	}
+	// another key does not verify it
+	other := t.TempDir()
+	mk2 := exec.Command("sh", root+"make-ed25519-key.sh", "other", other)
+	mk2.Env = mk.Env
+	if out, err := mk2.CombinedOutput(); err != nil {
+		t.Fatalf("%v\n%s", err, out)
+	}
+	if err := os.WriteFile(filepath.Join(f.art, "web/index.html"), []byte("<html></html>"), 0o644); err != nil { // restore whatever the fixture had is not needed: the key check comes first
+		t.Fatal(err)
+	}
+	if _, err := VerifySignatures(context.Background(), e, f.art, SignatureOptions{Dir: sigs, PublicKey: filepath.Join(other, "other.pub")}); err == nil {
+		t.Fatal("a different public key verified the signatures")
+	}
 }
