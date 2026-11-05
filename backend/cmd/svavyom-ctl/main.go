@@ -55,6 +55,7 @@ const usage = `usage: svavyom-ctl <command> [flags]
   db-backup        [--keep N]                                         consistent, verified copy of the API database (service keeps running)
   db-backups                                                          list the database copies and re-verify each
   db-restore       [ID|latest] [--apply]                              put a verified copy back (keeps the replaced database)
+  user-unlock      [--username NAME] [--apply]                        clear the sign-in blocks (restarts the API: they live in its memory; sessions stay valid)
   uninstall        [--apply] [--purge --confirm-purge DELETE-SVAVYOM-DATA]
 Privileged commands print their plan and change nothing without --apply.`
 
@@ -75,6 +76,7 @@ func run(ctx context.Context, e *ctl.Env, args []string, stdout, stderr io.Write
 	out := fl.String("out", "", "support-bundle: output directory")
 	artifact := fl.String("artifact", "", "release artifact directory")
 	apply := fl.Bool("apply", false, "perform the plan (default: print it only)")
+	username := fl.String("username", "", "user-unlock: the account to get back in (names the plan; the blocks are cleared for every account)")
 	allowNR := fl.Bool("allow-not-ready", false, "install: continue when the preflight is NOT_READY (never when it FAILs)")
 	tlsHost := fl.String("tls-self-signed", "", "install: create a Development Preview self-signed certificate for this host name if none exists")
 	pool := fl.String("pool", "", "install: libvirt pool name (default svavyom)")
@@ -308,6 +310,12 @@ func run(ctx context.Context, e *ctl.Env, args []string, stdout, stderr io.Write
 				state = "NOT VERIFIED: " + verr.Error()
 			}
 			_, _ = fmt.Fprintf(stdout, "%s  %s  %d bytes  %s\n", m.ID, m.CreatedAt, m.SizeBytes, state)
+		}
+		return 0
+	case "user-unlock":
+		// DR-038 D3: the sign-in blocks are in the API's memory, so unlocking restarts the API (all blocks, no sessions).
+		if err := ctl.UserUnlock(ctx, e, ctl.UserUnlockOptions{Username: *username, Apply: *apply}, stdout); err != nil {
+			return fail(err)
 		}
 		return 0
 	case "db-restore":
