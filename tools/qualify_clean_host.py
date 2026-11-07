@@ -3,7 +3,8 @@
 
     python3 tools/qualify_clean_host.py --host 203.0.113.10 --key ~/.ssh/KEY --tls-name HOST.example --artifact release-out/svavyom-0.1.0-preview.15 --out DIR --stage facts
     stages: facts (read-only) | prepare (apt: qemu and libvirt) | install (copy the artifact to a root-owned place, preflight, install) | bootstrap (the first administrator)
-            | verify (services, API health on the host and from here)
+            | verify (services, API health on the host and from here) | image (an Ubuntu cloud image registered and qualified in the catalog)
+            | vm (tools/qualify_install.py run ON the host: VM create, SSH, console, reboot, resize, snapshot, backup, network, service restart, support bundle)
 
 It needs passwordless sudo for the SSH user on the host (the owner allowed it on the two test hosts) and changes only that host. It never prints a password: the
 administrator's password is generated here, written to DIR/admin-password (mode 0600) and sent to the host on standard input. The artifact is installed through the
@@ -23,7 +24,7 @@ import time
 sys.dont_write_bytecode = True
 
 R = []
-STAGES = ["facts", "prepare", "install", "bootstrap", "verify"]
+STAGES = ["facts", "prepare", "install", "bootstrap", "verify", "image", "vm"]
 HOST_RE = re.compile(r"^[0-9]{1,3}(\.[0-9]{1,3}){3}$")
 NAME_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9.-]{0,251}[A-Za-z0-9]$")
 RUN_RE = re.compile(r"^qr-[0-9]{8}-[0-9a-f]{6}$")
@@ -55,6 +56,12 @@ class Host:
 
     def run(self, cmd, timeout=300, stdin=None):
         p = subprocess.run(ssh_argv(self.user, self.host, self.key, cmd), input=stdin, capture_output=True, text=True, timeout=timeout, check=False)  # noqa: S603
+        return p.returncode, (p.stdout + p.stderr)
+
+    def get(self, remote, local, timeout=300):
+        argv = ["scp", "-q", "-i", self.key, "-o", "IdentitiesOnly=yes", "-o", "BatchMode=yes", "-o", "ConnectTimeout=15", "-o", "StrictHostKeyChecking=accept-new",
+                "%s@%s:%s" % (self.user, self.host, remote), local]
+        p = subprocess.run(argv, capture_output=True, text=True, timeout=timeout, check=False)  # noqa: S603
         return p.returncode, (p.stdout + p.stderr)
 
     def put(self, local, remote, timeout=600):
@@ -207,7 +214,65 @@ def stage_verify(h, a):
     rec("certificate-is-the-self-signed-one", "svavyom" in out.lower() or a.tls_name in out, out.replace("\n", "; ")[:200] or "no certificate read")
 
 
-FUNCS = {"facts": stage_facts, "prepare": stage_prepare, "install": stage_install, "bootstrap": stage_bootstrap, "verify": stage_verify}
+IMAGE_URL = "https://cloud-images.ubuntu.com/noble/current"
+IMAGE_FILE = "noble-server-cloudimg-amd64.img"
+IMAGE_ID = "ubuntu-24.04"
+WORKDIR = "/var/tmp/svavyom-qual"
+
+
+def image_commands(run_id):
+    """The commands that put an Ubuntu 24.04 cloud image in the catalog as the administrator would: download, check the published digest, register, verify, qualify
+    (the evidence names this run: the image is qualified by the VM this run then boots). Nothing here takes a value from the host."""
+    api = "sudo /usr/libexec/svavyom/api"
+    cfg = "--provision-config /etc/svavyom/provision.json"
+    return [
+        ("image-downloaded", "cd /var/tmp && curl -fsSL -o %s %s/%s && curl -fsSL -o SHA256SUMS.cloud %s/SHA256SUMS && grep %s SHA256SUMS.cloud | sed 's/ \\*/  /' | sha256sum -c - && echo DIGEST_OK"
+         % (IMAGE_FILE, IMAGE_URL, IMAGE_FILE, IMAGE_URL, IMAGE_FILE), "DIGEST_OK"),
+        ("image-registered", "%s register-image %s --id %s --display-name 'Ubuntu 24.04' --distribution Ubuntu --version 24.04 --media disk --login-user ubuntu --cloud-init "
+         "--min-disk-gib 10 --source /var/tmp/%s && echo REGISTERED" % (api, cfg, IMAGE_ID, IMAGE_FILE), "REGISTERED"),
+        ("image-verified", "%s image-state %s --id %s --state verified && echo STATE_OK" % (api, cfg, IMAGE_ID), "STATE_OK"),
+        ("image-qualified", "%s image-state %s --id %s --state qualified --evidence %s && echo STATE_OK" % (api, cfg, IMAGE_ID, run_id), "STATE_OK"),
+    ]
+
+
+def stage_image(h, a):
+    for cid, cmd, want in image_commands(a.run_id):
+        rc, out = h.run(cmd, timeout=1800)
+        if not rec(cid, rc == 0 and want in out, "ok" if want in out and rc == 0 else out[-250:]):
+            return
+    h.run("rm -f /var/tmp/%s /var/tmp/SHA256SUMS.cloud" % IMAGE_FILE, timeout=60)
+
+
+def vm_run_command(run_id):
+    return ("cd %s && python3 qualify_install.py --base https://127.0.0.1:8443 --insecure-tls --password-file pw --pubkey key.pub --ssh-key key --image %s --run-id %s --out . "
+            "--phase all; echo EXIT=$?" % (WORKDIR, IMAGE_ID, run_id))
+
+
+def stage_vm(h, a):
+    pw_path = os.path.join(a.out, "%s-admin-password" % a.run_id)
+    if not os.path.isfile(pw_path):
+        rec("admin-password", False, "no password file from the bootstrap stage of this run")
+        return
+    pw = open(pw_path).read().strip()
+    here = os.path.dirname(os.path.abspath(__file__))
+    h.run("rm -rf %s && install -d -m 0700 %s && ssh-keygen -q -t ed25519 -N '' -f %s/key" % (WORKDIR, WORKDIR, WORKDIR), timeout=60)
+    h.run("umask 077; cat > %s/pw" % WORKDIR, timeout=30, stdin=pw + "\n")
+    rc, out = h.put(os.path.join(here, "qualify_install.py"), "%s/qualify_install.py" % WORKDIR)
+    if not rec("harness-copied", rc == 0, "tools/qualify_install.py is on the host" if rc == 0 else out[-150:]):
+        return
+    rc, out = h.run(vm_run_command(a.run_id), timeout=3600)
+    local = os.path.join(a.out, "%s-install.json" % a.run_id)
+    grc, gout = h.get("%s/%s-install.json" % (WORKDIR, a.run_id), local)
+    h.run("shred -u %s/pw %s/key 2>/dev/null; rm -rf %s" % (WORKDIR, WORKDIR, WORKDIR), timeout=60)
+    if grc != 0 or not os.path.isfile(local):
+        rec("vm-harness-result", False, "no result file came back: " + out[-250:])
+        return
+    res = json.load(open(local))
+    for x in res.get("results", []):
+        rec("vm:" + x["id"], x["status"] == "PASS", x.get("detail", ""))
+
+
+FUNCS = {"facts": stage_facts, "prepare": stage_prepare, "install": stage_install, "bootstrap": stage_bootstrap, "verify": stage_verify, "image": stage_image, "vm": stage_vm}
 
 
 def validate(a):

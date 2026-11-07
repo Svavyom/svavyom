@@ -73,6 +73,29 @@ class Commands(unittest.TestCase):
         self.assertNotIn("sshpass", src)
 
 
+class ImageAndVmStages(unittest.TestCase):
+    def test_the_image_commands_are_the_administrators_own_and_take_nothing_from_the_host(self):
+        cmds = q.image_commands("qr-20261107-a1b2c3")
+        self.assertEqual([c for c, _, _ in cmds], ["image-downloaded", "image-registered", "image-verified", "image-qualified"])
+        text = " ".join(c for _, c, _ in cmds)
+        self.assertIn("register-image --provision-config /etc/svavyom/provision.json", text)
+        self.assertIn("--state qualified --evidence qr-20261107-a1b2c3", text)
+        self.assertIn("sha256sum -c -", text, "the downloaded image is checked against its published digest")
+        self.assertNotIn("curl -k", text)
+        self.assertNotRegex(text, r"\|\s*(ba)?sh\b", "nothing downloaded is piped into a shell")
+
+    def test_the_vm_stage_runs_the_installed_system_harness_on_the_host_against_loopback_with_the_self_signed_certificate(self):
+        cmd = q.vm_run_command("qr-20261107-a1b2c3")
+        self.assertIn("--base https://127.0.0.1:8443 --insecure-tls", cmd)
+        self.assertIn("--run-id qr-20261107-a1b2c3", cmd)
+        src = (ROOT / "tools" / "qualify_clean_host.py").read_text()
+        self.assertIn("shred -u", src, "the password and the disposable key are removed from the host afterwards")
+
+    def test_the_stage_names(self):
+        self.assertEqual(q.STAGES, ["facts", "prepare", "install", "bootstrap", "verify", "image", "vm"])
+        self.assertEqual(set(q.STAGES), set(q.FUNCS))
+
+
 class Arguments(unittest.TestCase):
     def test_good_and_bad_arguments(self):
         self.assertEqual(q.validate(args()), [])
