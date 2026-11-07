@@ -118,6 +118,17 @@ class Units(unittest.TestCase):
                     ("svavyom-console", "/var/lib/svavyom/api"), ("svavyom-console", "/var/lib/svavyom/state")):
             self.assertIn(hidden, " ".join(self.svc(n, "InaccessiblePaths")).split(), n)
 
+    def test_only_the_mutation_unit_can_see_the_default_pool(self):
+        # a create on the packaged default pool needs the mutation helper to lstat the new volume; with the pool hidden from it every create failed with "conflict"
+        # (the first clean-host qualification). The other units keep it hidden.
+        pool = "/var/lib/svavyom/pool"
+        self.assertNotIn(pool, " ".join(self.svc("svavyom-mutation", "InaccessiblePaths")).split())
+        self.assertNotIn(pool, " ".join(self.svc("svavyom-mutation", "ReadWritePaths")).split(), "it may see the pool, never write it")
+        for n in ("svavyom-api", "svavyom-agent", "svavyom-console"):
+            self.assertIn(pool, " ".join(self.svc(n, "InaccessiblePaths")).split(), n)
+        offsite = (PKG / "systemd" / "svavyom-offsite.service.in").read_text()
+        self.assertRegex(offsite, r"(?m)^InaccessiblePaths=.*%s" % pool, "svavyom-offsite")
+
     def test_api_has_no_libvirt_socket_and_mutation_is_opt_in(self):
         exec_ = self.svc("svavyom-api", "ExecStart")[0]
         self.assertNotIn("libvirt", exec_)
