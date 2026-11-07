@@ -29,11 +29,23 @@ def sh(cmd, timeout=120, check=False):
     return r.returncode, (r.stdout + r.stderr)
 
 
+def insecure_context():
+    """A TLS context that does not verify the certificate: only for the installation's own self-signed certificate on a loopback address (--insecure-tls)."""
+    ctx = ssl.create_default_context()
+    ctx.check_hostname = False
+    ctx.verify_mode = ssl.CERT_NONE
+    return ctx
+
+
 class Api:
-    def __init__(self, base, pwfile):
+    def __init__(self, base, pwfile, insecure_tls=False):
         self.base, self.pwfile = base, pwfile
         self.jar = http.cookiejar.CookieJar()
-        self.op = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(self.jar))
+        self.ctx = insecure_context() if insecure_tls else None
+        handlers = [urllib.request.HTTPCookieProcessor(self.jar)]
+        if self.ctx is not None:
+            handlers.append(urllib.request.HTTPSHandler(context=self.ctx))
+        self.op = urllib.request.build_opener(*handlers)
         self.csrf = None
 
     def call(self, method, path, body=None, extra=None):
@@ -112,11 +124,13 @@ def ws_console(api, vm_id, seconds=25):
     if s != 200 and s != 201:
         return None, f"ticket HTTP {s}"
     ticket = t["ticket"]
-    u = re.match(r"http://([^:/]+):(\d+)", api.base)
+    u = re.match(r"https?://([^:/]+):(\d+)", api.base)
     host, port = u.group(1), int(u.group(2))
     cookies = "; ".join(f"{c.name}={c.value}" for c in api.jar)
     key = base64.b64encode(os.urandom(16)).decode()
     sock = socket.create_connection((host, port), timeout=10)
+    if api.base.startswith("https://") and api.ctx is not None:
+        sock = api.ctx.wrap_socket(sock, server_hostname=host)
     req = (f"GET /console/v1/vms/{vm_id}/socket HTTP/1.1\r\nHost: {host}:{port}\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Key: {key}\r\nSec-WebSocket-Version: 13\r\n"
            f"Sec-WebSocket-Protocol: svavyom.console.v1, t.{ticket}\r\nOrigin: {api.base}\r\nCookie: {cookies}\r\n\r\n")
     sock.sendall(req.encode())
@@ -166,6 +180,7 @@ def ws_console(api, vm_id, seconds=25):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--base", required=True)
+    ap.add_argument("--insecure-tls", action="store_true", help="https base: do not verify the certificate (the installation's own self-signed one, on loopback)")
     ap.add_argument("--password-file", required=True)
     ap.add_argument("--pubkey", required=True)
     ap.add_argument("--ssh-key", required=True)
@@ -182,7 +197,7 @@ def main():
     subnet_octet = 100 + int(h[:2], 16) % 100
     subnet = f"10.{subnet_octet}.{int(h[2:4], 16) % 250}.0/24"
     os.makedirs(a.out, exist_ok=True)
-    api = Api(a.base, a.password_file)
+    api = Api(a.base, a.password_file, a.insecure_tls)
     pub = open(a.pubkey).read().strip()
 
     def finish():
@@ -210,7 +225,7 @@ def main():
     imgs = [i for i in (d or {}).get("items", []) if i.get("id") == a.image]
     rec("image-qualified", "PASS" if imgs and imgs[0]["observed"]["qualification"] == "qualified" else "FAIL", "the catalog offers the qualified image")
     try:
-        urllib.request.urlopen(urllib.request.Request(a.base + "/api/v1/vms"), timeout=10)
+        urllib.request.urlopen(urllib.request.Request(a.base + "/api/v1/vms"), timeout=10, context=insecure_context() if a.insecure_tls else None)
         rec("unauthenticated-refused", "FAIL", "anonymous read succeeded")
     except urllib.error.HTTPError as e:
         rec("unauthenticated-refused", "PASS" if e.code == 401 else "FAIL", f"anonymous GET /api/v1/vms -> HTTP {e.code}")
@@ -299,7 +314,7 @@ def main():
         pid_after = sh(["sudo", "-n", "pgrep", "-f", f"guest={vm_name}"])[1].split()[:1]
         rec("services-restart-vm-intact", "PASS" if rc == 0 and rc2 == 0 and before == after == "running" and pid_before == pid_after and pid_before else "FAIL",
             f"services restarted; domain {before!r} -> {after!r}; QEMU process unchanged: {pid_before == pid_after and bool(pid_before)}")
-        api2 = Api(a.base, a.password_file)
+        api2 = Api(a.base, a.password_file, a.insecure_tls)
         rec("sign-in-after-restart", "PASS" if api2.sign_in() else "FAIL", "a fresh sign-in works after the restart")
         api = api2
         v = api.vm_by_name(vm_name)
