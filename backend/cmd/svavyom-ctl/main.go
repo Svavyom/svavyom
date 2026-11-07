@@ -56,6 +56,7 @@ const usage = `usage: svavyom-ctl <command> [flags]
   db-backup        [--keep N]                                         consistent, verified copy of the API database (service keeps running)
   db-backups                                                          list the database copies and re-verify each
   db-restore       [ID|latest] [--apply]                              put a verified copy back (keeps the replaced database)
+  backup-report    [--config FILE] [--json]                           root: read-only list of the backups on disk next to what the scheduler keeps (finds what the retention bug left)
   user-unlock      [--username NAME] [--apply]                        clear the sign-in blocks (restarts the API: they live in its memory; sessions stay valid)
   uninstall        [--apply] [--purge --confirm-purge DELETE-SVAVYOM-DATA]
 Privileged commands print their plan and change nothing without --apply.`
@@ -312,6 +313,12 @@ func run(ctx context.Context, e *ctl.Env, args []string, stdout, stderr io.Write
 				state = "NOT VERIFIED: " + verr.Error()
 			}
 			_, _ = fmt.Fprintf(stdout, "%s  %s  %d bytes  %s\n", m.ID, m.CreatedAt, m.SizeBytes, state)
+		}
+		return 0
+	case "backup-report":
+		// M0-E01-S08: what is on disk next to what the scheduler keeps (read-only; run as root, the store belongs to the mutation service).
+		if err := ctl.BackupReportRun(ctx, e, *cfg, *asJSON, stdout); err != nil {
+			return fail(err)
 		}
 		return 0
 	case "user-unlock":
