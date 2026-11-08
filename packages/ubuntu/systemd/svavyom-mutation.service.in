@@ -58,7 +58,11 @@ MemoryMax=1G
 # Writable: its socket and its own scratch/state. Everything it trusts is explicitly read-only; the API's database is invisible.
 ReadWritePaths=/run/svavyom/mutation /var/lib/svavyom/state
 ReadOnlyPaths=/etc/svavyom /usr/libexec/svavyom /var/lib/svavyom/images
-InaccessiblePaths=/var/lib/svavyom/api /var/lib/svavyom/pool
+# The default pool is NOT hidden from this unit. A VM create makes its root volume there (libvirt makes it root:root 0600 in a 0711 directory), and the helper must
+# lstat that path to prove it is the regular file it created, not a symlink or a lookalike, before it names it in the domain: a hidden pool made every create on the
+# packaged default pool fail with "conflict" (found by the first clean-host qualification). The 0711 directory lets this identity see that a volume exists and what it
+# is; it cannot read any volume (0600 root), and the API, agent, console and off-host units still cannot see the pool at all.
+InaccessiblePaths=/var/lib/svavyom/api
 # EXCEPTIONS (each to be re-tested on the qualification host):
 #  * MemoryDenyWriteExecute is not set (libvirt client libraries, as for the agent).
 #  * PrivateUsers is not set: libvirt authorises the socket by the caller's real uid/gid (SO_PEERCRED); a user-namespace mapping
