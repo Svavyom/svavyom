@@ -4,7 +4,7 @@
     python3 tools/qualify_clean_host.py --host 203.0.113.10 --key ~/.ssh/KEY --tls-name HOST.example --artifact release-out/svavyom-0.1.0-preview.15 --out DIR --stage facts
     stages: facts (read-only) | prepare (apt: qemu and libvirt) | install (copy the artifact to a root-owned place, preflight, install) | bootstrap (the first administrator)
             | verify (services, API health on the host and from here) | image (an Ubuntu cloud image registered and qualified in the catalog)
-            | vm (tools/qualify_install.py run ON the host: VM create, SSH, console, reboot, resize, snapshot, backup, network, service restart, support bundle)
+            | upgrade (a newer artifact over the installed one, signed or from a root-owned copy; the installer makes its backup first) | vm (tools/qualify_install.py run ON the host: VM create, SSH, console, reboot, resize, snapshot, backup, network, service restart, support bundle)
 
 It needs passwordless sudo for the SSH user on the host (the owner allowed it on the two test hosts) and changes only that host. It never prints a password: the
 administrator's password is generated here, written to DIR/admin-password (mode 0600) and sent to the host on standard input. The artifact is installed through the
@@ -24,7 +24,7 @@ import time
 sys.dont_write_bytecode = True
 
 R = []
-STAGES = ["facts", "prepare", "install", "bootstrap", "verify", "image", "vm"]
+STAGES = ["facts", "prepare", "install", "bootstrap", "verify", "image", "vm", "upgrade"]
 HOST_RE = re.compile(r"^[0-9]{1,3}(\.[0-9]{1,3}){3}$")
 NAME_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9.-]{0,251}[A-Za-z0-9]$")
 RUN_RE = re.compile(r"^qr-[0-9]{8}-[0-9a-f]{6}$")
@@ -150,28 +150,64 @@ def tar_artifact(path, dest):
     return name
 
 
-def stage_install(h, a):
+def put_artifact(h, a):
+    """Copy the artifact (and, when given, its signatures and the public key) to a place only root can change on the host, and check every digest there. Returns the
+    artifact's directory name, or None after recording the failure."""
     tmp = os.path.join(a.out, "%s-artifact.tgz" % a.run_id)
     name = tar_artifact(a.artifact, tmp)
     rc, out = h.put(tmp, "/tmp/%s.tgz" % name)
     os.remove(tmp)
     if not rec("artifact-copied", rc == 0, out[-120:] if rc else "copied to the host"):
-        return
+        return None
     cmd = ("sudo install -d -m 0755 -o root -g root %s && sudo tar -C %s -xzf /tmp/%s.tgz && sudo chown -R root:root %s/%s && sudo chmod -R go-w %s/%s && rm -f /tmp/%s.tgz "
            "&& cd %s/%s && sudo sha256sum --quiet -c SHA256SUMS && echo VERIFIED") % (REMOTE_ARTIFACTS, REMOTE_ARTIFACTS, name, REMOTE_ARTIFACTS, name, REMOTE_ARTIFACTS, name, name, REMOTE_ARTIFACTS, name)
     rc, out = h.run(cmd, timeout=120)
     if not rec("artifact-root-owned-and-intact", rc == 0 and "VERIFIED" in out, "under %s, root-owned, every digest matches SHA256SUMS" % REMOTE_ARTIFACTS if rc == 0 else out[-200:]):
-        return
-    signed = bool(a.signatures and a.public_key)
-    if signed:
-        for local, remote in ((a.public_key, "%s/release-signing-key.pub" % REMOTE_ARTIFACTS),):
-            rc, out = h.put(local, "/tmp/k.pub")
-            h.run("sudo install -m 0644 -o root -g root /tmp/k.pub %s && rm -f /tmp/k.pub" % remote)
+        return None
+    if a.signatures and a.public_key:
+        h.put(a.public_key, "/tmp/k.pub")
+        h.run("sudo install -m 0644 -o root -g root /tmp/k.pub %s/release-signing-key.pub && rm -f /tmp/k.pub" % REMOTE_ARTIFACTS)
         sigtmp = os.path.join(a.out, "%s-sigs.tgz" % a.run_id)
         subprocess.run(["tar", "-C", os.path.dirname(os.path.abspath(a.signatures)), "-czf", sigtmp, os.path.basename(os.path.normpath(a.signatures))], check=True)  # noqa: S603,S607
         h.put(sigtmp, "/tmp/sigs.tgz")
         os.remove(sigtmp)
         h.run("sudo rm -rf %s/signatures && sudo mkdir -p %s/signatures && sudo tar -C %s/signatures --strip-components=1 -xzf /tmp/sigs.tgz && sudo chown -R root:root %s/signatures && rm -f /tmp/sigs.tgz" % ((REMOTE_ARTIFACTS,) * 4))
+    return name
+
+
+def remote_upgrade_argv(name, listen, signed):
+    """The upgrade command on the host from the root-owned copy of the NEW artifact: the installed options are repeated (the installer says to), the signature or --allow-unsigned."""
+    base = "%s/%s" % (REMOTE_ARTIFACTS, name)
+    argv = ["sudo", "%s/bin/svavyom-ctl" % base, "upgrade", "--artifact", base, "--enable-mutation", "--enable-console", "--backup-dir", "/var/lib/svavyom/backups", "--listen", listen]
+    argv += ["--signatures", "%s/signatures" % REMOTE_ARTIFACTS, "--public-key", "%s/release-signing-key.pub" % REMOTE_ARTIFACTS] if signed else ["--allow-unsigned"]
+    return argv
+
+
+def stage_upgrade(h, a):
+    before = h.run("cat /usr/libexec/svavyom/VERSION", timeout=30)[1].strip()
+    name = put_artifact(h, a)
+    if not name:
+        return
+    signed = bool(a.signatures and a.public_key)
+    cmd = " ".join(shlex.quote(x) for x in remote_upgrade_argv(name, a.listen, signed))
+    rc, plan = h.run(cmd + "; echo EXIT=$?", timeout=300)
+    rec("upgrade-plan", "EXIT=0" in plan and "PLAN" in plan, "the plan was printed and nothing was changed" if "EXIT=0" in plan else plan[-300:])
+    rc, out = h.run(cmd + " --apply; echo EXIT=$?", timeout=1200)
+    ok = "EXIT=0" in out and "upgraded" in out
+    rec("upgrade-applied", ok, ("upgraded %s through the %s path" % (before, "signed" if signed else "--allow-unsigned (root-owned copy)")) if ok else out[-500:])
+    if signed:
+        rec("signature-checked", "signature: valid" in out, "the installer said the signature is valid" if "signature: valid" in out else "the installer did not report a valid signature")
+    m = re.search(r"backup (\S+) is kept for `svavyom-ctl rollback`", out)
+    rec("rollback-backup-recorded", m is not None, ("backup " + m.group(1)) if m else "the installer named no backup")
+    with open(os.path.join(a.out, "%s-upgrade-backup-id" % a.run_id), "w") as f:
+        f.write((m.group(1) if m else "") + "\n")
+
+
+def stage_install(h, a):
+    name = put_artifact(h, a)
+    if not name:
+        return
+    signed = bool(a.signatures and a.public_key)
     ctl = "%s/%s/bin/svavyom-ctl" % (REMOTE_ARTIFACTS, name)
     rc, out = h.run("sudo %s preflight; echo EXIT=$?" % ctl, timeout=120)
     m = re.search(r"(?m)^RESULT:\s*(PASS|NOT_READY|FAIL)\s*$", out)
@@ -272,7 +308,7 @@ def stage_vm(h, a):
         rec("vm:" + x["id"], x["status"] == "PASS", x.get("detail", ""))
 
 
-FUNCS = {"facts": stage_facts, "prepare": stage_prepare, "install": stage_install, "bootstrap": stage_bootstrap, "verify": stage_verify, "image": stage_image, "vm": stage_vm}
+FUNCS = {"facts": stage_facts, "prepare": stage_prepare, "install": stage_install, "bootstrap": stage_bootstrap, "verify": stage_verify, "image": stage_image, "vm": stage_vm, "upgrade": stage_upgrade}
 
 
 def validate(a):

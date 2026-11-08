@@ -91,8 +91,19 @@ class ImageAndVmStages(unittest.TestCase):
         src = (ROOT / "tools" / "qualify_clean_host.py").read_text()
         self.assertIn("shred -u", src, "the password and the disposable key are removed from the host afterwards")
 
+    def test_the_upgrade_repeats_the_installed_options_and_is_signed_or_explicitly_unsigned(self):
+        unsigned = q.remote_upgrade_argv("svavyom-0.1.0-preview.16", "0.0.0.0:8443", False)
+        signed = q.remote_upgrade_argv("svavyom-0.1.0-preview.16", "0.0.0.0:8443", True)
+        for argv in (unsigned, signed):
+            self.assertEqual(argv[:3], ["sudo", q.REMOTE_ARTIFACTS + "/svavyom-0.1.0-preview.16/bin/svavyom-ctl", "upgrade"])
+            for need in ("--enable-mutation", "--enable-console", "--backup-dir", "--listen"):
+                self.assertIn(need, argv, "the installer says to repeat the options the install used")
+        self.assertIn("--allow-unsigned", unsigned)
+        self.assertNotIn("--allow-unsigned", signed)
+        self.assertIn("--signatures", signed)
+
     def test_the_stage_names(self):
-        self.assertEqual(q.STAGES, ["facts", "prepare", "install", "bootstrap", "verify", "image", "vm"])
+        self.assertEqual(q.STAGES, ["facts", "prepare", "install", "bootstrap", "verify", "image", "vm", "upgrade"])
         self.assertEqual(set(q.STAGES), set(q.FUNCS))
 
 
