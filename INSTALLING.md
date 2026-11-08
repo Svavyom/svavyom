@@ -38,11 +38,37 @@ Options you will likely want:
 * `--network`, `--pool` to use names other than the defaults.
 
 ### Where VM disks live
-VM disks and their cloud-init seeds are kept in a libvirt **directory pool**. By default that is the pool `svavyom` on `/var/lib/svavyom/pool` (root-owned, mode 0711; only libvirt writes there, and no Svavyom service can read it). `--create-pool` defines it for you.
+VM disks and their cloud-init seeds are kept in a libvirt **directory pool**. By default that is the pool `svavyom` on `/var/lib/svavyom/pool` (root-owned, mode 0711; only libvirt writes there. The API, agent, console and off-host copy services cannot see the directory at all; the mutation service can see that a volume exists and what it is, because it must check the disk it has just made, but it cannot read any volume, which is root-only). `--create-pool` defines it for you.
 
 If `/var/lib` is small, keep the disks on a larger disk instead: define your own libvirt directory pool there first, then give its name with `--pool NAME` and leave out `--create-pool` (an existing pool is used as it is and never changed). The name ends up in `/etc/svavyom/provision.json` as `pool`. `/var/lib/svavyom/pool` is then created but stays **empty**, which is expected and not an error. Check which pool is in use with `sudo virsh pool-list --all` and `grep pool /etc/svavyom/provision.json`.
 
 Images are separate: they live in `/var/lib/svavyom/images`, which is fixed.
+
+### Running behind a TLS proxy
+By default Svavyom serves HTTPS itself. If you already run a reverse proxy that terminates TLS (nginx, Caddy), you can instead let Svavyom listen on loopback in plain HTTP and put the proxy in front. Three things must be true, or sign-in throttling and the audit trail will see every visitor as the proxy:
+1. Install with `--listen 127.0.0.1:8443` (a loopback listener needs no TLS) and add `--behind-tls-proxy` to the API's command line. The installer has no flag for it; use a systemd drop-in that clears and repeats the whole `ExecStart` (an empty `ExecStart=` line, then the command from `systemctl cat svavyom-api` with the flag appended), for example `/etc/systemd/system/svavyom-api.service.d/zz-proxy.conf` (the `zz-` makes it sort after the installer's own `features.conf`), then `sudo systemctl daemon-reload && sudo systemctl restart svavyom-api`. A drop-in that repeats `ExecStart` does not follow later upgrades: after every upgrade compare it with `systemctl cat svavyom-api`.
+2. The proxy sets `X-Forwarded-Proto: https` (so the session cookie is `Secure`) and the **client's address** in a header that the client cannot forge: by default `X-Forwarded-For`, and Svavyom reads only its **rightmost** entry, the one your proxy wrote itself. For another header (for example `CF-Connecting-IP`), pass `--proxy-address-header NAME`; trust such a header only if your proxy overwrites it.
+3. The proxy passes WebSocket upgrades (the consoles) and the original `Host`, and allows a long read time.
+
+nginx, as a minimal example (an illustration, not tested against every proxy version):
+```
+location / {
+    proxy_pass http://127.0.0.1:8443;
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-Proto https;
+    proxy_set_header X-Forwarded-For $remote_addr;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+    proxy_read_timeout 3600s;
+}
+```
+Caddy: `reverse_proxy 127.0.0.1:8443` is enough (it sets both headers and passes WebSockets).
+
+What this mode trusts: Svavyom believes the client-address header only on a connection that comes from loopback, and any process on the host can connect to the loopback listener and claim any address. Use this mode on a host where only software you trust runs. Without `--behind-tls-proxy` the header is never read.
+
+### Locked out of sign-in
+After five failed sign-ins for a user from one address, that **pair** is blocked for 30 seconds, then longer on each further failure up to 15 minutes. Someone else failing for your user name from another address does not lock you out; one address that fails twenty times across any names is blocked on its own; and a user name that has failed recently from anywhere makes the next attempts wait up to two seconds, but a correct password is still accepted. The blocks are held in the API's memory, so there is no per-user unlock: `sudo svavyom-ctl user-unlock --apply` restarts the API and clears them all (signed-in sessions stay valid); `sudo svavyom-ctl user-unlock` alone prints what it would do.
 
 ## 4. After the install
 1. **Create the administrator** (once; the password file is yours, delete it afterwards):
