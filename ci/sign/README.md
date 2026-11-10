@@ -4,11 +4,11 @@ Svavyom releases are signed with an **Ed25519** key, named `dbscodesignkey`. The
 
 ```
 -----BEGIN PUBLIC KEY-----
-MCowBQYDK2VwAyEA6pBEBUMPeG8P8rvjqTumeyIUyYjzlcm9aiTKRqPzFWg=
+MCowBQYDK2VwAyEAQHNxmclfJBcP/YTreCAhs/eFDZzlOsRblUnAd8vJLUU=
 -----END PUBLIC KEY-----
 ```
 
-**Fingerprint:** `a4671940514c19a7` (the first 16 hex digits of the SHA-256 of the DER form of the public key; `SIGNING-INFO.json` of a signed release names the same value).
+**Fingerprint:** `247e9193c933b6fa` (the first 16 hex digits of the SHA-256 of the DER form of the public key; `SIGNING-INFO.json` of a signed release names the same value).
 
 Check it yourself before you trust it: `openssl pkey -pubin -in release-signing-key.pub -pubout -outform DER | sha256sum | cut -c1-16`. A key that arrives beside a release proves nothing: compare the fingerprint with the one in the project's README and release notes, obtained from a place you trust.
 
@@ -32,3 +32,6 @@ done
 
 ## If the key is lost or exposed
 Say so in the release notes, make a new key, publish its fingerprint beside the old one and sign the next release with the new key; users who verify must be told to trust the new fingerprint through a channel they trust. There is no automatic revocation in a preview release.
+
+## Retired keys
+* `a4671940514c19a7` was published in preview builds but never signed a release; its passphrase was lost on 2026-11-08 and it is retired. Do not trust a signature that names it.
