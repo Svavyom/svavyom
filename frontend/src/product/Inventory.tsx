@@ -7,6 +7,7 @@ import { decodeHost, decodeVmList } from "../api/decoders";
 import type { Host, VM } from "../api/schema";
 import { readiness } from "./Dashboard";
 import { Connection, NetworkInfo } from "./VmDetail";
+import { guidance } from "./guidance";
 import { atLeast, useRole } from "./role";
 import { POWER_LABEL, POWER_TONE } from "./vmparts";
 
@@ -64,6 +65,8 @@ export function Inventory(props: { query: string; refresh: number; onSessionEnde
   const enabled = host?.observed.creation.enabled === true;
   const role = useRole();
   const canCreate = host?.observed.creation.ready === true && atLeast(role, "operator");
+  // Without this the button simply is not there and nothing says why (a fresh install has no image yet).
+  const whyNot = host && !host.observed.creation.ready ? guidance(host.observed.creation.reasons).blocking.join(" ") : "";
   const q = props.query.trim().toLowerCase();
   const shown = (vms ?? []).filter((v) => matches(v, filter) && (q === "" || v.name.toLowerCase().includes(q)));
   const count = (f: Filter) => (vms ?? []).filter((v) => matches(v, f)).length;
@@ -73,6 +76,7 @@ export function Inventory(props: { query: string; refresh: number; onSessionEnde
         <p>Select a VM to see its details and manage it.</p>
       </PageHead>
       {enabled ? <StatusMessage tone="warning">Development Preview: creating and starting VMs is experimental and has not been qualified on real hardware.</StatusMessage> : null}
+      {whyNot ? <StatusMessage tone="warning">Creating a VM is not available right now. {whyNot}</StatusMessage> : null}
       {notReady && notReady.tone === "warning" ? <StatusMessage tone="warning">{notReady.text}</StatusMessage> : null}
       {failure?.kind === "unreachable" ? <UnreachableBanner lastKnown={lastAt} onRetry={() => load(null)} /> : null}
       {failure?.kind === "error" ? (
@@ -88,7 +92,7 @@ export function Inventory(props: { query: string; refresh: number; onSessionEnde
       <LoadingRegion label="Virtual machines" loading={loading && !vms}>
         {vms && failure && lastAt ? <StaleNotice lastUpdated={lastAt} now={new Date()} /> : null}
         {vms && vms.length === 0 ? (
-          <EmptyState title="No VMs yet" reason={canCreate ? "There are no virtual machines on this host yet." : "There are no virtual machines on this host. Creating virtual machines is not available yet."}
+          <EmptyState title="No VMs yet" reason={canCreate ? "There are no virtual machines on this host yet." : "There are no virtual machines on this host. Creating virtual machines is not available right now (see above)."}
             action={canCreate ? <a className="ds-button ds-button--primary" href="#/create">Create VM</a> : undefined} />
         ) : null}
         {vms && vms.length > 0 ? (

@@ -250,6 +250,16 @@ describe("VM inventory (read-only)", () => {
     expect(await axeViolations(document.body)).toEqual([]);
   });
 
+  it("says why there is no Create VM button when creation is enabled but not ready", async () => {
+    api.vms = [];
+    api.host = { ...HOST, observed: { ...HOST.observed, creation: { enabled: true, network: "available", storage: "available", vcpu_options: [1], memory_mib_options: [512], disk_gib_options: [10], ready: false, reasons: ["no_usable_image", "host_not_qualified"] } } };
+    await openInventory();
+    expect((await screen.findAllByText(/No image can be chosen yet/)).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/sudo \/usr\/libexec\/svavyom\/api register-image .*--cloud-init/).length).toBeGreaterThan(0);
+    expect(screen.queryByRole("link", { name: "Create VM" })).toBeNull();
+    expect(await axeViolations(document.body)).toEqual([]);
+  });
+
   it("lists the machines with their observed power state and offers no lifecycle controls", async () => {
     api.vms = [VM_RUNNING, vm({ id: "db-1", name: "db-1", observed: { ...NO_SIZE, power: "stopped", last_seen_at: "2026-10-09T09:00:00Z", managed: false, ip_address: null, login_user: null, disk_gib: null, snapshots: [], network: null } }),
       vm({ id: "wk-1", name: "wk-1", observed: { ...NO_SIZE, power: "paused", last_seen_at: "2026-10-09T09:00:00Z", managed: false, ip_address: null, login_user: null, disk_gib: null, snapshots: [], network: null } }),
