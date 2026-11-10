@@ -255,6 +255,7 @@ describe("VM inventory (read-only)", () => {
     api.host = { ...HOST, observed: { ...HOST.observed, creation: { enabled: true, network: "available", storage: "available", vcpu_options: [1], memory_mib_options: [512], disk_gib_options: [10], ready: false, reasons: ["no_usable_image", "host_not_qualified"] } } };
     await openInventory();
     expect((await screen.findAllByText(/No image can be chosen yet/)).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/sudo \/usr\/libexec\/svavyom\/api register-image .*--cloud-init/).length).toBeGreaterThan(0);
     expect(screen.queryByRole("link", { name: "Create VM" })).toBeNull();
     expect(await axeViolations(document.body)).toEqual([]);
   });

@@ -4,9 +4,12 @@ import type { Host } from "../api/schema";
 
 export type Reason = Host["observed"]["creation"]["reasons"][number];
 
+/** The one place that spells the command out, so the Storage page, the VM list and the create form say the same thing (the web console cannot import images: only root can write the image store). */
+export const REGISTER_IMAGE_HINT = "As root on the host: sudo /usr/libexec/svavyom/api register-image --provision-config /etc/svavyom/provision.json --id ubuntu-24.04 --display-name \"Ubuntu 24.04\" --distribution Ubuntu --version 24.04 --source /abs/path/noble-server-cloudimg-amd64.img --login-user ubuntu --min-disk-gib 3 --cloud-init (an Ubuntu or Debian cloud image in qcow2 format that you downloaded and checked yourself; see INSTALLING.md, section 4).";
+
 const BLOCKING: Record<Reason, string> = {
   mutation_disabled: "VM creation is not enabled on this installation. The server operator turns it on with the Development Preview setting (--experimental-mutation).",
-  no_usable_image: "No image can be chosen yet. The host administrator (root) imports one with `api register-image` and declares its cloud-init support with --cloud-init; an image that is only imported cannot be used.",
+  no_usable_image: "No image can be chosen yet. The host administrator (root) imports one with `api register-image` and declares its cloud-init support with --cloud-init; an image that is only imported cannot be used. " + REGISTER_IMAGE_HINT,
   storage_unavailable: "The storage pool for VM disks is not available. Check that the Svavyom libvirt storage pool exists and is active.",
   network_unavailable: "The NAT network for VMs is not available. Check that the Svavyom libvirt network exists and is active.",
   virtualization_unavailable: "This host does not offer hardware virtualization (KVM). See the readiness details on the dashboard.",

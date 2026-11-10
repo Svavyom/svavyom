@@ -8,7 +8,7 @@ import { read, type ReadResult } from "../api/client";
 import { decodeBackupList, decodeHost, decodeImageList, decodeVmList, decodeVolumeList } from "../api/decoders";
 import type { Backup, Host, Image, VM, Volume } from "../api/schema";
 import { OperationProgress } from "./OperationProgress";
-import { guidance, imageStateLabel } from "./guidance";
+import { guidance, imageStateLabel, REGISTER_IMAGE_HINT } from "./guidance";
 import { useRunner } from "./runner";
 import { DOWNTIME_WARNING, describeSchedule } from "./BackupSchedule";
 import { atLeast, useRole } from "./role";
@@ -178,7 +178,7 @@ export function Storage(props: { query: string; refresh: number; onSessionEnded:
         ) : null}
         <section>
           <h2>Images</h2>
-          {images.length === 0 ? <EmptyState title="No images" reason="The host administrator imports images with the api register-image command." /> : (
+          {images.length === 0 ? <EmptyState title="No images" reason={"The web console cannot import images; the host administrator does it on the host. " + REGISTER_IMAGE_HINT} /> : (
             <DataTable caption="Image catalog" rows={images.filter((i) => q === "" || i.name.toLowerCase().includes(q))} rowKey={(i) => i.id} columns={[
               { header: "Name", cell: (i: Image) => i.name, rowHeader: true },
               { header: "Kind", cell: (i: Image) => (i.observed.media === "iso" ? "Installation media (ISO)" : "Cloud image") },
