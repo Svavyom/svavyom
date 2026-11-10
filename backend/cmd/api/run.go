@@ -14,6 +14,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 
 	"example.invalid/dedicatedcloud/backend/internal/agent"
@@ -333,6 +334,8 @@ func serve(ctx context.Context, args []string, stderr io.Writer) int {
 		alertSettings *provision.AlertSettings
 		opStore       operation.Store
 	)
+	deps.StartedAt = time.Now()
+	deps.Services = serviceProbe(map[string]string{"agent": *agentSocket, "mutation": *mutSocket, "console": *consoleSocket, "offsite": *offsiteSocket})
 	if *firewallStatus != "" {
 		deps.Firewall = func() []api.FirewallFinding {
 			r, ok := fwstatus.Read(os.ReadFile, *firewallStatus, time.Now(), 7*24*time.Hour)
@@ -841,4 +844,38 @@ func adminPolicy(cfgPath, dir string, insecure bool) (provision.Policy, string, 
 		return provision.Policy{}, "", fmt.Errorf("the deployment is not operator-owned and read-only for the runtime identities: %s", strings.Join(bad, ", "))
 	}
 	return pol, pc.CatalogDir, nil
+}
+
+// serviceProbe reports, for each peer service of the API, whether its Unix socket accepts a connection. A service whose socket was not configured is
+// "not_enabled". Results are kept for a few seconds so the host endpoint does not dial on every request. The API only connects and closes: it asks nothing.
+func serviceProbe(sockets map[string]string) func() []api.ServiceState {
+	order := []string{"agent", "mutation", "console", "offsite"}
+	var (
+		mu   sync.Mutex
+		at   time.Time
+		last []api.ServiceState
+	)
+	return func() []api.ServiceState {
+		mu.Lock()
+		defer mu.Unlock()
+		if last != nil && time.Since(at) < 10*time.Second {
+			return append([]api.ServiceState(nil), last...)
+		}
+		out := make([]api.ServiceState, 0, len(order))
+		for _, id := range order {
+			state := "not_enabled"
+			if p := sockets[id]; p != "" {
+				state = "ok"
+				c, err := net.DialTimeout("unix", p, 500*time.Millisecond)
+				if err != nil {
+					state = "unreachable"
+				} else {
+					_ = c.Close()
+				}
+			}
+			out = append(out, api.ServiceState{ID: id, State: state})
+		}
+		last, at = out, time.Now()
+		return append([]api.ServiceState(nil), out...)
+	}
 }

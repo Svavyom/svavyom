@@ -15,7 +15,7 @@ export const HOST: Host = {
   observed: {
     reachable: true, agent_version: "0.0.0-dev", cpu_count: 8, memory_mib: 16384, capability_verdict: "supported",
     virtualization: { hardware: "available", kvm_device: "available", libvirt_packages: "available", qemu_packages: "available" },
-    distribution: { id: "debian", version_id: "13" }, capability_findings: [], usage: NO_HOST_USAGE, alerts: { open: 0, webhook: "none" }, nightly_boot: null, bridge: null,
+    distribution: { id: "debian", version_id: "13" }, capability_findings: [], usage: NO_HOST_USAGE, alerts: { open: 0, webhook: "none" }, nightly_boot: null, bridge: null, services: [{ id: "api", state: "ok" }, { id: "agent", state: "ok" }, { id: "mutation", state: "not_enabled" }, { id: "console", state: "not_enabled" }, { id: "offsite", state: "not_enabled" }], started_at: "2026-10-09T08:00:00Z",
     creation: { enabled: false, network: "unknown", storage: "unknown", vcpu_options: [], memory_mib_options: [], disk_gib_options: [], ready: false, reasons: ["mutation_disabled"] },
     storage: { state: "unknown", pool_total_gib: null, pool_free_gib: null, images_gib: null, backups_configured: false, backups_gib: null, backups_free_gib: null, snapshots: "unknown", backup_targets: [], allocation_note: "Disk sizes shown for a VM are virtual sizes. Real usage is lower while the disk is thinly allocated; the pool free figure is what counts." },
   },

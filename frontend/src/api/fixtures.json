@@ -74,7 +74,30 @@
       "webhook": "none"
      },
      "nightly_boot": null,
-     "bridge": null
+     "bridge": null,
+     "services": [
+      {
+       "id": "api",
+       "state": "ok"
+      },
+      {
+       "id": "agent",
+       "state": "ok"
+      },
+      {
+       "id": "mutation",
+       "state": "not_enabled"
+      },
+      {
+       "id": "console",
+       "state": "not_enabled"
+      },
+      {
+       "id": "offsite",
+       "state": "not_enabled"
+      }
+     ],
+     "started_at": "2026-10-09T08:00:00Z"
     },
     "allowed_actions": []
    }
@@ -408,7 +431,30 @@
         "webhook": "none"
        },
        "nightly_boot": null,
-       "bridge": null
+       "bridge": null,
+       "services": [
+        {
+         "id": "api",
+         "state": "ok"
+        },
+        {
+         "id": "agent",
+         "state": "ok"
+        },
+        {
+         "id": "mutation",
+         "state": "not_enabled"
+        },
+        {
+         "id": "console",
+         "state": "not_enabled"
+        },
+        {
+         "id": "offsite",
+         "state": "not_enabled"
+        }
+       ],
+       "started_at": "2026-10-09T08:00:00Z"
       },
       "allowed_actions": []
      }
@@ -939,7 +985,30 @@
       "webhook": "none"
      },
      "nightly_boot": null,
-     "bridge": null
+     "bridge": null,
+     "services": [
+      {
+       "id": "api",
+       "state": "ok"
+      },
+      {
+       "id": "agent",
+       "state": "ok"
+      },
+      {
+       "id": "mutation",
+       "state": "not_enabled"
+      },
+      {
+       "id": "console",
+       "state": "not_enabled"
+      },
+      {
+       "id": "offsite",
+       "state": "not_enabled"
+      }
+     ],
+     "started_at": "2026-10-09T08:00:00Z"
     },
     "allowed_actions": []
    }
@@ -1090,7 +1159,30 @@
       "webhook": "none"
      },
      "nightly_boot": null,
-     "bridge": null
+     "bridge": null,
+     "services": [
+      {
+       "id": "api",
+       "state": "ok"
+      },
+      {
+       "id": "agent",
+       "state": "ok"
+      },
+      {
+       "id": "mutation",
+       "state": "not_enabled"
+      },
+      {
+       "id": "console",
+       "state": "not_enabled"
+      },
+      {
+       "id": "offsite",
+       "state": "not_enabled"
+      }
+     ],
+     "started_at": "2026-10-09T08:00:00Z"
     },
     "allowed_actions": []
    }
@@ -1250,7 +1342,30 @@
       "webhook": "none"
      },
      "nightly_boot": null,
-     "bridge": null
+     "bridge": null,
+     "services": [
+      {
+       "id": "api",
+       "state": "ok"
+      },
+      {
+       "id": "agent",
+       "state": "ok"
+      },
+      {
+       "id": "mutation",
+       "state": "not_enabled"
+      },
+      {
+       "id": "console",
+       "state": "not_enabled"
+      },
+      {
+       "id": "offsite",
+       "state": "not_enabled"
+      }
+     ],
+     "started_at": "2026-10-09T08:00:00Z"
     },
     "allowed_actions": []
    }
@@ -1419,7 +1534,30 @@
       "result": "pass",
       "seconds": 412
      },
-     "bridge": null
+     "bridge": null,
+     "services": [
+      {
+       "id": "api",
+       "state": "ok"
+      },
+      {
+       "id": "agent",
+       "state": "ok"
+      },
+      {
+       "id": "mutation",
+       "state": "not_enabled"
+      },
+      {
+       "id": "console",
+       "state": "not_enabled"
+      },
+      {
+       "id": "offsite",
+       "state": "not_enabled"
+      }
+     ],
+     "started_at": "2026-10-09T08:00:00Z"
     },
     "allowed_actions": []
    }
@@ -1506,7 +1644,9 @@
      "ip_address": null,
      "login_user": null,
      "iso": "alpine-iso",
-     "isos": ["alpine-iso"],
+     "isos": [
+      "alpine-iso"
+     ],
      "guest_profile": "linux",
      "disk_gib": null,
      "snapshots": [],
@@ -1604,7 +1744,30 @@
       "bridge": "svbr0",
       "interface": "eno1",
       "seconds_left": 90
-     }
+     },
+     "services": [
+      {
+       "id": "api",
+       "state": "ok"
+      },
+      {
+       "id": "agent",
+       "state": "ok"
+      },
+      {
+       "id": "mutation",
+       "state": "not_enabled"
+      },
+      {
+       "id": "console",
+       "state": "not_enabled"
+      },
+      {
+       "id": "offsite",
+       "state": "not_enabled"
+      }
+     ],
+     "started_at": "2026-10-09T08:00:00Z"
     },
     "allowed_actions": []
    }
@@ -1683,7 +1846,30 @@
       "bridge": "svbr0",
       "interface": "eno1",
       "seconds_left": null
-     }
+     },
+     "services": [
+      {
+       "id": "api",
+       "state": "ok"
+      },
+      {
+       "id": "agent",
+       "state": "ok"
+      },
+      {
+       "id": "mutation",
+       "state": "not_enabled"
+      },
+      {
+       "id": "console",
+       "state": "not_enabled"
+      },
+      {
+       "id": "offsite",
+       "state": "not_enabled"
+      }
+     ],
+     "started_at": "2026-10-09T08:00:00Z"
     },
     "allowed_actions": []
    }
@@ -1794,7 +1980,30 @@
       "webhook": "none"
      },
      "nightly_boot": null,
-     "bridge": null
+     "bridge": null,
+     "services": [
+      {
+       "id": "api",
+       "state": "ok"
+      },
+      {
+       "id": "agent",
+       "state": "ok"
+      },
+      {
+       "id": "mutation",
+       "state": "not_enabled"
+      },
+      {
+       "id": "console",
+       "state": "not_enabled"
+      },
+      {
+       "id": "offsite",
+       "state": "not_enabled"
+      }
+     ],
+     "started_at": "2026-10-09T08:00:00Z"
     },
     "allowed_actions": [],
     "message": "x"
@@ -1843,7 +2052,30 @@
       "webhook": "none"
      },
      "nightly_boot": null,
-     "bridge": null
+     "bridge": null,
+     "services": [
+      {
+       "id": "api",
+       "state": "ok"
+      },
+      {
+       "id": "agent",
+       "state": "ok"
+      },
+      {
+       "id": "mutation",
+       "state": "not_enabled"
+      },
+      {
+       "id": "console",
+       "state": "not_enabled"
+      },
+      {
+       "id": "offsite",
+       "state": "not_enabled"
+      }
+     ],
+     "started_at": "2026-10-09T08:00:00Z"
     },
     "allowed_actions": []
    },
@@ -1915,7 +2147,30 @@
       "webhook": "none"
      },
      "nightly_boot": null,
-     "bridge": null
+     "bridge": null,
+     "services": [
+      {
+       "id": "api",
+       "state": "ok"
+      },
+      {
+       "id": "agent",
+       "state": "ok"
+      },
+      {
+       "id": "mutation",
+       "state": "not_enabled"
+      },
+      {
+       "id": "console",
+       "state": "not_enabled"
+      },
+      {
+       "id": "offsite",
+       "state": "not_enabled"
+      }
+     ],
+     "started_at": "2026-10-09T08:00:00Z"
     },
     "allowed_actions": []
    },
@@ -1987,7 +2242,30 @@
       "webhook": "none"
      },
      "nightly_boot": null,
-     "bridge": null
+     "bridge": null,
+     "services": [
+      {
+       "id": "api",
+       "state": "ok"
+      },
+      {
+       "id": "agent",
+       "state": "ok"
+      },
+      {
+       "id": "mutation",
+       "state": "not_enabled"
+      },
+      {
+       "id": "console",
+       "state": "not_enabled"
+      },
+      {
+       "id": "offsite",
+       "state": "not_enabled"
+      }
+     ],
+     "started_at": "2026-10-09T08:00:00Z"
     },
     "allowed_actions": []
    },
@@ -2059,7 +2337,30 @@
       "webhook": "none"
      },
      "nightly_boot": null,
-     "bridge": null
+     "bridge": null,
+     "services": [
+      {
+       "id": "api",
+       "state": "ok"
+      },
+      {
+       "id": "agent",
+       "state": "ok"
+      },
+      {
+       "id": "mutation",
+       "state": "not_enabled"
+      },
+      {
+       "id": "console",
+       "state": "not_enabled"
+      },
+      {
+       "id": "offsite",
+       "state": "not_enabled"
+      }
+     ],
+     "started_at": "2026-10-09T08:00:00Z"
     },
     "allowed_actions": [
      "start"
@@ -3664,7 +3965,30 @@
         "webhook": "none"
        },
        "nightly_boot": null,
-       "bridge": null
+       "bridge": null,
+       "services": [
+        {
+         "id": "api",
+         "state": "ok"
+        },
+        {
+         "id": "agent",
+         "state": "ok"
+        },
+        {
+         "id": "mutation",
+         "state": "not_enabled"
+        },
+        {
+         "id": "console",
+         "state": "not_enabled"
+        },
+        {
+         "id": "offsite",
+         "state": "not_enabled"
+        }
+       ],
+       "started_at": "2026-10-09T08:00:00Z"
       },
       "allowed_actions": []
      }
@@ -3956,7 +4280,30 @@
       "webhook": "none"
      },
      "nightly_boot": null,
-     "bridge": null
+     "bridge": null,
+     "services": [
+      {
+       "id": "api",
+       "state": "ok"
+      },
+      {
+       "id": "agent",
+       "state": "ok"
+      },
+      {
+       "id": "mutation",
+       "state": "not_enabled"
+      },
+      {
+       "id": "console",
+       "state": "not_enabled"
+      },
+      {
+       "id": "offsite",
+       "state": "not_enabled"
+      }
+     ],
+     "started_at": "2026-10-09T08:00:00Z"
     },
     "allowed_actions": []
    },
@@ -4029,7 +4376,30 @@
       "webhook": "none"
      },
      "nightly_boot": null,
-     "bridge": null
+     "bridge": null,
+     "services": [
+      {
+       "id": "api",
+       "state": "ok"
+      },
+      {
+       "id": "agent",
+       "state": "ok"
+      },
+      {
+       "id": "mutation",
+       "state": "not_enabled"
+      },
+      {
+       "id": "console",
+       "state": "not_enabled"
+      },
+      {
+       "id": "offsite",
+       "state": "not_enabled"
+      }
+     ],
+     "started_at": "2026-10-09T08:00:00Z"
     },
     "allowed_actions": []
    },
@@ -4170,7 +4540,30 @@
       "webhook": "none"
      },
      "nightly_boot": null,
-     "bridge": null
+     "bridge": null,
+     "services": [
+      {
+       "id": "api",
+       "state": "ok"
+      },
+      {
+       "id": "agent",
+       "state": "ok"
+      },
+      {
+       "id": "mutation",
+       "state": "not_enabled"
+      },
+      {
+       "id": "console",
+       "state": "not_enabled"
+      },
+      {
+       "id": "offsite",
+       "state": "not_enabled"
+      }
+     ],
+     "started_at": "2026-10-09T08:00:00Z"
     },
     "allowed_actions": []
    },
@@ -4427,7 +4820,30 @@
       "webhook": "none"
      },
      "nightly_boot": null,
-     "bridge": null
+     "bridge": null,
+     "services": [
+      {
+       "id": "api",
+       "state": "ok"
+      },
+      {
+       "id": "agent",
+       "state": "ok"
+      },
+      {
+       "id": "mutation",
+       "state": "not_enabled"
+      },
+      {
+       "id": "console",
+       "state": "not_enabled"
+      },
+      {
+       "id": "offsite",
+       "state": "not_enabled"
+      }
+     ],
+     "started_at": "2026-10-09T08:00:00Z"
     },
     "allowed_actions": []
    },
@@ -4685,7 +5101,30 @@
       "webhook": "none"
      },
      "nightly_boot": null,
-     "bridge": null
+     "bridge": null,
+     "services": [
+      {
+       "id": "api",
+       "state": "ok"
+      },
+      {
+       "id": "agent",
+       "state": "ok"
+      },
+      {
+       "id": "mutation",
+       "state": "not_enabled"
+      },
+      {
+       "id": "console",
+       "state": "not_enabled"
+      },
+      {
+       "id": "offsite",
+       "state": "not_enabled"
+      }
+     ],
+     "started_at": "2026-10-09T08:00:00Z"
     },
     "allowed_actions": []
    },
@@ -6445,7 +6884,30 @@
       "webhook": "none"
      },
      "nightly_boot": null,
-     "bridge": null
+     "bridge": null,
+     "services": [
+      {
+       "id": "api",
+       "state": "ok"
+      },
+      {
+       "id": "agent",
+       "state": "ok"
+      },
+      {
+       "id": "mutation",
+       "state": "not_enabled"
+      },
+      {
+       "id": "console",
+       "state": "not_enabled"
+      },
+      {
+       "id": "offsite",
+       "state": "not_enabled"
+      }
+     ],
+     "started_at": "2026-10-09T08:00:00Z"
     },
     "allowed_actions": []
    },
@@ -6533,7 +6995,30 @@
       "webhook": "none"
      },
      "nightly_boot": null,
-     "bridge": null
+     "bridge": null,
+     "services": [
+      {
+       "id": "api",
+       "state": "ok"
+      },
+      {
+       "id": "agent",
+       "state": "ok"
+      },
+      {
+       "id": "mutation",
+       "state": "not_enabled"
+      },
+      {
+       "id": "console",
+       "state": "not_enabled"
+      },
+      {
+       "id": "offsite",
+       "state": "not_enabled"
+      }
+     ],
+     "started_at": "2026-10-09T08:00:00Z"
     },
     "allowed_actions": []
    },
@@ -6616,7 +7101,30 @@
       "webhook": "none"
      },
      "nightly_boot": null,
-     "bridge": null
+     "bridge": null,
+     "services": [
+      {
+       "id": "api",
+       "state": "ok"
+      },
+      {
+       "id": "agent",
+       "state": "ok"
+      },
+      {
+       "id": "mutation",
+       "state": "not_enabled"
+      },
+      {
+       "id": "console",
+       "state": "not_enabled"
+      },
+      {
+       "id": "offsite",
+       "state": "not_enabled"
+      }
+     ],
+     "started_at": "2026-10-09T08:00:00Z"
     },
     "allowed_actions": []
    },
@@ -6950,7 +7458,30 @@
       "webhook": "https://x"
      },
      "nightly_boot": null,
-     "bridge": null
+     "bridge": null,
+     "services": [
+      {
+       "id": "api",
+       "state": "ok"
+      },
+      {
+       "id": "agent",
+       "state": "ok"
+      },
+      {
+       "id": "mutation",
+       "state": "not_enabled"
+      },
+      {
+       "id": "console",
+       "state": "not_enabled"
+      },
+      {
+       "id": "offsite",
+       "state": "not_enabled"
+      }
+     ],
+     "started_at": "2026-10-09T08:00:00Z"
     },
     "allowed_actions": []
    },
@@ -7026,7 +7557,30 @@
       "result": "maybe",
       "seconds": 1
      },
-     "bridge": null
+     "bridge": null,
+     "services": [
+      {
+       "id": "api",
+       "state": "ok"
+      },
+      {
+       "id": "agent",
+       "state": "ok"
+      },
+      {
+       "id": "mutation",
+       "state": "not_enabled"
+      },
+      {
+       "id": "console",
+       "state": "not_enabled"
+      },
+      {
+       "id": "offsite",
+       "state": "not_enabled"
+      }
+     ],
+     "started_at": "2026-10-09T08:00:00Z"
     },
     "allowed_actions": []
    },
@@ -7418,7 +7972,30 @@
       "bridge": "svbr0",
       "interface": "eno1",
       "seconds_left": null
-     }
+     },
+     "services": [
+      {
+       "id": "api",
+       "state": "ok"
+      },
+      {
+       "id": "agent",
+       "state": "ok"
+      },
+      {
+       "id": "mutation",
+       "state": "not_enabled"
+      },
+      {
+       "id": "console",
+       "state": "not_enabled"
+      },
+      {
+       "id": "offsite",
+       "state": "not_enabled"
+      }
+     ],
+     "started_at": "2026-10-09T08:00:00Z"
     },
     "allowed_actions": []
    },
@@ -7495,7 +8072,30 @@
       "bridge": "svbr0",
       "interface": "eno1",
       "seconds_left": 99999
-     }
+     },
+     "services": [
+      {
+       "id": "api",
+       "state": "ok"
+      },
+      {
+       "id": "agent",
+       "state": "ok"
+      },
+      {
+       "id": "mutation",
+       "state": "not_enabled"
+      },
+      {
+       "id": "console",
+       "state": "not_enabled"
+      },
+      {
+       "id": "offsite",
+       "state": "not_enabled"
+      }
+     ],
+     "started_at": "2026-10-09T08:00:00Z"
     },
     "allowed_actions": []
    },
@@ -7572,7 +8172,30 @@
       "bridge": "a b",
       "interface": "eno1",
       "seconds_left": null
-     }
+     },
+     "services": [
+      {
+       "id": "api",
+       "state": "ok"
+      },
+      {
+       "id": "agent",
+       "state": "ok"
+      },
+      {
+       "id": "mutation",
+       "state": "not_enabled"
+      },
+      {
+       "id": "console",
+       "state": "not_enabled"
+      },
+      {
+       "id": "offsite",
+       "state": "not_enabled"
+      }
+     ],
+     "started_at": "2026-10-09T08:00:00Z"
     },
     "allowed_actions": []
    },

@@ -703,7 +703,7 @@ func TestHostListExposesExactlyTheApprovedFields(t *testing.T) {
 		obs = append(obs, k)
 	}
 	sort.Strings(obs)
-	if got := strings.Join(obs, ","); got != "agent_version,alerts,bridge,capability_findings,capability_verdict,cpu_count,creation,distribution,memory_mib,nightly_boot,reachable,storage,usage,virtualization" {
+	if got := strings.Join(obs, ","); got != "agent_version,alerts,bridge,capability_findings,capability_verdict,cpu_count,creation,distribution,memory_mib,nightly_boot,reachable,services,started_at,storage,usage,virtualization" {
 		t.Fatalf("observed keys %s", got)
 	}
 	var full hostJSON
