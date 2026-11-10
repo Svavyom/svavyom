@@ -7,8 +7,9 @@ rm -rf "$dst" && mkdir -p "$dst" /out/bin
 tar -C "$src" --exclude=./frontend --exclude=./.git -cf - . | tar -C "$dst" -xf -
 cd "$dst/backend"
 v=$(cat ../VERSION)
+# main.version is what the API reports as the Svavyom version on the dashboard and the status page; without it a release says "dev".
 build() { # name package cgo tags
-  CGO_ENABLED=$3 go build -trimpath -buildvcs=false -tags "$4" -ldflags "-s -w" -o "/out/bin/$1" "./cmd/$2"
+  CGO_ENABLED=$3 go build -trimpath -buildvcs=false -tags "$4" -ldflags "-s -w -X main.version=$v" -o "/out/bin/$1" "./cmd/$2"
 }
 build api api 0 ""
 build mutation-supervisor mutation-supervisor 0 ""
