@@ -82,7 +82,30 @@
                     "webhook": "none"
                   },
                   "nightly_boot": null,
-                  "bridge": null
+                  "bridge": null,
+                  "services": [
+                    {
+                      "id": "api",
+                      "state": "ok"
+                    },
+                    {
+                      "id": "agent",
+                      "state": "ok"
+                    },
+                    {
+                      "id": "mutation",
+                      "state": "not_enabled"
+                    },
+                    {
+                      "id": "console",
+                      "state": "not_enabled"
+                    },
+                    {
+                      "id": "offsite",
+                      "state": "not_enabled"
+                    }
+                  ],
+                  "started_at": "2026-10-09T08:00:00Z"
                 },
                 "allowed_actions": []
               }
@@ -159,7 +182,30 @@
                     "webhook": "none"
                   },
                   "nightly_boot": null,
-                  "bridge": null
+                  "bridge": null,
+                  "services": [
+                    {
+                      "id": "api",
+                      "state": "ok"
+                    },
+                    {
+                      "id": "agent",
+                      "state": "ok"
+                    },
+                    {
+                      "id": "mutation",
+                      "state": "not_enabled"
+                    },
+                    {
+                      "id": "console",
+                      "state": "not_enabled"
+                    },
+                    {
+                      "id": "offsite",
+                      "state": "not_enabled"
+                    }
+                  ],
+                  "started_at": "2026-10-09T08:00:00Z"
                 },
                 "allowed_actions": []
               }
@@ -1805,7 +1851,30 @@
                     "webhook": "none"
                   },
                   "nightly_boot": null,
-                  "bridge": null
+                  "bridge": null,
+                  "services": [
+                    {
+                      "id": "api",
+                      "state": "ok"
+                    },
+                    {
+                      "id": "agent",
+                      "state": "ok"
+                    },
+                    {
+                      "id": "mutation",
+                      "state": "not_enabled"
+                    },
+                    {
+                      "id": "console",
+                      "state": "not_enabled"
+                    },
+                    {
+                      "id": "offsite",
+                      "state": "not_enabled"
+                    }
+                  ],
+                  "started_at": "2026-10-09T08:00:00Z"
                 },
                 "allowed_actions": []
               }
@@ -1890,7 +1959,30 @@
                     "webhook": "none"
                   },
                   "nightly_boot": null,
-                  "bridge": null
+                  "bridge": null,
+                  "services": [
+                    {
+                      "id": "api",
+                      "state": "ok"
+                    },
+                    {
+                      "id": "agent",
+                      "state": "ok"
+                    },
+                    {
+                      "id": "mutation",
+                      "state": "not_enabled"
+                    },
+                    {
+                      "id": "console",
+                      "state": "not_enabled"
+                    },
+                    {
+                      "id": "offsite",
+                      "state": "not_enabled"
+                    }
+                  ],
+                  "started_at": "2026-10-09T08:00:00Z"
                 },
                 "allowed_actions": []
               }
