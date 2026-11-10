@@ -712,7 +712,7 @@ components:
         observed:
           type: object
           additionalProperties: false
-          required: [reachable, agent_version, cpu_count, memory_mib, capability_verdict, virtualization, distribution, creation, storage, usage, alerts, nightly_boot, bridge, capability_findings]
+          required: [reachable, agent_version, cpu_count, memory_mib, capability_verdict, virtualization, distribution, creation, storage, usage, alerts, nightly_boot, bridge, services, started_at, capability_findings]
           x-data-class: operational
           properties:
             reachable:
@@ -1037,6 +1037,30 @@ components:
                   maximum: 3600
                   x-data-class: operational
                   description: Seconds left to confirm while the state is pending_confirmation, otherwise null.
+            services:
+              type: array
+              maxItems: 8
+              x-data-class: operational
+              description: The services the API depends on and whether each answered when last checked (a few seconds ago). The API itself is always listed; a peer that was not configured is not_enabled.
+              items:
+                type: object
+                additionalProperties: false
+                required: [id, state]
+                properties:
+                  id:
+                    type: string
+                    enum: [api, agent, mutation, console, offsite]
+                    x-data-class: operational
+                  state:
+                    type: string
+                    enum: [ok, unreachable, not_enabled]
+                    x-data-class: operational
+            started_at:
+              type: [string, "null"]
+              format: date-time
+              maxLength: 40
+              x-data-class: operational
+              description: When this API process started; null when unknown.
             capability_findings:
               type: array
               maxItems: 16

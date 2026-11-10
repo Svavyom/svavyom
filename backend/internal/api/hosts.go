@@ -38,7 +38,14 @@ type hostObserved struct {
 	Alerts             hostAlertsJSON `json:"alerts"`
 	NightlyBoot        *nightlyJSON   `json:"nightly_boot"`
 	Bridge             *bridgeJSON    `json:"bridge"`
+	Services           []serviceJSON  `json:"services"`
+	StartedAt          *string        `json:"started_at"`
 	CapabilityFindings []finding      `json:"capability_findings"`
+}
+
+type serviceJSON struct {
+	ID    string `json:"id"`
+	State string `json:"state"`
 }
 
 type virtualization struct {
@@ -164,7 +171,7 @@ func (h *Handler) listHosts(w http.ResponseWriter, r *http.Request) {
 		Items   []hostJSON `json:"items"`
 		Allowed []string   `json:"allowed_actions"`
 		Next    *string    `json:"next_cursor"`
-	}{Items: []hostJSON{toHostJSON(info, h.creationFor(r.Context(), info), h.storageFor(r.Context()), h.hostUsage(r.Context()), h.firewallFindings(), h.hostAlerts(r.Context()), h.nightlyBoot(), h.hostBridge())}, Allowed: []string{}})
+	}{Items: []hostJSON{h.hostWithSystem(toHostJSON(info, h.creationFor(r.Context(), info), h.storageFor(r.Context()), h.hostUsage(r.Context()), h.firewallFindings(), h.hostAlerts(r.Context()), h.nightlyBoot(), h.hostBridge()))}, Allowed: []string{}})
 }
 
 func (h *Handler) readHost(w http.ResponseWriter, r *http.Request) {
@@ -184,7 +191,22 @@ func (h *Handler) readHost(w http.ResponseWriter, r *http.Request) {
 		h.reject(w, categoryNotFound)
 		return
 	}
-	writeJSON(w, http.StatusOK, toHostJSON(info, h.creationFor(r.Context(), info), h.storageFor(r.Context()), h.hostUsage(r.Context()), h.firewallFindings(), h.hostAlerts(r.Context()), h.nightlyBoot(), h.hostBridge()))
+	writeJSON(w, http.StatusOK, h.hostWithSystem(toHostJSON(info, h.creationFor(r.Context(), info), h.storageFor(r.Context()), h.hostUsage(r.Context()), h.firewallFindings(), h.hostAlerts(r.Context()), h.nightlyBoot(), h.hostBridge())))
+}
+
+// hostWithSystem adds what the API knows about itself and the services it depends on: always the API, then each configured peer.
+func (h *Handler) hostWithSystem(j hostJSON) hostJSON {
+	j.Observed.Services = []serviceJSON{{ID: "api", State: "ok"}}
+	if h.deps.Services != nil {
+		for _, s := range h.deps.Services() {
+			j.Observed.Services = append(j.Observed.Services, serviceJSON(s))
+		}
+	}
+	if !h.deps.StartedAt.IsZero() {
+		t := h.deps.StartedAt.UTC().Format(time.RFC3339)
+		j.Observed.StartedAt = &t
+	}
+	return j
 }
 
 func (h *Handler) firewallFindings() []FirewallFinding {
