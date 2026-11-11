@@ -23,7 +23,7 @@ beforeEach(() => {
     const method = init?.method ?? "GET";
     const headers = new Headers(init?.headers);
     if (method !== "GET" || url.includes("ssh-keys")) sent.push({ method, url, body: String(init?.body ?? ""), csrf: headers.get("X-CSRF-Token") });
-    if (url === "/api/v1/auth/session") return respond(200, { authenticated: true, username: "olly", expires_at: "2026-10-09T08:30:00Z", role }, TOKEN("S"));
+    if (url === "/api/v1/auth/session") return respond(200, { authenticated: true, username: "olly", expires_at: "2026-10-09T08:30:00Z", role, must_change_password: false }, TOKEN("S"));
     if (url === "/api/v1/hosts/local") return respond(200, HOST);
     if (url === "/api/v1/ssh-keys" && method === "GET") return respond(200, { items: keys, allowed_actions: role === "viewer" ? [] : allowed });
     if (url === "/api/v1/ssh-keys" && method === "POST") { const b = JSON.parse(String(init?.body)); const k = key({ id: "k-aaaaaaaaaaaaaaaa", name: b.name, public_key: b.public_key }); keys = [...keys, k]; return respond(201, k); }

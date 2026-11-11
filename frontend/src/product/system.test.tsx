@@ -8,7 +8,7 @@ import { axeViolations } from "../test-axe";
 import type { Host } from "../api/schema";
 
 const TOKEN = (c: string) => c.repeat(43);
-const IN = { authenticated: true, username: "admin", expires_at: "2026-10-09T08:30:00Z", role: "admin" };
+const IN = { authenticated: true, username: "admin", expires_at: "2026-10-09T08:30:00Z", role: "admin", must_change_password: false };
 const respond = (status: number, body: unknown, csrf?: string) => new Response(JSON.stringify(body), { status, headers: csrf ? { "X-CSRF-Token": csrf } : {} });
 const withServices = (services: Host["observed"]["services"], version = "0.1.0-preview.16"): Host => ({ ...HOST, observed: { ...HOST.observed, agent_version: version, services } });
 

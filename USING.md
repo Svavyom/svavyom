@@ -15,9 +15,13 @@ Open `https://HOST:8443/` (or the SSH tunnel you made) and sign in. The menu has
 | **Alerts** | disk-space and other alerts, and whether the webhook is configured |
 | **Activity** | every operation: who did what, when and how it ended |
 | **SSH keys** | the public keys saved for new VMs, and a way to make a key pair in your browser |
+| **Users** | (admins only) who can sign in and in which role: add a user, change a role, reset a password, disable or enable |
+| **Account** | change your own password |
 | **System** | which Svavyom version runs, which services it depends on and whether each answers, and what to do when one does not |
 
 There are three roles. A **viewer** can look at everything. An **operator** can also create, start, stop, snapshot, back up, restore and delete VMs and open consoles. An **admin** can also manage networks, delete a backup and use the other admin-only actions. Users are managed on the host with `api user-add|user-list|user-role|user-disable|user-enable|user-passwd` ([Operations](https://docs.svavyom.com/operations/upgrade/)). Buttons you may not use are not shown.
+
+**Users and passwords.** Everyone can change their own password under **Account**: you type the current one (a wrong guess counts against the same limit as signing in), and your other sessions are signed out while the one you are using stays. An **admin** manages people under **Users**: **Add a user** gives a name, a role and a **temporary password**; the new user must choose their own password when they first sign in, and until they do the console shows only that screen and every other request is refused. **Reset password** does the same for an existing user and signs them out. Changing a role, disabling and resetting also sign the user out. An administrator cannot change their own role, disable or reset themselves here, so the console cannot lock the installation out; the host's `sudo /usr/libexec/svavyom/api user-list | user-add | user-role | user-disable | user-enable | user-passwd` remain the recovery path, and the last enabled administrator can never be demoted or disabled. Give a temporary password to its user through a safe channel: it is shown to nobody afterwards.
 
 ## 2. Create a VM
 You need an image first (`INSTALLING.md`, section 4). If creation is blocked the Dashboard says why in plain words (for example "VM creation is not enabled on this installation" or "no usable image").

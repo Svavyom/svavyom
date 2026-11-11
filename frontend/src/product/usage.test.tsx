@@ -10,7 +10,7 @@ import { summarize, UsageChart } from "../design-system";
 import type { Host, Operation, VM } from "../api/schema";
 
 const TOKEN = (c: string) => c.repeat(43);
-const IN = { authenticated: true, username: "admin", expires_at: "2026-10-09T08:30:00Z", role: "admin" };
+const IN = { authenticated: true, username: "admin", expires_at: "2026-10-09T08:30:00Z", role: "admin", must_change_password: false };
 
 const POINTS = [0, 1, 2, 3].map((i) => ({ at: `2026-10-13T09:0${i}:00Z`, cpu_percent: 20 + i * 10, memory_used_mib: 4096 + i * 100, disk_kib_s: 100 + i, net_kib_s: 50 + i }));
 const usageHost = (): Host => ({ ...HOST, observed: { ...HOST.observed, memory_mib: 16384, usage: { state: "available", interval_seconds: 30, cpu_percent: 50, memory_used_mib: 4396, disk_kib_s: 103, net_kib_s: 53, history: POINTS } } });

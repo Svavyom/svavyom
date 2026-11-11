@@ -40,7 +40,7 @@ beforeEach(() => {
   posts = [];
   machine = running();
   vi.stubGlobal("fetch", vi.fn(async (url: string, init: RequestInit = {}) => {
-    if (url === "/api/v1/auth/session") return new Response(JSON.stringify({ authenticated: true, username: "admin", expires_at: "2026-10-17T08:30:00Z", role: "admin" }), { status: 200, headers: { "X-CSRF-Token": "S".repeat(43) } });
+    if (url === "/api/v1/auth/session") return new Response(JSON.stringify({ authenticated: true, username: "admin", expires_at: "2026-10-17T08:30:00Z", role: "admin", must_change_password: false }), { status: 200, headers: { "X-CSRF-Token": "S".repeat(43) } });
     if (url === "/api/v1/vms/web-1") return new Response(JSON.stringify(machine), { status: 200 });
     if (url === "/console/v1/vms/web-1/graphics-tickets" && init.method === "POST") {
       posts.push(url);

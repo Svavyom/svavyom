@@ -74,6 +74,17 @@
     "request.sign_in.password": "credential",
     "request.add_ssh_key.name": "operational",
     "request.add_ssh_key.public_key": "operational",
-    "request.delete_ssh_key.id": "operational"
+    "request.delete_ssh_key.id": "operational",
+    "request.change_password.current_password": "credential",
+    "request.change_password.new_password": "credential",
+    "request.create_user.username": "operational",
+    "request.create_user.role": "operational",
+    "request.create_user.password": "credential",
+    "request.set_user_role.id": "operational",
+    "request.set_user_role.role": "operational",
+    "request.disable_user.id": "operational",
+    "request.enable_user.id": "operational",
+    "request.reset_user_password.id": "operational",
+    "request.reset_user_password.password": "credential"
   }
 }

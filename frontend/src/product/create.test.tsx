@@ -12,7 +12,7 @@ import { axeViolations } from "../test-axe";
 import type { Host, Image, Operation, VM } from "../api/schema";
 
 const KEY = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGg4Zgd2sQ0v9i6Y0bq7n3m9c1m3k3Qm8iH6m3f3b2yd admin@laptop";
-const IN = { authenticated: true, username: "admin", expires_at: "2026-10-09T08:30:00Z", role: "admin" };
+const IN = { authenticated: true, username: "admin", expires_at: "2026-10-09T08:30:00Z", role: "admin", must_change_password: false };
 const IMAGE: Image = {
   id: "debian-13", project_id: "default", generation: 1, name: "Debian 13", allowed_actions: [],
   desired: { source_digest: "sha256:" + "a".repeat(64) },

@@ -13,8 +13,8 @@ import type { Host, VM } from "../api/schema";
 import { VM_RUNNING, vm, vmList } from "../api/fixtures";
 
 const TOKEN = (c: string) => c.repeat(43);
-const ANON = { authenticated: false, username: null, expires_at: null, role: null };
-const IN = { authenticated: true, username: "admin", expires_at: "2026-10-09T08:30:00Z", role: "admin" };
+const ANON = { authenticated: false, username: null, expires_at: null, role: null, must_change_password: false };
+const IN = { authenticated: true, username: "admin", expires_at: "2026-10-09T08:30:00Z", role: "admin", must_change_password: false };
 
 type Call = { method: string; url: string; csrf: string | null; body: unknown };
 

@@ -158,13 +158,15 @@ type authSession struct {
 	Username      *string `json:"username"`
 	ExpiresAt     *string `json:"expires_at"`
 	Role          *string `json:"role"`
+	// MustChange is true while the user has a temporary password (DR-041 D3): the console then shows only the password change.
+	MustChange bool `json:"must_change_password"`
 }
 
 func anonymous() authSession { return authSession{} }
 
 func fromSession(s auth.Session) authSession {
 	u, e, r := s.Username, s.ExpiresAt.UTC().Format(time.RFC3339), string(s.Role)
-	return authSession{Authenticated: true, Username: &u, ExpiresAt: &e, Role: &r}
+	return authSession{Authenticated: true, Username: &u, ExpiresAt: &e, Role: &r, MustChange: s.MustChange}
 }
 
 // remoteHost is the address of the connection itself.
@@ -266,6 +268,20 @@ func (h *Handler) serveImplemented(w http.ResponseWriter, r *http.Request, route
 		h.readOperation(w, r)
 	case "POST /api/v1/operations/{id}/cancel":
 		h.cancelOperation(w, r)
+	case "POST /api/v1/auth/password":
+		h.changeOwnPassword(w, r)
+	case "GET /api/v1/users":
+		h.listUsers(w, r)
+	case "POST /api/v1/users":
+		h.addUser(w, r)
+	case "POST /api/v1/users/{id}/role":
+		h.setUserRole(w, r)
+	case "POST /api/v1/users/{id}/disable":
+		h.setUserDisabled(w, r, true)
+	case "POST /api/v1/users/{id}/enable":
+		h.setUserDisabled(w, r, false)
+	case "POST /api/v1/users/{id}/password":
+		h.resetUserPassword(w, r)
 	case "GET /api/v1/ssh-keys":
 		h.listSSHKeys(w, r)
 	case "POST /api/v1/ssh-keys":

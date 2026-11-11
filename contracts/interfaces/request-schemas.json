@@ -134,6 +134,30 @@
     },
     "delete_ssh_key": {
       "id": "id"
+    },
+    "change_password": {
+      "current_password": "password",
+      "new_password": "password"
+    },
+    "list_users": {},
+    "create_user": {
+      "username": "username",
+      "role": "user_role",
+      "password": "password"
+    },
+    "set_user_role": {
+      "id": "id",
+      "role": "user_role"
+    },
+    "disable_user": {
+      "id": "id"
+    },
+    "enable_user": {
+      "id": "id"
+    },
+    "reset_user_password": {
+      "id": "id",
+      "password": "password"
     }
   },
   "value_types": {
@@ -144,6 +168,7 @@
     "username": "^.{1,64}$",
     "password": "^.{1,128}$",
     "ssh_key_name": "^[A-Za-z0-9][A-Za-z0-9 ._()+-]{0,62}$",
-    "ssh_public_key": "^[ -~]{1,2048}$"
+    "ssh_public_key": "^[ -~]{1,2048}$",
+    "user_role": "^(admin|operator|viewer)$"
   }
 }

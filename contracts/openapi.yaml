@@ -496,6 +496,167 @@ paths:
         '429': {$ref: '#/components/responses/RateLimited'}
         '500': {$ref: '#/components/responses/InternalError'}
         '503': {$ref: '#/components/responses/Unavailable'}
+  /api/v1/auth/password:
+    post:
+      operationId: changePassword
+      x-request-category: change_password
+      x-implementation-status: implemented
+      security: [{ownerSession: []}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/ChangePasswordRequest'}
+      responses:
+        '200':
+          description: The password was changed; every other session of the user ended (DR-041). The body is the session that made the change.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/AuthSession'}
+        '400': {$ref: '#/components/responses/ValidationError'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '429': {$ref: '#/components/responses/RateLimited'}
+        '500': {$ref: '#/components/responses/InternalError'}
+        '503': {$ref: '#/components/responses/Unavailable'}
+  /api/v1/users:
+    get:
+      operationId: listUser
+      x-request-category: list_users
+      x-implementation-status: implemented
+      security: [{ownerSession: []}]
+      responses:
+        '200':
+          description: Every user (administrators only, DR-041)
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/UserList'}
+        '400': {$ref: '#/components/responses/ValidationError'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '429': {$ref: '#/components/responses/RateLimited'}
+        '500': {$ref: '#/components/responses/InternalError'}
+        '503': {$ref: '#/components/responses/Unavailable'}
+    post:
+      operationId: createUser
+      x-request-category: create_user
+      x-implementation-status: implemented
+      security: [{ownerSession: []}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/CreateUserRequest'}
+      responses:
+        '201':
+          description: The new user, who must change the temporary password at the next sign-in (DR-041)
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/User'}
+        '400': {$ref: '#/components/responses/ValidationError'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {$ref: '#/components/responses/Conflict'}
+        '429': {$ref: '#/components/responses/RateLimited'}
+        '500': {$ref: '#/components/responses/InternalError'}
+        '503': {$ref: '#/components/responses/Unavailable'}
+  /api/v1/users/{id}/role:
+    post:
+      operationId: setUserRole
+      x-request-category: set_user_role
+      x-implementation-status: implemented
+      security: [{ownerSession: []}]
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/SetUserRoleRequest'}
+      responses:
+        '200':
+          description: The user with the new role; their sessions ended (DR-041)
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/User'}
+        '400': {$ref: '#/components/responses/ValidationError'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+        '429': {$ref: '#/components/responses/RateLimited'}
+        '500': {$ref: '#/components/responses/InternalError'}
+        '503': {$ref: '#/components/responses/Unavailable'}
+  /api/v1/users/{id}/disable:
+    post:
+      operationId: disableUser
+      x-request-category: disable_user
+      x-implementation-status: implemented
+      security: [{ownerSession: []}]
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          description: The disabled user; their sessions ended (DR-041)
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/User'}
+        '400': {$ref: '#/components/responses/ValidationError'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+        '429': {$ref: '#/components/responses/RateLimited'}
+        '500': {$ref: '#/components/responses/InternalError'}
+        '503': {$ref: '#/components/responses/Unavailable'}
+  /api/v1/users/{id}/enable:
+    post:
+      operationId: enableUser
+      x-request-category: enable_user
+      x-implementation-status: implemented
+      security: [{ownerSession: []}]
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          description: The enabled user (DR-041)
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/User'}
+        '400': {$ref: '#/components/responses/ValidationError'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+        '429': {$ref: '#/components/responses/RateLimited'}
+        '500': {$ref: '#/components/responses/InternalError'}
+        '503': {$ref: '#/components/responses/Unavailable'}
+  /api/v1/users/{id}/password:
+    post:
+      operationId: resetUserPassword
+      x-request-category: reset_user_password
+      x-implementation-status: implemented
+      security: [{ownerSession: []}]
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/ResetUserPasswordRequest'}
+      responses:
+        '200':
+          description: The user with a temporary password they must change at the next sign-in; their sessions ended (DR-041)
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/User'}
+        '400': {$ref: '#/components/responses/ValidationError'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '429': {$ref: '#/components/responses/RateLimited'}
+        '500': {$ref: '#/components/responses/InternalError'}
+        '503': {$ref: '#/components/responses/Unavailable'}
   /api/v1/ssh-keys:
     get:
       operationId: listSshKey
@@ -2249,6 +2410,120 @@ components:
           pattern: "^[A-Za-z0-9_-]{1,128}$"
           maxLength: 128
           x-data-class: operational
+    User:
+      type: object
+      additionalProperties: false
+      required: [username, role, disabled, must_change_password, created_at, allowed_actions]
+      x-data-class: operational
+      description: One account as an administrator sees it (DR-041). It carries no credential. allowed_actions lists what the caller may do to it; an administrator is offered none on their own row.
+      properties:
+        username:
+          type: string
+          pattern: "^[a-z][a-z0-9._-]{2,31}$"
+          maxLength: 32
+          x-data-class: operational
+        role:
+          type: string
+          enum: [admin, operator, viewer]
+          x-data-class: operational
+        disabled:
+          type: boolean
+          x-data-class: operational
+        must_change_password:
+          type: boolean
+          x-data-class: operational
+        created_at:
+          type: string
+          format: date-time
+          maxLength: 40
+          x-data-class: operational
+        allowed_actions:
+          type: array
+          maxItems: 3
+          x-data-class: operational
+          items:
+            type: string
+            enum: [set_role, reset_password, disable, enable]
+    UserList:
+      type: object
+      additionalProperties: false
+      required: [items, allowed_actions]
+      x-data-class: operational
+      properties:
+        items:
+          type: array
+          maxItems: 200
+          x-data-class: operational
+          items:
+            $ref: "#/components/schemas/User"
+        allowed_actions:
+          type: array
+          maxItems: 1
+          x-data-class: operational
+          items:
+            type: string
+            enum: [create]
+    CreateUserRequest:
+      type: object
+      additionalProperties: false
+      required: [username, role, password]
+      x-data-class: operational
+      description: Request body (not a response). password is the temporary password (credential-class); it is never returned, logged or audited.
+      properties:
+        username:
+          type: string
+          minLength: 1
+          maxLength: 64
+          x-data-class: operational
+        role:
+          type: string
+          enum: [admin, operator, viewer]
+          x-data-class: operational
+        password:
+          type: string
+          minLength: 1
+          maxLength: 128
+          x-data-class: credential
+    SetUserRoleRequest:
+      type: object
+      additionalProperties: false
+      required: [role]
+      x-data-class: operational
+      description: Request body (not a response).
+      properties:
+        role:
+          type: string
+          enum: [admin, operator, viewer]
+          x-data-class: operational
+    ResetUserPasswordRequest:
+      type: object
+      additionalProperties: false
+      required: [password]
+      x-data-class: operational
+      description: Request body (not a response). The temporary password is credential-class and is never returned, logged or audited.
+      properties:
+        password:
+          type: string
+          minLength: 1
+          maxLength: 128
+          x-data-class: credential
+    ChangePasswordRequest:
+      type: object
+      additionalProperties: false
+      required: [current_password, new_password]
+      x-data-class: operational
+      description: Request body (not a response). Both passwords are credential-class and are never returned, logged or audited.
+      properties:
+        current_password:
+          type: string
+          minLength: 1
+          maxLength: 128
+          x-data-class: credential
+        new_password:
+          type: string
+          minLength: 1
+          maxLength: 128
+          x-data-class: credential
     SshKey:
       type: object
       additionalProperties: false
@@ -2334,7 +2609,7 @@ components:
     AuthSession:
       type: object
       additionalProperties: false
-      required: [authenticated, username, expires_at, role]
+      required: [authenticated, username, expires_at, role, must_change_password]
       x-data-class: operational
       description: No secret is ever in this body. The CSRF token travels in the X-CSRF-Token response header. role (DR-023 D1) is null when anonymous.
       properties:
@@ -2355,6 +2630,10 @@ components:
           type: [string, "null"]
           enum: [admin, operator, viewer, null]
           x-data-class: operational
+        must_change_password:
+          type: boolean
+          x-data-class: operational
+          description: True while the user has a temporary password (DR-041 D3); the console then offers only the password change and sign-out.
     SignInRequest:
       type: object
       additionalProperties: false

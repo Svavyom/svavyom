@@ -13,6 +13,8 @@ import { Storage } from "./Storage";
 import { Activity } from "./Activity";
 import { System } from "./System";
 import { SshKeys } from "./SshKeys";
+import { Account } from "./Account";
+import { Users } from "./Users";
 import { Alerts } from "./Alerts";
 import { read } from "../api/client";
 import { decodeHost } from "../api/decoders";
@@ -24,7 +26,7 @@ type View =
   | { kind: "loading" }
   | { kind: "unreachable" }
   | { kind: "anonymous"; reason: "none" | "expired" }
-  | { kind: "authenticated"; username: string; role: Role | null };
+  | { kind: "authenticated"; username: string; role: Role | null; mustChange: boolean };
 
 export function Root() {
   const [view, setView] = useState<View>({ kind: "loading" });
@@ -36,7 +38,7 @@ export function Root() {
     const r = await sessionStatus();
     if (r.kind === "unreachable") setView({ kind: "unreachable" });
     else if (r.kind === "error") setView({ kind: "unreachable" });
-    else setView(r.data.authenticated && r.data.username ? { kind: "authenticated", username: r.data.username, role: r.data.role } : { kind: "anonymous", reason: "none" });
+    else setView(r.data.authenticated && r.data.username ? { kind: "authenticated", username: r.data.username, role: r.data.role, mustChange: r.data.must_change_password } : { kind: "anonymous", reason: "none" });
   }, []);
 
   useEffect(() => { void check(); }, [check]);
@@ -47,7 +49,7 @@ export function Root() {
     const r = await signIn(username, password);
     setPending(false);
     if (r.kind === "ok" && r.data.authenticated && r.data.username) {
-      setView({ kind: "authenticated", username: r.data.username, role: r.data.role });
+      setView({ kind: "authenticated", username: r.data.username, role: r.data.role, mustChange: r.data.must_change_password });
     } else if (r.kind === "unreachable") {
       setFailure("unreachable");
     } else if (r.kind === "error") {
@@ -75,7 +77,7 @@ export function Root() {
   const vmDetail = () => /^#\/vms\/([A-Za-z0-9][A-Za-z0-9._-]{0,62})$/.exec(location.hash)?.[1] ?? null;
   const consoleVm = () => /^#\/console\/([A-Za-z0-9][A-Za-z0-9._-]{0,62})$/.exec(location.hash)?.[1] ?? null;
   const graphicsVm = () => /^#\/graphics\/([A-Za-z0-9][A-Za-z0-9._-]{0,62})$/.exec(location.hash)?.[1] ?? null;
-  const routeOf = () => (graphicsVm() ? "graphics" : consoleVm() ? "console" : vmDetail() ? "vm" : location.hash === "#/vms" ? "vms" : location.hash === "#/create" ? "create" : location.hash === "#/storage" ? "storage" : location.hash === "#/networks" ? "networks" : location.hash === "#/activity" ? "activity" : location.hash === "#/alerts" ? "alerts" : location.hash === "#/keys" ? "keys" : location.hash === "#/system" ? "system" : "dashboard");
+  const routeOf = () => (graphicsVm() ? "graphics" : consoleVm() ? "console" : vmDetail() ? "vm" : location.hash === "#/vms" ? "vms" : location.hash === "#/create" ? "create" : location.hash === "#/storage" ? "storage" : location.hash === "#/networks" ? "networks" : location.hash === "#/activity" ? "activity" : location.hash === "#/alerts" ? "alerts" : location.hash === "#/account" ? "account" : location.hash === "#/users" ? "users" : location.hash === "#/keys" ? "keys" : location.hash === "#/system" ? "system" : "dashboard");
   const [route, setRoute] = useState(routeOf);
   const [, setHashTick] = useState(0); // the route can stay "vm" or "console" while the VM in the address changes: re-render on every hash change
   useEffect(() => {
@@ -98,13 +100,18 @@ export function Root() {
     return () => { alive = false; clearInterval(t); };
   }, [signedIn, refreshKey, route]);
   const expired = () => { setFailure(null); setView({ kind: "anonymous", reason: "expired" }); void sessionStatus(); };
-  const nav = view.kind === "authenticated"
+  const mustChange = view.kind === "authenticated" && view.mustChange;
+  const nav = view.kind === "authenticated" && view.mustChange
+    ? [{ href: "#/account", label: "Account", icon: "account" as const, current: true }]
+    : view.kind === "authenticated"
     ? [{ href: "#/", label: "Dashboard", icon: "dashboard" as const, current: route === "dashboard" }, { href: "#/vms", label: "Virtual machines", icon: "vms" as const, current: route === "vms" || route === "vm" || route === "create" || route === "console" || route === "graphics" },
       { href: "#/storage", label: "Storage and recovery", icon: "storage" as const, current: route === "storage" },
       { href: "#/networks", label: "Networks", icon: "networks" as const, current: route === "networks" },
       { href: "#/alerts", label: "Alerts", icon: "alerts" as const, current: route === "alerts" },
       { href: "#/activity", label: "Activity", icon: "activity" as const, current: route === "activity" },
       { href: "#/keys", label: "SSH keys", icon: "keys" as const, current: route === "keys" },
+      ...(view.role === "admin" ? [{ href: "#/users", label: "Users", icon: "users" as const, current: route === "users" }] : []),
+      { href: "#/account", label: "Account", icon: "account" as const, current: route === "account" },
       { href: "#/system", label: "System", icon: "system" as const, current: route === "system" }]
     : [{ href: "#main", label: "Sign in", icon: "signin" as const, current: true }];
   return (
@@ -129,7 +136,7 @@ export function Root() {
       {view.kind === "anonymous" ? <SignIn reason={view.reason} failure={failure} pending={pending} onSubmit={submit} /> : null}
       {view.kind === "authenticated" ? (
         <RoleContext.Provider value={view.role}>
-          {route === "graphics" && graphicsVm() ? <GraphicsConsole key={`${graphicsVm()!}-${refreshKey}`} vm={graphicsVm()!} onSessionEnded={expired} /> : route === "console" && consoleVm() ? <ConsoleView key={`${consoleVm()!}-${refreshKey}`} vm={consoleVm()!} onSessionEnded={expired} /> : route === "create" ? <CreateVm key={refreshKey} onSessionEnded={expired} /> : route === "storage" ? <Storage refresh={refreshKey} query={query} onSessionEnded={expired} /> : route === "networks" ? <Networks refresh={refreshKey} query={query} onSessionEnded={expired} /> : route === "alerts" ? <Alerts refresh={refreshKey} query={query} onSessionEnded={expired} /> : route === "keys" ? <SshKeys refresh={refreshKey} onSessionEnded={expired} /> : route === "system" ? <System refresh={refreshKey} onSessionEnded={expired} /> : route === "activity" ? <Activity refresh={refreshKey} query={query} onSessionEnded={expired} /> : route === "vm" && vmDetail() ? <VmDetail key={vmDetail()!} vmId={vmDetail()!} refresh={refreshKey} onSessionEnded={expired} /> : route === "vms" ? <Inventory refresh={refreshKey} query={query} onSessionEnded={expired} /> : <Dashboard refresh={refreshKey} onSessionEnded={expired} />}
+          {mustChange ? <Account username={view.username} required onChanged={() => void check()} onSessionEnded={expired} /> : route === "account" ? <Account username={view.username} required={false} onChanged={() => undefined} onSessionEnded={expired} /> : route === "users" && view.role === "admin" ? <Users refresh={refreshKey} onSessionEnded={expired} /> : route === "graphics" && graphicsVm() ? <GraphicsConsole key={`${graphicsVm()!}-${refreshKey}`} vm={graphicsVm()!} onSessionEnded={expired} /> : route === "console" && consoleVm() ? <ConsoleView key={`${consoleVm()!}-${refreshKey}`} vm={consoleVm()!} onSessionEnded={expired} /> : route === "create" ? <CreateVm key={refreshKey} onSessionEnded={expired} /> : route === "storage" ? <Storage refresh={refreshKey} query={query} onSessionEnded={expired} /> : route === "networks" ? <Networks refresh={refreshKey} query={query} onSessionEnded={expired} /> : route === "alerts" ? <Alerts refresh={refreshKey} query={query} onSessionEnded={expired} /> : route === "keys" ? <SshKeys refresh={refreshKey} onSessionEnded={expired} /> : route === "system" ? <System refresh={refreshKey} onSessionEnded={expired} /> : route === "activity" ? <Activity refresh={refreshKey} query={query} onSessionEnded={expired} /> : route === "vm" && vmDetail() ? <VmDetail key={vmDetail()!} vmId={vmDetail()!} refresh={refreshKey} onSessionEnded={expired} /> : route === "vms" ? <Inventory refresh={refreshKey} query={query} onSessionEnded={expired} /> : <Dashboard refresh={refreshKey} onSessionEnded={expired} />}
         </RoleContext.Provider>
       ) : null}
     </AppShell>

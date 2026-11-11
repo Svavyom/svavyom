@@ -128,6 +128,14 @@ PATHS[("post", "/api/v1/operations/{id}/cancel")] = ("cancel_operation", "200", 
 PATHS[("get", "/api/v1/ssh-keys")] = ("list_ssh_keys", "200", "SshKeyList", (), False)
 PATHS[("post", "/api/v1/ssh-keys")] = ("add_ssh_key", "201", "SshKey", (), "AddSshKeyRequest")
 PATHS[("delete", "/api/v1/ssh-keys/{id}")] = ("delete_ssh_key", "200", "SshKey", ("Id",), False)
+# DR-041: users and passwords in the console.
+PATHS[("post", "/api/v1/auth/password")] = ("change_password", "200", "AuthSession", (), "ChangePasswordRequest")
+PATHS[("get", "/api/v1/users")] = ("list_users", "200", "UserList", (), False)
+PATHS[("post", "/api/v1/users")] = ("create_user", "201", "User", (), "CreateUserRequest")
+PATHS[("post", "/api/v1/users/{id}/role")] = ("set_user_role", "200", "User", ("Id",), "SetUserRoleRequest")
+PATHS[("post", "/api/v1/users/{id}/disable")] = ("disable_user", "200", "User", ("Id",), False)
+PATHS[("post", "/api/v1/users/{id}/enable")] = ("enable_user", "200", "User", ("Id",), False)
+PATHS[("post", "/api/v1/users/{id}/password")] = ("reset_user_password", "200", "User", ("Id",), "ResetUserPasswordRequest")
 METHODS = {"get", "put", "post", "delete", "options", "head", "patch", "trace"}
 
 SCHEMA_KEYWORDS = {"type", "enum", "const", "pattern", "format", "minLength", "maxLength", "minimum", "maximum",

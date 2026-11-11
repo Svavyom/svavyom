@@ -9,7 +9,7 @@ import { forgetCsrf } from "../api/session";
 import { axeViolations } from "../test-axe";
 import type { Host, Image, VM } from "../api/schema";
 
-const IN = { authenticated: true, username: "admin", expires_at: "2026-10-17T08:30:00Z", role: "admin" };
+const IN = { authenticated: true, username: "admin", expires_at: "2026-10-17T08:30:00Z", role: "admin", must_change_password: false };
 const ISO: Image = { id: "alpine-iso", project_id: "default", generation: 1, name: "Alpine installer", allowed_actions: [], desired: { source_digest: "sha256:" + "b".repeat(64) },
   observed: { state: "available", distribution: "Alpine", version: "3.20", architecture: "x86_64", login_user: null, media: "iso", min_disk_gib: 2, qualification: "verified", qualification_evidence: null } };
 const DISK: Image = { ...ISO, id: "debian-13", name: "Debian 13", observed: { ...ISO.observed, media: "disk", login_user: "debian" } };

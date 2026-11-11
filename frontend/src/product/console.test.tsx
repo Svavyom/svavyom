@@ -58,7 +58,7 @@ beforeEach(async () => {
   vi.stubGlobal("fetch", vi.fn(async (url: string, init: RequestInit = {}) => {
     const headers = (init.headers ?? {}) as Record<string, string>;
     calls.push({ method: init.method ?? "GET", url, csrf: headers["X-CSRF-Token"] });
-    if (url === "/api/v1/auth/session") return json(200, { authenticated: true, username: "admin", expires_at: "2026-10-09T08:30:00Z", role: "admin" });
+    if (url === "/api/v1/auth/session") return json(200, { authenticated: true, username: "admin", expires_at: "2026-10-09T08:30:00Z", role: "admin", must_change_password: false });
     if (url === "/api/v1/vms/web-1") return json(200, machine);
     if (url === "/console/v1/vms/web-1/serial") return serialFailure ? failure(serialFailure) : json(200, serial);
     if (url === "/console/v1/vms/web-1/tickets") return ticketReply === "ok" ? json(200, { ticket: TICKET, expires_at: "2026-10-11T09:00:30Z" }) : failure(ticketReply);

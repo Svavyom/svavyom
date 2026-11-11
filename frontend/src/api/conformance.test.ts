@@ -103,9 +103,9 @@ type Scenario = { api: Record<string, Reply | Reply[]> };
 describe("route table", () => {
   it("declares only the DR-015 routes (and the DR-036 cancel route and the DR-040 saved-key routes) as implemented", () => {
     expect(ROUTES.filter((r) => r.implemented).map((r) => `${r.method} ${r.path}`).sort()).toEqual([
-      "DELETE /api/v1/auth/session", "DELETE /api/v1/ssh-keys/{id}", "GET /api/v1/auth/session", "GET /api/v1/backups", "GET /api/v1/backups/{id}", "GET /api/v1/events", "GET /api/v1/events/{id}", "GET /api/v1/hosts", "GET /api/v1/hosts/{id}", "GET /api/v1/images", "GET /api/v1/images/{id}", "GET /api/v1/operations", "GET /api/v1/operations/{id}", "GET /api/v1/ssh-keys", "GET /api/v1/virtual-networks", "GET /api/v1/virtual-networks/{id}", "GET /api/v1/vms", "GET /api/v1/vms/{id}", "GET /api/v1/volumes", "GET /api/v1/volumes/{id}", "GET /healthz",
-      "POST /api/v1/auth/session", "POST /api/v1/operations", "POST /api/v1/operations/{id}/cancel", "POST /api/v1/ssh-keys"]);
-    expect(ROUTES).toHaveLength(29);
+      "DELETE /api/v1/auth/session", "DELETE /api/v1/ssh-keys/{id}", "GET /api/v1/auth/session", "GET /api/v1/backups", "GET /api/v1/backups/{id}", "GET /api/v1/events", "GET /api/v1/events/{id}", "GET /api/v1/hosts", "GET /api/v1/hosts/{id}", "GET /api/v1/images", "GET /api/v1/images/{id}", "GET /api/v1/operations", "GET /api/v1/operations/{id}", "GET /api/v1/ssh-keys", "GET /api/v1/users", "GET /api/v1/virtual-networks", "GET /api/v1/virtual-networks/{id}", "GET /api/v1/vms", "GET /api/v1/vms/{id}", "GET /api/v1/volumes", "GET /api/v1/volumes/{id}", "GET /healthz",
+      "POST /api/v1/auth/password", "POST /api/v1/auth/session", "POST /api/v1/operations", "POST /api/v1/operations/{id}/cancel", "POST /api/v1/ssh-keys", "POST /api/v1/users", "POST /api/v1/users/{id}/disable", "POST /api/v1/users/{id}/enable", "POST /api/v1/users/{id}/password", "POST /api/v1/users/{id}/role"]);
+    expect(ROUTES).toHaveLength(36);
   });
   it("lists only browser-api error statuses", () => {
     const allowed = new Set([400, 401, 403, 404, 409, 422, 429, 500, 503]);
