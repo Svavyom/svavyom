@@ -649,7 +649,9 @@ def check_resources(spec, c):
     out = []
     schemas = schemas_of(spec)
     res = c["resources"]["resources"]
-    expected = {"Health", "Error", "SubmitOperationRequest", "AuthSession", "SignInRequest"} | set(res) | {k + "List" for k in res}
+    # DR-040 (saved SSH keys) and DR-041 (users and passwords) add request and response shapes that are not resources
+    expected = {"Health", "Error", "SubmitOperationRequest", "AuthSession", "SignInRequest", "SshKey", "SshKeyList", "AddSshKeyRequest", "User", "UserList", "CreateUserRequest",
+                "SetUserRoleRequest", "ResetUserPasswordRequest", "ChangePasswordRequest"} | set(res) | {k + "List" for k in res}
     if set(res) != set(KINDS):
         out.append(("RESOURCE_SET", "resources.json", "resource kinds differ from the pinned set"))
     for extra in sorted(set(schemas) - expected):
@@ -867,11 +869,12 @@ def check_auth_shapes(schemas):
     """DR-015 D3: the authentication shapes are exactly these (no secret in a response, closed request)."""
     out = []
     a = as_dict(schemas.get("AuthSession"))
-    keys = {"authenticated", "username", "expires_at", "role"}
+    keys = {"authenticated", "username", "expires_at", "role", "must_change_password"}  # DR-041 D3: the last is a boolean, true while the password is temporary
     role = as_dict(as_dict(a.get("properties")).get("role"))
-    if set(as_dict(a.get("properties"))) != keys or set(a.get("required") or []) != keys or a.get("additionalProperties") is not False \
+    must = as_dict(as_dict(a.get("properties")).get("must_change_password"))
+    if types_of(must) != {"boolean"} or set(as_dict(a.get("properties"))) != keys or set(a.get("required") or []) != keys or a.get("additionalProperties") is not False \
             or types_of(role) != {"string", "null"} or sorted(map(str, role.get("enum") or [])) != sorted(["admin", "operator", "viewer", "None"]):
-        out.append(("RESOURCE_SHAPE", "AuthSession", "must be exactly {authenticated, username, expires_at, role (admin|operator|viewer|null)}"))
+        out.append(("RESOURCE_SHAPE", "AuthSession", "must be exactly {authenticated, username, expires_at, role (admin|operator|viewer|null), must_change_password (boolean)}"))
     r = as_dict(schemas.get("SignInRequest"))
     rp = as_dict(r.get("properties"))
     if set(rp) != {"username", "password"} or set(r.get("required") or []) != {"username", "password"} \
