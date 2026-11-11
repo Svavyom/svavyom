@@ -8,6 +8,7 @@ import { read, type ReadResult } from "../api/client";
 import { decodeBackupList, decodeHost, decodeImageList, decodeVmList, decodeVolumeList } from "../api/decoders";
 import type { Backup, Host, Image, VM, Volume } from "../api/schema";
 import { OperationProgress } from "./OperationProgress";
+import { SshKeyField } from "./SshKeyField";
 import { guidance, imageStateLabel, REGISTER_IMAGE_HINT } from "./guidance";
 import { useRunner } from "./runner";
 import { DOWNTIME_WARNING, describeSchedule } from "./BackupSchedule";
@@ -264,7 +265,7 @@ export function Storage(props: { query: string; refresh: number; onSessionEnded:
           <>
             <p>This creates a <strong>new</strong> stopped VM from {dlg.backup.name}. No existing VM is changed. The guest starts as a new instance, so it gets new SSH host keys and may get a different address.</p>
             <TextField id="restore-name" label="Name of the new VM" value={name} onChange={setName} required error={formError && !NAME_RE.test(name) ? formError : undefined} />
-            <TextArea id="restore-key" label="SSH public key" value={key} onChange={setKey} description="One public key; the backup itself holds none." error={formError && NAME_RE.test(name) ? formError : undefined} />
+            <SshKeyField id="restore-key" label="SSH public key" value={key} onChange={setKey} description="One public key; the backup itself holds none." error={formError && NAME_RE.test(name) ? formError : undefined} />
           </>
         ) : null}
         {dlg?.kind === "export_backup" ? (

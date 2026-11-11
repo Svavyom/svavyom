@@ -34,6 +34,7 @@ import (
 	"example.invalid/dedicatedcloud/backend/internal/provision"
 	"example.invalid/dedicatedcloud/backend/internal/schedule"
 	"example.invalid/dedicatedcloud/backend/internal/sqlitedb"
+	"example.invalid/dedicatedcloud/backend/internal/sshkeys"
 )
 
 // run executes a subcommand and returns the process exit code. It never prints a password, hash or token.
@@ -334,6 +335,12 @@ func serve(ctx context.Context, args []string, stderr io.Writer) int {
 		alertSettings *provision.AlertSettings
 		opStore       operation.Store
 	)
+	keyLib, err := sshkeys.OpenSQLite(ctx, db)
+	if err != nil {
+		_, _ = fmt.Fprintln(stderr, "ERROR cannot initialise the SSH key library")
+		return 1
+	}
+	deps.SSHKeys = keyLib
 	deps.StartedAt = time.Now()
 	deps.Services = serviceProbe(map[string]string{"agent": *agentSocket, "mutation": *mutSocket, "console": *consoleSocket, "offsite": *offsiteSocket})
 	if *firewallStatus != "" {

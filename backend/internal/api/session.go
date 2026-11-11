@@ -57,6 +57,8 @@ type Deps struct {
 	Alerts *AlertsView
 	// Schedules is the backup schedule store (DR-024 D3). Nil reports every VM without a schedule and offers no schedule action.
 	Schedules ScheduleSource
+	// SSHKeys is the library of saved SSH public keys (DR-040). Nil keeps its routes closed.
+	SSHKeys SSHKeyLibrary
 	// Services reports whether each service the API depends on answers (agent, mutation, console, offsite): "ok", "unreachable" or "not_enabled". Nil reports none.
 	Services func() []ServiceState
 	// StartedAt is when this API process started (the status page shows it); zero when unknown.
@@ -264,6 +266,12 @@ func (h *Handler) serveImplemented(w http.ResponseWriter, r *http.Request, route
 		h.readOperation(w, r)
 	case "POST /api/v1/operations/{id}/cancel":
 		h.cancelOperation(w, r)
+	case "GET /api/v1/ssh-keys":
+		h.listSSHKeys(w, r)
+	case "POST /api/v1/ssh-keys":
+		h.addSSHKey(w, r)
+	case "DELETE /api/v1/ssh-keys/{id}":
+		h.deleteSSHKey(w, r)
 	case "GET /api/v1/events":
 		h.listEvents(w, r)
 	case "GET /api/v1/events/{id}":

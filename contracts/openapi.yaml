@@ -496,6 +496,68 @@ paths:
         '429': {$ref: '#/components/responses/RateLimited'}
         '500': {$ref: '#/components/responses/InternalError'}
         '503': {$ref: '#/components/responses/Unavailable'}
+  /api/v1/ssh-keys:
+    get:
+      operationId: listSshKey
+      x-request-category: list_ssh_keys
+      x-implementation-status: implemented
+      security: [{ownerSession: []}]
+      responses:
+        '200':
+          description: Every saved SSH public key, by name (DR-040)
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/SshKeyList'}
+        '400': {$ref: '#/components/responses/ValidationError'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '429': {$ref: '#/components/responses/RateLimited'}
+        '500': {$ref: '#/components/responses/InternalError'}
+        '503': {$ref: '#/components/responses/Unavailable'}
+    post:
+      operationId: addSshKey
+      x-request-category: add_ssh_key
+      x-implementation-status: implemented
+      security: [{ownerSession: []}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/AddSshKeyRequest'}
+      responses:
+        '201':
+          description: The saved key (DR-040)
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/SshKey'}
+        '400': {$ref: '#/components/responses/ValidationError'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {$ref: '#/components/responses/Conflict'}
+        '429': {$ref: '#/components/responses/RateLimited'}
+        '500': {$ref: '#/components/responses/InternalError'}
+        '503': {$ref: '#/components/responses/Unavailable'}
+  /api/v1/ssh-keys/{id}:
+    delete:
+      operationId: deleteSshKey
+      x-request-category: delete_ssh_key
+      x-implementation-status: implemented
+      security: [{ownerSession: []}]
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          description: The key that was removed (DR-040)
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/SshKey'}
+        '400': {$ref: '#/components/responses/ValidationError'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '429': {$ref: '#/components/responses/RateLimited'}
+        '500': {$ref: '#/components/responses/InternalError'}
+        '503': {$ref: '#/components/responses/Unavailable'}
   /api/v1/events:
     get:
       operationId: listEvent
@@ -2186,6 +2248,88 @@ components:
           type: [string, "null"]
           pattern: "^[A-Za-z0-9_-]{1,128}$"
           maxLength: 128
+          x-data-class: operational
+    SshKey:
+      type: object
+      additionalProperties: false
+      required: [id, name, type, public_key, fingerprint, added_by, added_at, allowed_actions]
+      x-data-class: operational
+      description: A saved SSH public key (DR-040). Public keys only; a private key is refused on the way in. allowed_actions is delete when the caller may delete it.
+      properties:
+        id:
+          type: string
+          pattern: "^k-[0-9a-f]{16}$"
+          maxLength: 18
+          x-data-class: operational
+        name:
+          type: string
+          pattern: "^[A-Za-z0-9][A-Za-z0-9 ._()+-]{0,62}$"
+          maxLength: 63
+          x-data-class: operational
+        type:
+          type: string
+          enum: [ed25519, ecdsa, rsa]
+          x-data-class: operational
+        public_key:
+          type: string
+          maxLength: 2048
+          x-data-class: operational
+        fingerprint:
+          type: string
+          pattern: "^SHA256:[A-Za-z0-9+/]{43}$"
+          maxLength: 50
+          x-data-class: operational
+        added_by:
+          type: string
+          maxLength: 64
+          x-data-class: operational
+        added_at:
+          type: string
+          format: date-time
+          maxLength: 40
+          x-data-class: operational
+        allowed_actions:
+          type: array
+          maxItems: 1
+          x-data-class: operational
+          items:
+            type: string
+            enum: [delete]
+    SshKeyList:
+      type: object
+      additionalProperties: false
+      required: [items, allowed_actions]
+      x-data-class: operational
+      properties:
+        items:
+          type: array
+          maxItems: 64
+          x-data-class: operational
+          items:
+            $ref: "#/components/schemas/SshKey"
+        allowed_actions:
+          type: array
+          maxItems: 1
+          x-data-class: operational
+          items:
+            type: string
+            enum: [add]
+    AddSshKeyRequest:
+      type: object
+      additionalProperties: false
+      required: [name, public_key]
+      x-data-class: operational
+      description: Request body (not a response). One plain public key on one line, never a private key; the server computes the fingerprint.
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 63
+          x-data-class: operational
+        public_key:
+          type: string
+          minLength: 1
+          maxLength: 2048
           x-data-class: operational
     AuthSession:
       type: object

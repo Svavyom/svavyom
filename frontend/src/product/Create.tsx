@@ -8,6 +8,7 @@ import { decodeHost, decodeImageList, decodeNetworkList } from "../api/decoders"
 import { submitOperation } from "../api/session";
 import type { Host, Image, Operation, VirtualNetwork } from "../api/schema";
 import { OperationProgress, OperationStatus } from "./OperationProgress";
+import { SshKeyField } from "./SshKeyField";
 import { guidance, imageAccessText, imageStateLabel } from "./guidance";
 import { availableProfiles } from "./profiles";
 import { atLeast, useRole } from "./role";
@@ -196,7 +197,7 @@ export function CreateVm(props: { onSessionEnded: () => void }) {
                 {isIso ? (
                   <StatusMessage tone="warning">This VM boots the installer from the ISO. There is no SSH key and no automatic setup: you install the system yourself. Start the VM, then follow the installer in the <strong>Graphical console</strong> on the VM&apos;s page (the serial console is also there, but many installers, Windows among them, only draw on the graphical one). Eject the media afterwards so the VM boots from its disk.</StatusMessage>
                 ) : (
-                  <TextArea id="create-key" label="SSH public key" value={draft.key} onChange={set("key")}
+                  <SshKeyField id="create-key" label="SSH public key" value={draft.key} onChange={set("key")}
                     description="One public key (for example the contents of id_ed25519.pub). It is the only way to sign in to the VM; passwords are disabled. Never paste a private key."
                     error={errors.find((x) => x.fieldId === "create-key")?.message} />
                 )}
