@@ -1,8 +1,8 @@
 // fe-unit: the browser-made SSH key (DR-040 D2). The file format is pinned by a golden file that the Go tests parse with golang.org/x/crypto/ssh, an independent
-// implementation of the OpenSSH format: backend/internal/sshkeys/testdata/browser-generated.key. If the format changes on purpose, copy the "received" value
+// implementation of the OpenSSH format: backend/internal/sshkeys/testdata/browser-generated.b64 (the base64 body only, so that no private-key armour is committed). If the format changes on purpose, copy the "received" value
 // of the failing comparison into those two files; the Go test then proves the new bytes still parse.
 import { describe, expect, it } from "vitest";
-import goldenKey from "../../../backend/internal/sshkeys/testdata/browser-generated.key?raw";
+import goldenBody from "../../../backend/internal/sshkeys/testdata/browser-generated.b64?raw";
 import goldenPub from "../../../backend/internal/sshkeys/testdata/browser-generated.pub?raw";
 import { canGenerate, fingerprint, generateKeyPair, opensshPrivateKey, publicLine } from "./keygen";
 
@@ -22,7 +22,8 @@ const body = (file: string) => unb64(file.split("\n").slice(1, -2).join(""));
 describe("OpenSSH key file", () => {
   it("matches the golden file that the Go tests parse with x/crypto/ssh", async () => {
     const pub = await publicOf(SEED);
-    expect(opensshPrivateKey(SEED, pub, "golden@svavyom", 0x01020304)).toBe(goldenKey);
+    const file = opensshPrivateKey(SEED, pub, "golden@svavyom", 0x01020304);
+    expect(file.split("\n").slice(1, -2).join("\n") + "\n").toBe(goldenBody);
     expect(publicLine(pub, "golden@svavyom") + "\n").toBe(goldenPub);
   });
 

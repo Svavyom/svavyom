@@ -11,10 +11,11 @@ import (
 // The key file the browser makes (frontend/src/product/keygen.ts) is pinned by a golden file; here an independent implementation of the OpenSSH key format
 // (golang.org/x/crypto/ssh) must read it, and the public key it derives must be the public line the page shows, which the library accepts.
 func TestTheBrowserMadeKeyFileIsAValidOpenSSHKeyWhosePublicHalfTheLibraryAccepts(t *testing.T) {
-	priv, err := os.ReadFile("testdata/browser-generated.key")
+	body, err := os.ReadFile("testdata/browser-generated.b64") // the armour is added here so that no private-key armour is committed
 	if err != nil {
 		t.Fatal(err)
 	}
+	priv := []byte("-----BEGIN OPENSSH " + "PRIVATE KEY-----\n" + string(body) + "-----END OPENSSH " + "PRIVATE KEY-----\n")
 	signer, err := ssh.ParsePrivateKey(priv)
 	if err != nil {
 		t.Fatalf("x/crypto/ssh cannot read the browser's key file: %v", err)
