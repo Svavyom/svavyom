@@ -5,7 +5,7 @@ in a file, a disposable SSH key pair, and a qualified image id. Every VM, snapsh
 resources it can prove it created (names derived from the run id, VM marker checked through the API).
 
     python3 tools/qualify_install.py --base http://127.0.0.1:8443 --password-file PW --pubkey KEY.pub --ssh-key KEY --image ubuntu-24.04 \
-        --run-id qr-YYYYMMDD-xxxxxx --out DIR [--ctl /usr/libexec/svavyom/svavyom-ctl] [--phase all|up|restart|down]
+        --run-id qr-YYYYMMDD-xxxxxx --out DIR [--ctl /usr/libexec/svavyom/svavyom-ctl] [--phase all|up|restart|down|check|afterboot]
 
 Output: DIR/<run-id>-install.json with PASS / FAIL / NOT_RUN per criterion. No password, cookie, CSRF value, ticket or key is printed or recorded.
 Exit 0 when nothing FAILED, 1 otherwise.
@@ -118,6 +118,17 @@ def ssh(key, user, ip, cmd, timeout=40):
                "-o", "BatchMode=yes", f"{user}@{ip}", cmd], timeout=timeout)
 
 
+def wait_ssh(key, user, ip, timeout=200):
+    """True once the guest answers SSH (key login) within the time limit."""
+    end = time.time() + timeout
+    while time.time() < end:
+        rc, out = ssh(key, user, ip, "echo svq-ok")
+        if rc == 0 and "svq-ok" in out:
+            return True
+        time.sleep(6)
+    return False
+
+
 def ws_console(api, vm_id, seconds=25):
     """Mint a ticket and read the serial console over a hand-made RFC 6455 client (binary frames). Returns the bytes seen."""
     s, t = api.call("POST", f"/console/v1/vms/{vm_id}/tickets", {})
@@ -188,7 +199,7 @@ def main():
     ap.add_argument("--run-id", required=True)
     ap.add_argument("--out", required=True)
     ap.add_argument("--ctl", default="/usr/libexec/svavyom/svavyom-ctl")
-    ap.add_argument("--phase", default="all", choices=["all", "up", "restart", "down"])
+    ap.add_argument("--phase", default="all", choices=["all", "up", "restart", "down", "check", "afterboot"])
     a = ap.parse_args()
     if not re.fullmatch(r"qr-\d{8}-[0-9a-f]{6}", a.run_id):
         sys.exit("ERROR run id must be qr-YYYYMMDD-xxxxxx")
@@ -230,6 +241,27 @@ def main():
     except urllib.error.HTTPError as e:
         rec("unauthenticated-refused", "PASS" if e.code == 401 else "FAIL", f"anonymous GET /api/v1/vms -> HTTP {e.code}")
 
+    if a.phase == "check":  # the installed-state checks and the sign-in only: after an upgrade, a rollback or a reboot
+        finish()
+    if a.phase == "afterboot":
+        # ---- after a HOST reboot: what comes back. A VM that was running is not started again by Svavyom itself, so its state is recorded, and the data must be intact.
+        v = api.vm_by_name(vm_name)
+        rec("vm-listed-after-host-reboot", "PASS" if v else "FAIL", "the VM is still listed by the API after the host rebooted")
+        if v:
+            state = v["observed"]["power"]
+            rec("vm-state-after-host-reboot", "PASS", "the VM is %s after the host rebooted (recorded, not judged)" % state)
+            ok = True
+            if state != "running":
+                ok, why = api.op_run("start", "VM", v["id"])
+                rec("vm-start-after-host-reboot", "PASS" if ok else "FAIL", why)
+            rv = api.wait_vm(vm_name, "running", ip=True) if ok else None
+            if rv and wait_ssh(a.ssh_key, rv["observed"]["login_user"] or "ubuntu", rv["observed"]["ip_address"]):
+                out = ssh(a.ssh_key, rv["observed"]["login_user"] or "ubuntu", rv["observed"]["ip_address"], "cat /var/lib/svq-marker1")[1]
+                rec("vm-data-survives-host-reboot", "PASS" if "svq-marker-1" in out else "FAIL", "the data written before the host reboot is in the guest")
+            else:
+                rec("vm-data-survives-host-reboot", "FAIL", "the VM did not come back with an address and SSH")
+        finish()
+
     if a.phase in ("all", "up"):
         # ---- create, start, SSH, console
         ok, why = api.op_run("create", "VM", vm_name, create={"vcpus": 1, "memory_mib": 1024, "image_id": a.image, "disk_gib": 10, "ssh_public_key": pub})
@@ -259,6 +291,9 @@ def main():
         if v:
             ssh(a.ssh_key, user, ip, "cloud-init status --wait >/dev/null 2>&1; true", timeout=200)
             bid = ssh(a.ssh_key, user, ip, "cat /proc/sys/kernel/random/boot_id")[1].strip()
+            # data written in the guest now is what the snapshot and the backup are later proven to bring back
+            out = ssh(a.ssh_key, user, ip, "sudo sh -c 'echo svq-marker-1 > /var/lib/svq-marker1; sync'; cat /var/lib/svq-marker1")[1]
+            rec("vm-guest-data-written", "PASS" if "svq-marker-1" in out else "FAIL", "a marker file was written inside the guest")
         ok, why = api.op_run("reboot", "VM", v["id"]) if v else (False, "no VM")
         rec("vm-reboot", "PASS" if ok and api.wait_vm(vm_name, "running", ip=True) else "FAIL", why)
         if ok and v:
@@ -268,6 +303,8 @@ def main():
                 rc, out = ssh(a.ssh_key, user, ip, "cat /proc/sys/kernel/random/boot_id")
                 nb = out.strip() if rc == 0 else ""
             rec("vm-reboot-observed", "PASS" if nb and nb != bid else "FAIL", "the guest answered SSH with a new boot id after the reboot")
+            kept = ssh(a.ssh_key, user, ip, "cat /var/lib/svq-marker1")[1]
+            rec("vm-data-survives-reboot", "PASS" if "svq-marker-1" in kept else "FAIL", "the marker written before the reboot is still in the guest")
         # ---- M3 smoke
         s, d = api.call("GET", "/api/v1/virtual-networks")
         rec("networks-list", "PASS" if s == 200 and d["items"] else "FAIL", f"GET /api/v1/virtual-networks HTTP {s}")
@@ -287,6 +324,26 @@ def main():
         ok, why = api.op_run("snapshot", "VM", v["id"]) if v else (False, "no VM")
         snaps = (api.vm_by_name(vm_name) or {"observed": {"snapshots": []}})["observed"]["snapshots"]
         rec("vm-snapshot-create", "PASS" if ok and len(snaps) == 1 else "FAIL", why + f"; the VM lists {len(snaps)} snapshot(s)")
+        if v and snaps:
+            # proof that a snapshot restore brings the disk back: change the guest after the snapshot, restore it, and look
+            sid, wrote2, kept1, gone2, why_s = snaps[0]["id"], False, False, False, ""
+            ok1, _ = api.op_run("start", "VM", v["id"])
+            vv = api.wait_vm(vm_name, "running", ip=True) if ok1 else None
+            if vv and wait_ssh(a.ssh_key, user, vv["observed"]["ip_address"]):
+                out = ssh(a.ssh_key, user, vv["observed"]["ip_address"], "sudo sh -c 'echo svq-marker-2 > /var/lib/svq-marker2; sync'; cat /var/lib/svq-marker2")[1]
+                wrote2 = "svq-marker-2" in out
+            api.op_run("stop", "VM", v["id"])
+            api.wait_vm(vm_name, "stopped")
+            ok2, why_s = api.op_run("restore_snapshot", "VM", v["id"], params={"snapshot_id": sid})
+            ok3, _ = api.op_run("start", "VM", v["id"])
+            vv = api.wait_vm(vm_name, "running", ip=True) if ok3 else None
+            if vv and wait_ssh(a.ssh_key, user, vv["observed"]["ip_address"]):
+                out = ssh(a.ssh_key, user, vv["observed"]["ip_address"], "cat /var/lib/svq-marker1; ls /var/lib/svq-marker2 2>&1; true")[1]
+                kept1, gone2 = "svq-marker-1" in out, "No such file" in out
+            rec("vm-snapshot-restore", "PASS" if ok2 and wrote2 and kept1 and gone2 else "FAIL",
+                f"{why_s}; the change made after the snapshot was written={wrote2}; after the restore the earlier data is back={kept1} and the later change is gone={gone2}")
+            api.op_run("stop", "VM", v["id"])
+            api.wait_vm(vm_name, "stopped")
         ok, why = api.op_run("delete_snapshot", "VM", v["id"], params={"snapshot_id": snaps[0]["id"]}) if v and snaps else (False, "no snapshot to delete")
         rec("vm-snapshot-delete", "PASS" if ok and not api.vm_by_name(vm_name)["observed"]["snapshots"] else "FAIL", why)
         def backup_ids():
@@ -296,6 +353,24 @@ def main():
         ok, why = api.op_run("backup", "VM", v["id"]) if v else (False, "no VM")
         mine = backup_ids() - before_b
         rec("vm-backup-create", "PASS" if ok and len(mine) == 1 else "FAIL", why + f"; the store lists {len(mine)} new backup(s)")
+        restored = f"qirs-{h}"
+        if v and ok and len(mine) == 1:
+            # proof that a backup restore brings the guest back as a NEW VM with the same data
+            okr, why_r = api.op_run("restore", "Backup", next(iter(mine)), params={"new_name": restored, "ssh_public_key": pub})
+            rv = api.vm_by_name(restored)
+            seen, kept1, gone2 = False, False, False
+            if okr and rv:
+                oks, _ = api.op_run("start", "VM", rv["id"])
+                rr = api.wait_vm(restored, "running", ip=True) if oks else None
+                if rr and wait_ssh(a.ssh_key, user, rr["observed"]["ip_address"]):
+                    seen = True
+                    out = ssh(a.ssh_key, user, rr["observed"]["ip_address"], "cat /var/lib/svq-marker1; ls /var/lib/svq-marker2 2>&1; true")[1]
+                    kept1, gone2 = "svq-marker-1" in out, "No such file" in out
+                api.op_run("stop", "VM", rv["id"])
+                api.wait_vm(restored, "stopped")
+                api.op_run("delete", "VM", rv["id"])
+            rec("vm-backup-restore", "PASS" if okr and rv and seen and kept1 and gone2 and not api.vm_by_name(restored) else "FAIL",
+                f"{why_r}; the restored VM booted and answered SSH={seen}; it holds the data of the backup={kept1} and not the later change={gone2}; the restored VM was removed")
         okd, whyd = (False, "no backup to delete")
         for bid in mine:
             okd, whyd = api.op_run("delete", "Backup", bid)
@@ -345,7 +420,7 @@ def main():
             api.op_run(op, "VirtualNetwork", net_name)
         left = sh(["sudo", "-n", "virsh", "-c", "qemu:///system", "list", "--all", "--name"])[1].split()
         nets = sh(["sudo", "-n", "virsh", "-c", "qemu:///system", "net-list", "--all", "--name"])[1].split()
-        rec("host-clean", "PASS" if vm_name not in left and net_name not in " ".join(nets) and not any(n.startswith("svqn-") and h in n for n in nets) else "FAIL",
+        rec("host-clean", "PASS" if vm_name not in left and f"qirs-{h}" not in left and net_name not in " ".join(nets) and not any(n.startswith("svqn-") and h in n for n in nets) else "FAIL",
             f"no domain {vm_name}, no network {net_name}")
     finish()
 

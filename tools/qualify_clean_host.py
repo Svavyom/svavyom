@@ -24,7 +24,7 @@ import time
 sys.dont_write_bytecode = True
 
 R = []
-STAGES = ["facts", "prepare", "install", "bootstrap", "verify", "image", "vm", "upgrade"]
+STAGES = ["facts", "prepare", "install", "bootstrap", "verify", "image", "vm", "upgrade", "rollback", "reboot", "nightly", "firewall"]
 HOST_RE = re.compile(r"^[0-9]{1,3}(\.[0-9]{1,3}){3}$")
 NAME_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9.-]{0,251}[A-Za-z0-9]$")
 RUN_RE = re.compile(r"^qr-[0-9]{8}-[0-9a-f]{6}$")
@@ -279,36 +279,225 @@ def stage_image(h, a):
     h.run("rm -f /var/tmp/%s /var/tmp/SHA256SUMS.cloud" % IMAGE_FILE, timeout=60)
 
 
-def vm_run_command(run_id):
+def vm_run_command(run_id, phase="all"):
     return ("cd %s && python3 qualify_install.py --base https://127.0.0.1:8443 --insecure-tls --password-file pw --pubkey key.pub --ssh-key key --image %s --run-id %s --out . "
-            "--phase all; echo EXIT=$?" % (WORKDIR, IMAGE_ID, run_id))
+            "--phase %s; echo EXIT=$?" % (WORKDIR, IMAGE_ID, run_id, phase))
 
 
-def stage_vm(h, a):
+def vm_setup(h, a):
+    """Put the on-host harness, a disposable SSH key and the administrator's password (mode 0600, from this run's file) in a private directory on the host."""
     pw_path = os.path.join(a.out, "%s-admin-password" % a.run_id)
     if not os.path.isfile(pw_path):
         rec("admin-password", False, "no password file from the bootstrap stage of this run")
-        return
+        return False
     pw = open(pw_path).read().strip()
     here = os.path.dirname(os.path.abspath(__file__))
     h.run("rm -rf %s && install -d -m 0700 %s && ssh-keygen -q -t ed25519 -N '' -f %s/key" % (WORKDIR, WORKDIR, WORKDIR), timeout=60)
     h.run("umask 077; cat > %s/pw" % WORKDIR, timeout=30, stdin=pw + "\n")
     rc, out = h.put(os.path.join(here, "qualify_install.py"), "%s/qualify_install.py" % WORKDIR)
-    if not rec("harness-copied", rc == 0, "tools/qualify_install.py is on the host" if rc == 0 else out[-150:]):
-        return
-    rc, out = h.run(vm_run_command(a.run_id), timeout=3600)
-    local = os.path.join(a.out, "%s-install.json" % a.run_id)
+    return rec("harness-copied", rc == 0, "tools/qualify_install.py is on the host" if rc == 0 else out[-150:])
+
+
+def vm_phase(h, a, phase, prefix="vm:", timeout=3600):
+    """Run one phase of the on-host harness and record each of its criteria as prefix+id. Returns the list of its results (empty when no result file came back)."""
+    h.run(vm_run_command(a.run_id, phase), timeout=timeout)
+    local = os.path.join(a.out, "%s-install-%s.json" % (a.run_id, phase))
     grc, gout = h.get("%s/%s-install.json" % (WORKDIR, a.run_id), local)
-    h.run("shred -u %s/pw %s/key 2>/dev/null; rm -rf %s" % (WORKDIR, WORKDIR, WORKDIR), timeout=60)
     if grc != 0 or not os.path.isfile(local):
-        rec("vm-harness-result", False, "no result file came back: " + out[-250:])
+        rec(prefix + "harness-result", False, "no result file came back (phase %s)" % phase)
+        return []
+    res = json.load(open(local)).get("results", [])
+    for x in res:
+        rec(prefix + x["id"], x["status"] == "PASS", x.get("detail", ""))
+    return res
+
+
+def vm_teardown(h):
+    h.run("shred -u %s/pw %s/key 2>/dev/null; rm -rf %s" % (WORKDIR, WORKDIR, WORKDIR), timeout=60)
+
+
+def stage_vm(h, a):
+    if not vm_setup(h, a):
         return
-    res = json.load(open(local))
-    for x in res.get("results", []):
-        rec("vm:" + x["id"], x["status"] == "PASS", x.get("detail", ""))
+    vm_phase(h, a, "all")
+    vm_teardown(h)
 
 
-FUNCS = {"facts": stage_facts, "prepare": stage_prepare, "install": stage_install, "bootstrap": stage_bootstrap, "verify": stage_verify, "image": stage_image, "vm": stage_vm, "upgrade": stage_upgrade}
+def boot_id(h):
+    try:
+        rc, out = h.run("cat /proc/sys/kernel/random/boot_id", timeout=20)
+    except subprocess.TimeoutExpired:
+        return ""
+    return out.strip() if rc == 0 else ""
+
+
+def wait_for(fn, seconds, every=10):
+    end = time.time() + seconds
+    while time.time() < end:
+        v = fn()
+        if v:
+            return v
+        time.sleep(every)
+    return None
+
+
+def judge_after_reboot(status_out, net_out, pool_out, units_out):
+    """[(criterion, ok, detail)] for a host that has just rebooted: the services are up through their own units, libvirt's default network and the Svavyom pool came back by themselves."""
+    units = dict(ln.split(None, 1) for ln in units_out.splitlines() if " " in ln)
+    return [
+        ("services-up-after-reboot", "RESULT: PASS" in status_out, "svavyom-ctl status: PASS" if "RESULT: PASS" in status_out else status_out[-200:]),
+        ("units-enabled-and-active", all(v.strip() == "enabled active" for k, v in units.items() if k != "svavyom-offsite"), "; ".join("%s %s" % (k, v.strip()) for k, v in sorted(units.items()))[:250]),
+        ("libvirt-default-network-back", "Active:         yes" in net_out and "Autostart:      yes" in net_out, re.sub(r"\s+", " ", net_out)[:120]),
+        ("svavyom-pool-back", "State:          running" in pool_out and "Autostart:      yes" in pool_out, re.sub(r"\s+", " ", pool_out)[:120]),
+    ]
+
+
+UNITS = ("svavyom-api", "svavyom-agent", "svavyom-mutation", "svavyom-console", "svavyom-offsite")
+UNITS_CMD = "for u in %s; do echo \"$u $(systemctl is-enabled $u 2>&1) $(systemctl is-active $u 2>&1)\"; done" % " ".join(UNITS)
+
+
+def stage_reboot(h, a):
+    """A VM running, the HOST rebooted, then: the services and libvirt objects come back by themselves, the VM is still there with its data (what Svavyom does with a
+    running VM at a host reboot is recorded, not judged), and the harness cleans up."""
+    if not vm_setup(h, a):
+        return
+    pre = vm_phase(h, a, "up", prefix="pre:")
+    before = boot_id(h)
+    rec("boot-id-read", bool(before), "the host's boot id before the reboot was read")
+    t0 = time.time()
+    try:
+        h.run("sudo systemctl reboot", timeout=30)
+    except subprocess.TimeoutExpired:
+        pass
+    time.sleep(30)
+    after = wait_for(lambda: (lambda b: b if b and b != before else None)(boot_id(h)), 900)
+    rec("host-rebooted", bool(after), "the host came back with a new boot id after %d seconds" % (time.time() - t0) if after else "the host did not come back within 15 minutes")
+    if not after:
+        return
+    ok = wait_for(lambda: "RESULT: PASS" in h.run("sudo /usr/libexec/svavyom/svavyom-ctl status", timeout=120)[1], 300, every=15)
+    rc, status = h.run("sudo /usr/libexec/svavyom/svavyom-ctl status; true", timeout=120)
+    net = h.run("sudo virsh -r -c qemu:///system net-info default", timeout=60)[1]
+    pool = h.run("sudo virsh -r -c qemu:///system pool-info svavyom", timeout=60)[1]
+    units = h.run(UNITS_CMD, timeout=60)[1]
+    for cid, good, detail in judge_after_reboot(status, net, pool, units):
+        rec(cid, good, detail)
+    p = subprocess.run(["curl", "-sk", "-o", "/dev/null", "-w", "%{http_code}", "--max-time", "12", "https://%s:8443/healthz" % a.host], capture_output=True, text=True, check=False)  # noqa: S603,S607
+    rec("api-https-from-outside-after-reboot", p.stdout.strip() == "200", "GET https://%s:8443/healthz -> %s" % (a.host, p.stdout.strip() or "no answer"))
+    vm_phase(h, a, "afterboot", prefix="post:")
+    vm_phase(h, a, "down", prefix="post:")
+    vm_teardown(h)
+
+
+def backup_id_from_listing(text):
+    """The newest backup id in `svavyom-ctl backups` output: the ids start with a UTC stamp, so the largest sorts last."""
+    ids = re.findall(r"\b(20[0-9]{6}T[0-9]{6}Z-[0-9A-Za-z.+-]+-to-[0-9A-Za-z.+-]+)\b", text)
+    return sorted(set(ids))[-1] if ids else ""
+
+
+def rollback_target(backup_id):
+    """The version a rollback from this backup returns to: the part between the stamp and `-to-`."""
+    m = re.fullmatch(r"20[0-9]{6}T[0-9]{6}Z-(.+)-to-(.+)", backup_id or "")
+    return m.group(1) if m else ""
+
+
+def stage_rollback(h, a):
+    """Roll the installation back to the backup the last upgrade made, check it is the earlier version and healthy, then (with --artifact) upgrade again."""
+    rc, ver = h.run("cat /usr/libexec/svavyom/VERSION", timeout=30)
+    before = ver.strip()
+    rc, listing = h.run("sudo /usr/libexec/svavyom/svavyom-ctl backups", timeout=60)
+    bid = backup_id_from_listing(listing)
+    want = rollback_target(bid)
+    if not rec("rollback-backup-found", bool(bid) and bool(want), "the newest backup is %s (returns to %s)" % (bid, want) if bid else "no upgrade backup is listed"):
+        return
+    ctl = "sudo /usr/libexec/svavyom/svavyom-ctl rollback --backup %s" % bid
+    rc, plan = h.run(ctl + "; echo EXIT=$?", timeout=300)
+    rec("rollback-plan", "EXIT=0" in plan, "the plan was printed and nothing was changed" if "EXIT=0" in plan else plan[-300:])
+    rc, now = h.run("cat /usr/libexec/svavyom/VERSION", timeout=30)
+    rec("rollback-plan-changed-nothing", now.strip() == before, "still %s after the plan" % now.strip())
+    rc, out = h.run(ctl + (" --restore-db" if a.restore_db else "") + " --apply; echo EXIT=$?", timeout=1200)
+    rec("rollback-applied", "EXIT=0" in out, "rolled back from %s" % before if "EXIT=0" in out else out[-500:])
+    rc, ver = h.run("cat /usr/libexec/svavyom/VERSION", timeout=30)
+    rec("rollback-version", ver.strip() == want, "installed %s, expected %s" % (ver.strip(), want))
+    ok = wait_for(lambda: "RESULT: PASS" in h.run("sudo /usr/libexec/svavyom/svavyom-ctl status", timeout=120)[1], 180, every=10)
+    rec("services-and-health-after-rollback", bool(ok), "svavyom-ctl status: PASS" if ok else "status is not PASS 3 minutes after the rollback")
+    if vm_setup(h, a):
+        vm_phase(h, a, "check", prefix="rolled-back:", timeout=600)
+        vm_teardown(h)
+    if a.artifact:
+        stage_upgrade(h, a)
+        rc, ver = h.run("cat /usr/libexec/svavyom/VERSION", timeout=30)
+        rec("upgraded-again", ver.strip() == a.version, "installed %s after the second upgrade" % ver.strip())
+        if vm_setup(h, a):
+            vm_phase(h, a, "check", prefix="upgraded-again:", timeout=600)
+            vm_teardown(h)
+
+
+def stage_nightly(h, a):
+    """The nightly boot check, run now: it creates, boots and deletes a disposable VM through the API as its own operator account, and records the result."""
+    rc, out = h.run("sudo test -f /etc/svavyom/nightly-credential && echo CRED || echo NOCRED", timeout=60)
+    rec("nightly-enabled", "CRED" in out and "NOCRED" not in out, "the nightly check is set up (credential present)" if "NOCRED" not in out else "not enabled: install or upgrade with --enable-nightly-boot HH:MM")
+    t0 = time.time()
+    rc, out = h.run("sudo /usr/libexec/svavyom/svavyom-ctl nightly-boot; echo EXIT=$?", timeout=1800)
+    rec("nightly-boot-run", "EXIT=0" in out and re.search(r"\bpass\b", out, re.I) is not None, ("passed in %d seconds" % (time.time() - t0)) if "EXIT=0" in out else out[-300:])
+    rc, left = h.run("sudo virsh -r -c qemu:///system list --all --name | grep -c -i nightly || true", timeout=60)
+    rec("nightly-left-nothing", left.strip() in ("0", ""), "no nightly VM is left on the host")
+
+
+def firewall_rules(h):
+    # the rules, not the packet counters (those change with every packet): ufw's own view, then the kernel's rules in iptables and nftables syntax
+    return h.run("sudo ufw status verbose; sudo iptables -S 2>/dev/null | md5sum; sudo nft list ruleset 2>/dev/null | sed -E 's/counter packets [0-9]+ bytes [0-9]+/counter/' | md5sum", timeout=60)[1]
+
+
+WATCHDOG = "svq-ufw-watchdog"
+
+
+def ufw_prepare_command():
+    """Save ufw's files and whether the firewall itself is ACTIVE (`ufw status`, not the service: on Ubuntu the ufw service reports active while the firewall is off), allow ssh and the
+    API FIRST, and arm a timer on the host that switches ufw off after 20 minutes unless this run cancels it, so a run that dies cannot leave the host unreachable."""
+    return ("sudo rm -rf /var/tmp/ufw-before && sudo cp -a /etc/ufw /var/tmp/ufw-before && (sudo ufw status | head -1 > /var/tmp/ufw-was); "
+            "sudo systemd-run --quiet --on-active=20m --unit=%s /usr/sbin/ufw --force disable && "
+            "sudo ufw allow 22/tcp && sudo ufw allow 8443/tcp && sudo ufw default deny incoming && sudo ufw default deny routed && sudo ufw --force enable" % WATCHDOG)
+
+
+def ufw_restore_command(was_active):
+    """Put ufw back exactly as it was: switch it off, bring the saved files back, and switch it on again ONLY if it was active before AND ssh stays allowed in what was saved."""
+    cmd = "sudo ufw --force disable; sudo rm -rf /etc/ufw && sudo cp -a /var/tmp/ufw-before /etc/ufw"
+    if was_active:
+        cmd += " && sudo ufw allow 22/tcp && sudo ufw --force enable"
+    return cmd + "; rm -rf /var/tmp/ufw-before /var/tmp/ufw-was"
+
+
+def stage_firewall(h, a):
+    """ufw switched on (deny incoming and routed, with only ssh and the API allowed): svavyom-ctl firewall-check says what it sees and changes no rule, the API still
+    answers, and a VM still gets an address and answers SSH. The firewall is put back exactly as it was; a watchdog timer on the host undoes the test if this run dies."""
+    if not vm_setup(h, a):
+        return
+    h.run(ufw_prepare_command(), timeout=120)
+    was_active = "Status: active" in h.run("cat /var/tmp/ufw-was", timeout=30)[1]
+    try:
+        active = h.run("sudo ufw status | head -1", timeout=30)[1]
+        rec("ufw-active", "Status: active" in active, active.strip())
+        before = firewall_rules(h)
+        rc, js = h.run("sudo /usr/libexec/svavyom/svavyom-ctl firewall-check --json", timeout=120)
+        try:
+            findings = json.loads(js).get("findings", [])
+        except ValueError:
+            findings = None
+        rec("firewall-check-ran", findings is not None, "findings: %s" % (", ".join(f["code"] for f in findings) or "none") if findings is not None else js[-200:])
+        rec("firewall-check-changed-no-rule", firewall_rules(h) == before, "the ufw and kernel rules are the same before and after svavyom-ctl firewall-check")
+        p = subprocess.run(["curl", "-sk", "-o", "/dev/null", "-w", "%{http_code}", "--max-time", "12", "https://%s:8443/healthz" % a.host], capture_output=True, text=True, check=False)  # noqa: S603,S607
+        rec("api-answers-with-ufw-on", p.stdout.strip() == "200", "GET https://%s:8443/healthz -> %s" % (a.host, p.stdout.strip() or "no answer"))
+        vm_phase(h, a, "up", prefix="ufw-on:")
+        vm_phase(h, a, "down", prefix="ufw-on:")
+    finally:
+        h.run(ufw_restore_command(was_active), timeout=120)
+        back = h.run("sudo ufw status | head -1; echo reachable", timeout=30)[1]
+        rec("ufw-restored", ("Status: active" in back) == was_active and "reachable" in back, "the firewall is back as it was (%s) and the host is still reachable: %s" % ("active" if was_active else "inactive", back.splitlines()[0].strip()))
+        h.run("sudo systemctl stop %s.timer 2>/dev/null; true" % WATCHDOG, timeout=30)  # the host is reachable again: the watchdog is no longer needed
+    vm_teardown(h)
+
+
+FUNCS = {"facts": stage_facts, "prepare": stage_prepare, "install": stage_install, "bootstrap": stage_bootstrap, "verify": stage_verify, "image": stage_image, "vm": stage_vm, "upgrade": stage_upgrade, "rollback": stage_rollback, "reboot": stage_reboot, "nightly": stage_nightly, "firewall": stage_firewall}
 
 
 def validate(a):
@@ -342,6 +531,7 @@ def main(argv=None):
     ap.add_argument("--tls-name", required=True, help="the host name the self-signed certificate is made for")
     ap.add_argument("--listen", default="0.0.0.0:8443")
     ap.add_argument("--out", required=True)
+    ap.add_argument("--restore-db", action="store_true", help="rollback stage: also put the database copy made by the upgrade back")
     ap.add_argument("--run-id", default="qr-" + time.strftime("%Y%m%d") + "-" + secrets.token_hex(3))
     a = ap.parse_args(argv)
     a.version = ""

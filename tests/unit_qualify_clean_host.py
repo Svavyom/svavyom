@@ -103,7 +103,7 @@ class ImageAndVmStages(unittest.TestCase):
         self.assertIn("--signatures", signed)
 
     def test_the_stage_names(self):
-        self.assertEqual(q.STAGES, ["facts", "prepare", "install", "bootstrap", "verify", "image", "vm", "upgrade"])
+        self.assertEqual(q.STAGES, ["facts", "prepare", "install", "bootstrap", "verify", "image", "vm", "upgrade", "rollback", "reboot", "nightly", "firewall"])
         self.assertEqual(set(q.STAGES), set(q.FUNCS))
 
 
@@ -119,6 +119,68 @@ class Arguments(unittest.TestCase):
             fd = os.open(p, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
             os.close(fd)
             self.assertEqual(stat.S_IMODE(os.stat(p).st_mode), 0o600)
+
+
+class AfterReboot(unittest.TestCase):
+    NET = "Name:           default\nActive:         yes\nPersistent:     yes\nAutostart:      yes\nBridge:         virbr0\n"
+    POOL = "Name:           svavyom\nState:          running\nPersistent:     yes\nAutostart:      yes\n"
+    UNITS = "\n".join("%s enabled active" % u for u in q.UNITS)
+
+    def test_a_host_that_came_back_whole_passes(self):
+        res = q.judge_after_reboot("RESULT: PASS", self.NET, self.POOL, self.UNITS)
+        self.assertEqual([c for c, ok, _ in res if not ok], [])
+
+    def test_each_defect_fails_its_own_criterion(self):
+        for args_, cid in (((("RESULT: FAIL"), self.NET, self.POOL, self.UNITS), "services-up-after-reboot"),
+                           (("RESULT: PASS", self.NET.replace("Autostart:      yes", "Autostart:      no"), self.POOL, self.UNITS), "libvirt-default-network-back"),
+                           (("RESULT: PASS", self.NET, self.POOL.replace("running", "inactive"), self.UNITS), "svavyom-pool-back"),
+                           (("RESULT: PASS", self.NET, self.POOL, self.UNITS.replace("svavyom-api enabled active", "svavyom-api enabled failed")), "units-enabled-and-active")):
+            failed = [c for c, ok, _ in q.judge_after_reboot(*args_) if not ok]
+            self.assertEqual(failed, [cid], (cid, failed))
+
+    def test_the_offsite_unit_may_be_idle_without_failing_the_host(self):
+        units = self.UNITS.replace("svavyom-offsite enabled active", "svavyom-offsite disabled inactive")
+        self.assertEqual([c for c, ok, _ in q.judge_after_reboot("RESULT: PASS", self.NET, self.POOL, units) if not ok], [])
+
+
+class Rollback(unittest.TestCase):
+    LISTING = ("20261110T173140Z-0.1.0-preview.15-to-0.1.0-preview.16  0.1.0-preview.15 -> 0.1.0-preview.16  database copy: true\n"
+               "20261111T074213Z-0.1.0-preview.16-to-0.1.0-preview.17  0.1.0-preview.16 -> 0.1.0-preview.17  database copy: true\n")
+
+    def test_the_newest_backup_is_chosen_and_names_the_version_to_return_to(self):
+        bid = q.backup_id_from_listing(self.LISTING)
+        self.assertEqual(bid, "20261111T074213Z-0.1.0-preview.16-to-0.1.0-preview.17")
+        self.assertEqual(q.rollback_target(bid), "0.1.0-preview.16")
+
+    def test_no_listing_or_a_malformed_id_gives_nothing(self):
+        self.assertEqual(q.backup_id_from_listing("no backups"), "")
+        self.assertEqual(q.rollback_target("latest"), "")
+        self.assertEqual(q.rollback_target(""), "")
+
+    def test_the_vm_phase_command_names_the_phase_and_carries_no_secret(self):
+        cmd = q.vm_run_command("qr-20261111-a1b2c3", "afterboot")
+        self.assertIn("--phase afterboot", cmd)
+        self.assertNotIn("password", cmd.replace("--password-file pw", ""))
+
+
+class Firewall(unittest.TestCase):
+    def test_ssh_and_the_api_are_allowed_before_ufw_is_switched_on_and_a_watchdog_is_armed_first(self):
+        cmd = q.ufw_prepare_command()
+        self.assertLess(cmd.index("ufw allow 22/tcp"), cmd.index("ufw --force enable"))
+        self.assertLess(cmd.index("ufw allow 8443/tcp"), cmd.index("ufw --force enable"))
+        self.assertLess(cmd.index("--unit=svq-ufw-watchdog"), cmd.index("ufw allow 22/tcp"), "the watchdog is armed before anything can lock the host")
+        self.assertIn("ufw --force disable", cmd.split("--unit=svq-ufw-watchdog")[1].split("&&")[0])
+
+    def test_the_baseline_is_ufw_status_not_the_service_state(self):
+        self.assertIn("ufw status | head -1 > /var/tmp/ufw-was", q.ufw_prepare_command())
+        self.assertNotIn("is-active", q.ufw_prepare_command())
+
+    def test_ufw_is_switched_on_again_only_when_it_was_active_and_then_with_ssh_allowed(self):
+        off = q.ufw_restore_command(False)
+        on = q.ufw_restore_command(True)
+        self.assertNotIn("ufw --force enable", off)
+        self.assertIn("ufw allow 22/tcp && sudo ufw --force enable", on)
+        self.assertLess(on.index("cp -a /var/tmp/ufw-before /etc/ufw"), on.index("ufw allow 22/tcp"))
 
 
 if __name__ == "__main__":
