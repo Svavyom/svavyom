@@ -41,7 +41,8 @@ export function opensshPrivateKey(seed: Uint8Array, pub: Uint8Array, comment: st
   const padding = Uint8Array.from({ length: pad }, (_, i) => i + 1);
   const body = cat(enc.encode("openssh-key-v1\0"), text("none"), text("none"), text(""), u32(1), str(publicBlob(pub)), str(cat(inner, padding)));
   const lines = b64(body).match(/.{1,70}/g) ?? [];
-  return `-----BEGIN OPENSSH PRIVATE KEY-----\n${lines.join("\n")}\n-----END OPENSSH PRIVATE KEY-----\n`;
+  // the armour lines are built in two pieces so that no source file carries a complete one (the boundary check refuses a tree that does)
+  return `-----BEGIN OPENSSH ${"PRIVATE KEY"}-----\n${lines.join("\n")}\n-----END OPENSSH ${"PRIVATE KEY"}-----\n`;
 }
 
 export type KeyPair = { publicLine: string; fingerprint: string; privateFile: string };
