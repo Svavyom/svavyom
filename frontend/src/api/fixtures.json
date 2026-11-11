@@ -1886,6 +1886,61 @@
      "bridge": "svbr0"
     }
    }
+  },
+  {
+   "name": "SshKey: an ed25519 key the caller may delete",
+   "schema": "SshKey",
+   "value": {
+    "id": "k-0123456789abcdef",
+    "name": "Olly laptop",
+    "type": "ed25519",
+    "public_key": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHm1Vi6P5lT5QHixEuipi6eQH4U65pW+1+DjkQutBJZk",
+    "fingerprint": "SHA256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "added_by": "olly",
+    "added_at": "2026-11-10T08:00:00Z",
+    "allowed_actions": [
+     "delete"
+    ]
+   }
+  },
+  {
+   "name": "SshKeyList: one key, caller may add",
+   "schema": "SshKeyList",
+   "value": {
+    "items": [
+     {
+      "id": "k-0123456789abcdef",
+      "name": "Olly laptop",
+      "type": "ed25519",
+      "public_key": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHm1Vi6P5lT5QHixEuipi6eQH4U65pW+1+DjkQutBJZk",
+      "fingerprint": "SHA256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "added_by": "olly",
+      "added_at": "2026-11-10T08:00:00Z",
+      "allowed_actions": [
+       "delete"
+      ]
+     }
+    ],
+    "allowed_actions": [
+     "add"
+    ]
+   }
+  },
+  {
+   "name": "SshKeyList: empty, a viewer",
+   "schema": "SshKeyList",
+   "value": {
+    "items": [],
+    "allowed_actions": []
+   }
+  },
+  {
+   "name": "AddSshKeyRequest: a name and a public key",
+   "schema": "AddSshKeyRequest",
+   "value": {
+    "name": "Work",
+    "public_key": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHm1Vi6P5lT5QHixEuipi6eQH4U65pW+1+DjkQutBJZk"
+   }
   }
  ],
  "negative": [
@@ -8201,6 +8256,35 @@
    },
    "reason": "pattern",
    "path": "$.observed.bridge.bridge"
+  },
+  {
+   "name": "SshKey: fingerprint is not SHA256",
+   "schema": "SshKey",
+   "value": {
+    "id": "k-0123456789abcdef",
+    "name": "Olly laptop",
+    "type": "ed25519",
+    "public_key": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHm1Vi6P5lT5QHixEuipi6eQH4U65pW+1+DjkQutBJZk",
+    "fingerprint": "MD5:aa",
+    "added_by": "olly",
+    "added_at": "2026-11-10T08:00:00Z",
+    "allowed_actions": [
+     "delete"
+    ]
+   },
+   "reason": "pattern",
+   "path": "$.fingerprint"
+  },
+  {
+   "name": "AddSshKeyRequest: a client-supplied fingerprint",
+   "schema": "AddSshKeyRequest",
+   "value": {
+    "name": "Work",
+    "public_key": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHm1Vi6P5lT5QHixEuipi6eQH4U65pW+1+DjkQutBJZk",
+    "fingerprint": "SHA256:x"
+   },
+   "reason": "additionalProperties",
+   "path": "$.fingerprint"
   }
  ]
 }

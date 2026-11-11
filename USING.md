@@ -14,15 +14,21 @@ Open `https://HOST:8443/` (or the SSH tunnel you made) and sign in. The menu has
 | **Networks** | managed NAT networks, the host's own networks (read-only), and the **Host bridge** card |
 | **Alerts** | disk-space and other alerts, and whether the webhook is configured |
 | **Activity** | every operation: who did what, when and how it ended |
+| **SSH keys** | the public keys saved for new VMs, and a way to make a key pair in your browser |
+| **System** | which Svavyom version runs, which services it depends on and whether each answers, and what to do when one does not |
 
 There are three roles. A **viewer** can look at everything. An **operator** can also create, start, stop, snapshot, back up, restore and delete VMs and open consoles. An **admin** can also manage networks, delete a backup and use the other admin-only actions. Users are managed on the host with `api user-add|user-list|user-role|user-disable|user-enable|user-passwd` ([Operations](https://docs.svavyom.com/operations/upgrade/)). Buttons you may not use are not shown.
 
 ## 2. Create a VM
 You need an image first (`INSTALLING.md`, section 4). If creation is blocked the Dashboard says why in plain words (for example "VM creation is not enabled on this installation" or "no usable image").
 1. **Create**. Choose a name (lower-case letters, digits and hyphens), an image, the number of vCPUs, memory and root-disk size from the offered choices, and a network (the default, or one you made).
-2. Paste **one public SSH key** (the line from your `id_ed25519.pub`). It is the only way to log in: password login is off. The review screen shows the key's fingerprint; compare it with `ssh-keygen -lf your-key.pub`.
+2. Choose a **saved key** (see **SSH keys** below) or paste **one public SSH key** (the line from your `id_ed25519.pub`). It is the only way to log in: password login is off. The review screen shows the key's fingerprint; compare it with `ssh-keygen -lf your-key.pub`.
 3. Submit. The operation runs in the background and you can watch it; when it ends the VM is **Stopped**. Press **Start**.
 4. When the VM has an address, log in: `ssh -i your-key ubuntu@ADDRESS` (the login user is shown with the image; add `-J you@host` if your workstation cannot reach the VM's network).
+
+**SSH keys.** The **SSH keys** page keeps one list of public keys for the whole installation, so you do not paste the key for every VM. Operators and administrators add keys; everyone signed in can see them; an administrator, or the person who added a key, can delete it (VMs already created with it keep it). Svavyom computes each key's fingerprint itself and refuses anything that is not one plain public key (a private key is refused and never echoed; RSA keys under 3072 bits are refused). The same list is offered when you reinstall a VM or restore a backup.
+
+**Making a key pair in the browser.** On the same page, **Make a key pair here** creates an Ed25519 pair on your computer. You download the **private key** once; it is never sent to Svavyom and not stored in the browser or on the server, so keep the file safe (it is not protected by a passphrase: run `chmod 600 FILE`, and `ssh-keygen -p -f FILE` adds one). Only the public key is saved, when you press **Save public key**, which is possible only after the download. The page needs HTTPS (a self-signed certificate that your browser was told to accept is enough); over plain `http://` it says so and you make the key on your own computer with `ssh-keygen -t ed25519`.
 
 A VM is also created with an installation-media option: choose an ISO instead of a cloud image to install an operating system by hand (see section 5).
 
@@ -62,6 +68,7 @@ Open the VM from **Virtual machines**. Depending on its state and your role you 
 Alerts warn about low free space on the VM pool and the backup store, high host memory use, a crashed or unexpectedly stopped VM, an operation that gave up, a failed scheduled backup and a failed nightly boot check. Open alerts show in the header; acknowledge them on the Alerts page. One **webhook** (configured in `provision.json`, never in the browser) can receive them ([Alerts](https://docs.svavyom.com/using/alerts/)). The **nightly boot check** creates, boots and deletes a disposable VM ([Alerts and the nightly boot check](https://docs.svavyom.com/using/alerts/)).
 
 ## 8. When something goes wrong
+* The **System** page names the Svavyom version and each service it depends on (the web console and API, the host agent, the mutation service, the console broker and the off-host backup service) and says whether each one **answers**, **does not answer** or is **turned off**. For a service that does not answer it shows the commands to run on the host. It reports what the API can see: it connects to each service and does not read the service's systemd state, which `sudo svavyom-ctl status` does.
 * The page shows a plain-language error and, for server errors, a correlation id; the same id is in the journal.
 * `sudo svavyom-ctl status` and `sudo svavyom-ctl validate-config` say what is wrong with the installation in typed findings; [Operations](https://docs.svavyom.com/operations/upgrade/) explains each.
 * An operation that failed or was interrupted shows on **Activity**; most can be retried and repeat exactly the same request.

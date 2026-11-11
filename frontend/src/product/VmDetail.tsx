@@ -12,6 +12,7 @@ import { readiness } from "./Dashboard";
 import { formatRate, POWER_LABEL, POWER_TONE } from "./vmparts";
 import { atLeast, useRole } from "./role";
 import { OperationProgress } from "./OperationProgress";
+import { SshKeyField } from "./SshKeyField";
 import { guidance, imageStateLabel } from "./guidance";
 import { useRunner } from "./runner";
 import { BackupScheduleCard } from "./BackupSchedule";
@@ -409,7 +410,7 @@ export function VmDetail(props: { vmId: string; refresh: number; onSessionEnded:
             {images.length === 0 ? <StatusMessage tone="warning">No image has been qualified on real hardware yet.</StatusMessage> : (
               <Select label="Image" value={imageId} onChange={setImageId} options={images.map((i) => ({ value: i.id, label: `${i.name} (${imageStateLabel(i.observed.qualification)})` }))} />
             )}
-            <TextArea id="reinstall-key" label="SSH public key" value={key} onChange={setKey} description="One public key; it becomes the only way to sign in to the reinstalled VM." error={formError ?? undefined} />
+            <SshKeyField id="reinstall-key" label="SSH public key" value={key} onChange={setKey} description="One public key; it becomes the only way to sign in to the reinstalled VM." error={formError ?? undefined} />
           </>
         ) : null}
         <div className="ds-button-row">
