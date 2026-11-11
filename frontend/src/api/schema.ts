@@ -99,6 +99,11 @@ export interface Host {
       interface: string;
       seconds_left: number | null;
     } | null;
+    services: ({
+      id: "api" | "agent" | "mutation" | "console" | "offsite";
+      state: "ok" | "unreachable" | "not_enabled";
+    })[];
+    started_at: string | null;
     capability_findings: ({
       code: string;
       remediation: string;
@@ -1478,6 +1483,52 @@ export const SCHEMAS = {
             "type": "boolean",
             "x-data-class": "operational"
           },
+          "services": {
+            "description": "The services the API depends on and whether each answered when last checked (a few seconds ago). The API itself is always listed; a peer that was not configured is not_enabled.",
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "enum": [
+                    "api",
+                    "agent",
+                    "mutation",
+                    "console",
+                    "offsite"
+                  ],
+                  "type": "string",
+                  "x-data-class": "operational"
+                },
+                "state": {
+                  "enum": [
+                    "ok",
+                    "unreachable",
+                    "not_enabled"
+                  ],
+                  "type": "string",
+                  "x-data-class": "operational"
+                }
+              },
+              "required": [
+                "id",
+                "state"
+              ],
+              "type": "object"
+            },
+            "maxItems": 8,
+            "type": "array",
+            "x-data-class": "operational"
+          },
+          "started_at": {
+            "description": "When this API process started; null when unknown.",
+            "format": "date-time",
+            "maxLength": 40,
+            "type": [
+              "string",
+              "null"
+            ],
+            "x-data-class": "operational"
+          },
           "storage": {
             "additionalProperties": false,
             "description": "Pool and backup-store facts the UI shows next to the VM sizes. VM disk sizes are virtual; the pool free figure is what counts.",
@@ -1791,6 +1842,8 @@ export const SCHEMAS = {
           "alerts",
           "nightly_boot",
           "bridge",
+          "services",
+          "started_at",
           "capability_findings"
         ],
         "type": "object",

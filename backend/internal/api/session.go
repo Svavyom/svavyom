@@ -25,6 +25,12 @@ type HostSource interface {
 	Host(ctx context.Context) (hostinfo.Info, error)
 }
 
+// ServiceState is one dependency of the API and whether it answered. ID is one of a closed set the page knows words for.
+type ServiceState struct {
+	ID    string
+	State string
+}
+
 // Deps are the collaborators of the implemented routes. A nil Auth keeps the scaffold behaviour.
 type Deps struct {
 	Auth  *auth.Service
@@ -51,6 +57,10 @@ type Deps struct {
 	Alerts *AlertsView
 	// Schedules is the backup schedule store (DR-024 D3). Nil reports every VM without a schedule and offers no schedule action.
 	Schedules ScheduleSource
+	// Services reports whether each service the API depends on answers (agent, mutation, console, offsite): "ok", "unreachable" or "not_enabled". Nil reports none.
+	Services func() []ServiceState
+	// StartedAt is when this API process started (the status page shows it); zero when unknown.
+	StartedAt time.Time
 	// NightlyBoot returns the last nightly real guest boot recorded by svavyom-ctl (DR-024 D4), or nil when none has run. The API reads a file; it never runs one.
 	NightlyBoot func() *NightlyResult
 	// Bridge returns the host bridge state recorded by svavyom-ctl (DR-024 D5), or nil when there is none. The API reads a file; it can neither plan nor apply.
