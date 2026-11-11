@@ -368,6 +368,27 @@ export interface EventList {
   next_cursor: string | null;
 }
 
+export interface SshKey {
+  id: string;
+  name: string;
+  type: "ed25519" | "ecdsa" | "rsa";
+  public_key: string;
+  fingerprint: string;
+  added_by: string;
+  added_at: string;
+  allowed_actions: "delete"[];
+}
+
+export interface SshKeyList {
+  items: SshKey[];
+  allowed_actions: "add"[];
+}
+
+export interface AddSshKeyRequest {
+  name: string;
+  public_key: string;
+}
+
 export interface AuthSession {
   authenticated: boolean;
   username: string | null;
@@ -420,6 +441,30 @@ export interface SubmitOperationRequest {
 }
 
 export const SCHEMAS = {
+  "AddSshKeyRequest": {
+    "additionalProperties": false,
+    "description": "Request body (not a response). One plain public key on one line, never a private key; the server computes the fingerprint.",
+    "properties": {
+      "name": {
+        "maxLength": 63,
+        "minLength": 1,
+        "type": "string",
+        "x-data-class": "operational"
+      },
+      "public_key": {
+        "maxLength": 2048,
+        "minLength": 1,
+        "type": "string",
+        "x-data-class": "operational"
+      }
+    },
+    "required": [
+      "name",
+      "public_key"
+    ],
+    "type": "object",
+    "x-data-class": "operational"
+  },
   "ApiError": {
     "additionalProperties": false,
     "description": "Typed error. There is no free-text message; the UI shows fixed text per category. field_errors appears only with category validation and names declared request keys only.",
@@ -2421,6 +2466,108 @@ export const SCHEMAS = {
     "type": "object",
     "x-data-class": "operational"
   },
+  "SshKey": {
+    "additionalProperties": false,
+    "description": "A saved SSH public key (DR-040). Public keys only; a private key is refused on the way in. allowed_actions is delete when the caller may delete it.",
+    "properties": {
+      "added_at": {
+        "format": "date-time",
+        "maxLength": 40,
+        "type": "string",
+        "x-data-class": "operational"
+      },
+      "added_by": {
+        "maxLength": 64,
+        "type": "string",
+        "x-data-class": "operational"
+      },
+      "allowed_actions": {
+        "items": {
+          "enum": [
+            "delete"
+          ],
+          "type": "string"
+        },
+        "maxItems": 1,
+        "type": "array",
+        "x-data-class": "operational"
+      },
+      "fingerprint": {
+        "maxLength": 50,
+        "pattern": "^SHA256:[A-Za-z0-9+/]{43}$",
+        "type": "string",
+        "x-data-class": "operational"
+      },
+      "id": {
+        "maxLength": 18,
+        "pattern": "^k-[0-9a-f]{16}$",
+        "type": "string",
+        "x-data-class": "operational"
+      },
+      "name": {
+        "maxLength": 63,
+        "pattern": "^[A-Za-z0-9][A-Za-z0-9 ._()+-]{0,62}$",
+        "type": "string",
+        "x-data-class": "operational"
+      },
+      "public_key": {
+        "maxLength": 2048,
+        "type": "string",
+        "x-data-class": "operational"
+      },
+      "type": {
+        "enum": [
+          "ed25519",
+          "ecdsa",
+          "rsa"
+        ],
+        "type": "string",
+        "x-data-class": "operational"
+      }
+    },
+    "required": [
+      "id",
+      "name",
+      "type",
+      "public_key",
+      "fingerprint",
+      "added_by",
+      "added_at",
+      "allowed_actions"
+    ],
+    "type": "object",
+    "x-data-class": "operational"
+  },
+  "SshKeyList": {
+    "additionalProperties": false,
+    "properties": {
+      "allowed_actions": {
+        "items": {
+          "enum": [
+            "add"
+          ],
+          "type": "string"
+        },
+        "maxItems": 1,
+        "type": "array",
+        "x-data-class": "operational"
+      },
+      "items": {
+        "items": {
+          "$ref": "#/components/schemas/SshKey"
+        },
+        "maxItems": 64,
+        "type": "array",
+        "x-data-class": "operational"
+      }
+    },
+    "required": [
+      "items",
+      "allowed_actions"
+    ],
+    "type": "object",
+    "x-data-class": "operational"
+  },
   "SubmitOperationRequest": {
     "additionalProperties": false,
     "description": "Request body (not a response). idempotency_key is credential-class and is never returned.",
@@ -4070,6 +4217,62 @@ export const ROUTES = [
       403,
       404,
       409,
+      429,
+      500,
+      503
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/ssh-keys",
+    "category": "list_ssh_keys",
+    "implemented": true,
+    "success": {
+      "status": 200,
+      "schema": "SshKeyList"
+    },
+    "error_statuses": [
+      400,
+      401,
+      403,
+      429,
+      500,
+      503
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/ssh-keys",
+    "category": "add_ssh_key",
+    "implemented": true,
+    "success": {
+      "status": 201,
+      "schema": "SshKey"
+    },
+    "error_statuses": [
+      400,
+      401,
+      403,
+      409,
+      429,
+      500,
+      503
+    ]
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/v1/ssh-keys/{id}",
+    "category": "delete_ssh_key",
+    "implemented": true,
+    "success": {
+      "status": 200,
+      "schema": "SshKey"
+    },
+    "error_statuses": [
+      400,
+      401,
+      403,
+      404,
       429,
       500,
       503

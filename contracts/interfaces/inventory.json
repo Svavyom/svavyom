@@ -19,7 +19,10 @@
         "cancel_operation",
         "auth_status",
         "sign_in",
-        "sign_out"
+        "sign_out",
+        "list_ssh_keys",
+        "add_ssh_key",
+        "delete_ssh_key"
       ],
       "error_categories": [
         "validation",
@@ -55,7 +58,10 @@
         "GET /api/v1/operations/{id}",
         "POST /api/v1/operations/{id}/cancel",
         "GET /api/v1/events",
-        "GET /api/v1/events/{id}"
+        "GET /api/v1/events/{id}",
+        "GET /api/v1/ssh-keys",
+        "POST /api/v1/ssh-keys",
+        "DELETE /api/v1/ssh-keys/{id}"
       ],
       "security": {
         "transport_kind": "https",

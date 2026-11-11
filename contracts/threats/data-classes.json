@@ -71,6 +71,9 @@
     "request.deploy_app.image_digest": "operational",
     "request.get_app.id": "operational",
     "request.sign_in.username": "operational",
-    "request.sign_in.password": "credential"
+    "request.sign_in.password": "credential",
+    "request.add_ssh_key.name": "operational",
+    "request.add_ssh_key.public_key": "operational",
+    "request.delete_ssh_key.id": "operational"
   }
 }

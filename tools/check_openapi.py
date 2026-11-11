@@ -124,6 +124,10 @@ for _k in KINDS:
     PATHS[("get", "/api/v1/%s/{id}" % COLLECTION[_k])] = ("read_resource", "200", _k, ("Id",), False)
 PATHS[("post", "/api/v1/operations")] = ("submit_operation", "202", "Operation", (), "SubmitOperationRequest")
 PATHS[("post", "/api/v1/operations/{id}/cancel")] = ("cancel_operation", "200", "Operation", ("Id",), False)
+# DR-040: the library of saved SSH public keys.
+PATHS[("get", "/api/v1/ssh-keys")] = ("list_ssh_keys", "200", "SshKeyList", (), False)
+PATHS[("post", "/api/v1/ssh-keys")] = ("add_ssh_key", "201", "SshKey", (), "AddSshKeyRequest")
+PATHS[("delete", "/api/v1/ssh-keys/{id}")] = ("delete_ssh_key", "200", "SshKey", ("Id",), False)
 METHODS = {"get", "put", "post", "delete", "options", "head", "patch", "trace"}
 
 SCHEMA_KEYWORDS = {"type", "enum", "const", "pattern", "format", "minLength", "maxLength", "minimum", "maximum",

@@ -126,6 +126,14 @@
     "sign_in": {
       "username": "username",
       "password": "password"
+    },
+    "list_ssh_keys": {},
+    "add_ssh_key": {
+      "name": "ssh_key_name",
+      "public_key": "ssh_public_key"
+    },
+    "delete_ssh_key": {
+      "id": "id"
     }
   },
   "value_types": {
@@ -134,6 +142,8 @@
     "limit": "^(?:[1-9][0-9]?|1[0-9]{2}|200)$",
     "cursor": "^[A-Za-z0-9_-]{1,128}$",
     "username": "^.{1,64}$",
-    "password": "^.{1,128}$"
+    "password": "^.{1,128}$",
+    "ssh_key_name": "^[A-Za-z0-9][A-Za-z0-9 ._()+-]{0,62}$",
+    "ssh_public_key": "^[ -~]{1,2048}$"
   }
 }
