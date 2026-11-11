@@ -97,6 +97,9 @@ func correlationID() (string, error) {
 
 // ServeHTTP implements http.Handler.
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if !h.mustChangeGate(w, r) { // a user with a temporary password may only change it (DR-041 D3)
+		return
+	}
 	if strings.HasPrefix(r.URL.Path, "/console/v1/") {
 		h.serveConsole(w, r)
 		return

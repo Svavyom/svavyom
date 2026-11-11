@@ -80,7 +80,7 @@ describe("Alerts", () => {
     const posted: unknown[] = [];
     const f = vi.fn(async (url: string, init: RequestInit = {}) => {
       const u = String(url);
-      if (u === "/api/v1/auth/session") return new Response(JSON.stringify({ authenticated: true, username: "admin", expires_at: "2026-10-16T08:30:00Z", role: "admin" }), { status: 200, headers: { "X-CSRF-Token": "S".repeat(43) } });
+      if (u === "/api/v1/auth/session") return new Response(JSON.stringify({ authenticated: true, username: "admin", expires_at: "2026-10-16T08:30:00Z", role: "admin", must_change_password: false }), { status: 200, headers: { "X-CSRF-Token": "S".repeat(43) } });
       if (u === "/api/v1/operations" && init.method === "POST") { posted.push(JSON.parse(init.body as string)); return new Response(JSON.stringify(operation({ id: "op-9", type: "alert_acknowledge", resource_kind: "Event", resource_id: "al-0000000000000001", status: "succeeded", allowed_actions: [] })), { status: 202 }); }
       if (u.startsWith("/api/v1/operations/")) return new Response(JSON.stringify(operation({ id: "op-9", type: "alert_acknowledge", resource_kind: "Event", resource_id: "al-0000000000000001", status: "succeeded", allowed_actions: [] })), { status: 200 });
       return String(url).startsWith("/api/v1/events") ? events([ev(1)]) : host("none");

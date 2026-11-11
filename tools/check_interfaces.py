@@ -27,7 +27,8 @@ BOUNDARIES = {
                      "authz_model": "deny_by_default", "ownership_check": True, "accepts_client_xml": False,
                      "executes_commands": False},
         "categories": {"health", "list_resources", "read_resource", "submit_operation", "cancel_operation", "auth_status",
-                       "sign_in", "sign_out", "list_ssh_keys", "add_ssh_key", "delete_ssh_key"},
+                       "sign_in", "sign_out", "list_ssh_keys", "add_ssh_key", "delete_ssh_key",
+                       "change_password", "list_users", "create_user", "set_user_role", "disable_user", "enable_user", "reset_user_password"},
         "status": "scaffold",
         "implemented": ["GET /healthz", "GET /api/v1/auth/session", "POST /api/v1/auth/session",
                         "DELETE /api/v1/auth/session", "GET /api/v1/hosts", "GET /api/v1/hosts/{id}",
@@ -35,7 +36,8 @@ BOUNDARIES = {
                         "GET /api/v1/virtual-networks", "GET /api/v1/virtual-networks/{id}", "GET /api/v1/volumes", "GET /api/v1/volumes/{id}", "GET /api/v1/backups", "GET /api/v1/backups/{id}",
                         "GET /api/v1/operations", "POST /api/v1/operations", "GET /api/v1/operations/{id}", "POST /api/v1/operations/{id}/cancel",
                         "GET /api/v1/events", "GET /api/v1/events/{id}",
-                        "GET /api/v1/ssh-keys", "POST /api/v1/ssh-keys", "DELETE /api/v1/ssh-keys/{id}"]},
+                        "GET /api/v1/ssh-keys", "POST /api/v1/ssh-keys", "DELETE /api/v1/ssh-keys/{id}",
+                        "POST /api/v1/auth/password", "GET /api/v1/users", "POST /api/v1/users", "POST /api/v1/users/{id}/role", "POST /api/v1/users/{id}/disable", "POST /api/v1/users/{id}/enable", "POST /api/v1/users/{id}/password"]},
     "api-operation-manager": {
         "security": {"transport_kind": "in_process", "listener": "none", "peer_auth": "in_process_actor_propagation",
                      "authz_model": "deny_by_default", "ownership_check": True, "accepts_client_xml": False,
@@ -101,9 +103,9 @@ PINNED_SECTIONS = {
     "prohibited.redaction.key_substrings":
         "e345ee00860d558c374286b0f269929a5df6f4bec8efd163e29113efbb1ac721",
     "request-schemas.categories":
-        "d481f93e7eb0ae00ff40d97beba799bdd1551c144b77839fd8db22543fe0b7db",
+        "d3319e05efc1c0745732c4826f86dbd3d5343efb6b1bb2682b4424ebe58996da",
     "request-schemas.value_types":
-        "06d73f6f70e53222cc5d6653267c767c9a3de36736890eac64efad3e7709b6a9",
+        "3f56a2cdd2c653fe0526e5457b5f51dd8085edd3a8fce4170ac6ea123e66b5ce",
     "resources.resources":
         "b704d4f139d9626dd2ef23d58e9090c6d05dec78b367844a5b90cb1c67ead010",
     "resources.operation_status":
@@ -310,8 +312,8 @@ def _check_contracts(data):
 
     schemas = data["request-schemas"]
     types = schemas.get("value_types")
-    if not isinstance(types, dict) or set(types) != {"id", "digest", "limit", "cursor", "username", "password", "ssh_key_name", "ssh_public_key"}:
-        findings.append(("CONTRACT_INVALID", "request-schemas", "value_types must be exactly id, digest, limit, cursor, username, password, ssh_key_name and ssh_public_key"))
+    if not isinstance(types, dict) or set(types) != {"id", "digest", "limit", "cursor", "username", "password", "ssh_key_name", "ssh_public_key", "user_role"}:
+        findings.append(("CONTRACT_INVALID", "request-schemas", "value_types must be exactly id, digest, limit, cursor, username, password, ssh_key_name, ssh_public_key and user_role"))
     else:
         for name, pattern in types.items():
             try:

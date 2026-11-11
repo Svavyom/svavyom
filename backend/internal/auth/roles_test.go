@@ -234,7 +234,7 @@ func TestMigrationKeepsTheExistingAdministratorAndHisSession(t *testing.T) {
 	if err := s.AddUser(ctx, "olly", pw2, RoleOperator); err != nil {
 		t.Fatalf("new users must work after the migration: %v", err)
 	}
-	if SchemaVersion() != 3 { // step 3 adds the username column of the audit trail (DR-038)
+	if SchemaVersion() != 4 { // step 3 adds the username column of the audit trail (DR-038), step 4 the must-change flag (DR-041)
 		t.Fatalf("schema version %d", SchemaVersion())
 	}
 }

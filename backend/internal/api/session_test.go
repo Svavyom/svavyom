@@ -198,7 +198,7 @@ func TestAnonymousStatusIssuesLoginTokenAndNoSecretInBody(t *testing.T) {
 	e := newEnv(t, true)
 	b := e.browser()
 	r := b.status()
-	if r.status != 200 || string(r.body) != `{"authenticated":false,"username":null,"expires_at":null,"role":null}` {
+	if r.status != 200 || string(r.body) != `{"authenticated":false,"username":null,"expires_at":null,"role":null,"must_change_password":false}` {
 		t.Fatalf("%d %s", r.status, r.body)
 	}
 	if !auth.ValidTokenFormat(b.csrf) {
@@ -230,7 +230,7 @@ func TestSignInHappyPathSessionAndHosts(t *testing.T) {
 	if r.status != 200 {
 		t.Fatalf("%d %s", r.status, r.body)
 	}
-	if got := strings.Join(keys(t, r.body), ","); got != "authenticated,expires_at,role,username" {
+	if got := strings.Join(keys(t, r.body), ","); got != "authenticated,expires_at,must_change_password,role,username" {
 		t.Fatalf("body keys %s", got)
 	}
 	var body struct {
@@ -465,7 +465,7 @@ func TestSignOutRevokesAndReplayFails(t *testing.T) {
 	}
 	token := b.csrf
 	r := b.signOut()
-	if r.status != 200 || string(r.body) != `{"authenticated":false,"username":null,"expires_at":null,"role":null}` {
+	if r.status != 200 || string(r.body) != `{"authenticated":false,"username":null,"expires_at":null,"role":null,"must_change_password":false}` {
 		t.Fatalf("%d %s", r.status, r.body)
 	}
 	if c := cookieNamed(r, "svavyom_session"); c == nil || c.MaxAge >= 0 {

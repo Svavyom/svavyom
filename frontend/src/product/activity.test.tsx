@@ -82,7 +82,7 @@ describe("Activity: cancelling an exhausted operation (DR-036)", () => {
     let cancelled = false;
     vi.stubGlobal("fetch", vi.fn(async (url: string, init: RequestInit = {}) => {
       calls.push({ method: init.method ?? "GET", url, csrf: ((init.headers ?? {}) as Record<string, string>)["X-CSRF-Token"] });
-      if (url === "/api/v1/auth/session") return new Response(JSON.stringify({ authenticated: true, username: "admin", expires_at: "2026-10-09T08:30:00Z", role: "admin" }), { status: 200, headers: { "X-CSRF-Token": "S".repeat(43) } });
+      if (url === "/api/v1/auth/session") return new Response(JSON.stringify({ authenticated: true, username: "admin", expires_at: "2026-10-09T08:30:00Z", role: "admin", must_change_password: false }), { status: 200, headers: { "X-CSRF-Token": "S".repeat(43) } });
       if (init.method === "POST") { cancelled = true; return new Response(JSON.stringify({ ...exhaustedOp, status: "cancelled" }), { status: 200 }); }
       return page([cancelled ? { ...exhaustedOp, status: "cancelled" } : exhaustedOp], null);
     }));
@@ -105,7 +105,7 @@ describe("Activity: cancelling an exhausted operation (DR-036)", () => {
 
   it("says in words when the operation has moved on (409)", async () => {
     vi.stubGlobal("fetch", vi.fn(async (url: string, init: RequestInit = {}) => {
-      if (url === "/api/v1/auth/session") return new Response(JSON.stringify({ authenticated: true, username: "admin", expires_at: "2026-10-09T08:30:00Z", role: "admin" }), { status: 200, headers: { "X-CSRF-Token": "S".repeat(43) } });
+      if (url === "/api/v1/auth/session") return new Response(JSON.stringify({ authenticated: true, username: "admin", expires_at: "2026-10-09T08:30:00Z", role: "admin", must_change_password: false }), { status: 200, headers: { "X-CSRF-Token": "S".repeat(43) } });
       if (init.method === "POST") return new Response(JSON.stringify(apiError("conflict")), { status: 409 });
       return page([exhaustedOp], null);
     }));
