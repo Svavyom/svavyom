@@ -73,7 +73,7 @@
     "request.sign_in.username": "operational",
     "request.sign_in.password": "credential",
     "request.add_ssh_key.name": "operational",
-    "request.add_ssh_key.public_key": "operational",
+    "request.add_ssh_key.public_key": "credential",
     "request.delete_ssh_key.id": "operational",
     "request.change_password.current_password": "credential",
     "request.change_password.new_password": "credential",

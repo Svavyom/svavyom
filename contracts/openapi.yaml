@@ -2605,7 +2605,7 @@ components:
           type: string
           minLength: 1
           maxLength: 2048
-          x-data-class: operational
+          x-data-class: credential
     AuthSession:
       type: object
       additionalProperties: false
