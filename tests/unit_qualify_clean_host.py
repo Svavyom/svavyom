@@ -102,8 +102,13 @@ class ImageAndVmStages(unittest.TestCase):
         self.assertNotIn("--allow-unsigned", signed)
         self.assertIn("--signatures", signed)
 
+    def test_the_nightly_boot_check_is_enabled_only_when_asked(self):
+        self.assertNotIn("--enable-nightly-boot", q.remote_upgrade_argv("svavyom-0.1.0-preview.18", "0.0.0.0:8443", True))
+        argv = q.remote_upgrade_argv("svavyom-0.1.0-preview.18", "0.0.0.0:8443", True, "03:30")
+        self.assertEqual(argv[-2:], ["--enable-nightly-boot", "03:30"])
+
     def test_the_stage_names(self):
-        self.assertEqual(q.STAGES, ["facts", "prepare", "install", "bootstrap", "verify", "image", "vm", "upgrade", "rollback", "reboot", "nightly", "firewall"])
+        self.assertEqual(q.STAGES, ["facts", "prepare", "install", "bootstrap", "verify", "image", "vm", "upgrade", "rollback", "reboot", "nightly", "firewall", "features"])
         self.assertEqual(set(q.STAGES), set(q.FUNCS))
 
 

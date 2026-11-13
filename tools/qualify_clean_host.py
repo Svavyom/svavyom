@@ -24,7 +24,7 @@ import time
 sys.dont_write_bytecode = True
 
 R = []
-STAGES = ["facts", "prepare", "install", "bootstrap", "verify", "image", "vm", "upgrade", "rollback", "reboot", "nightly", "firewall"]
+STAGES = ["facts", "prepare", "install", "bootstrap", "verify", "image", "vm", "upgrade", "rollback", "reboot", "nightly", "firewall", "features"]
 HOST_RE = re.compile(r"^[0-9]{1,3}(\.[0-9]{1,3}){3}$")
 NAME_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9.-]{0,251}[A-Za-z0-9]$")
 RUN_RE = re.compile(r"^qr-[0-9]{8}-[0-9a-f]{6}$")
@@ -175,11 +175,13 @@ def put_artifact(h, a):
     return name
 
 
-def remote_upgrade_argv(name, listen, signed):
+def remote_upgrade_argv(name, listen, signed, nightly=""):
     """The upgrade command on the host from the root-owned copy of the NEW artifact: the installed options are repeated (the installer says to), the signature or --allow-unsigned."""
     base = "%s/%s" % (REMOTE_ARTIFACTS, name)
     argv = ["sudo", "%s/bin/svavyom-ctl" % base, "upgrade", "--artifact", base, "--enable-mutation", "--enable-console", "--backup-dir", "/var/lib/svavyom/backups", "--listen", listen]
     argv += ["--signatures", "%s/signatures" % REMOTE_ARTIFACTS, "--public-key", "%s/release-signing-key.pub" % REMOTE_ARTIFACTS] if signed else ["--allow-unsigned"]
+    if nightly:  # the nightly boot check (HH:MM, host time): it needs its credential and timer, which only an install or an upgrade sets up
+        argv += ["--enable-nightly-boot", nightly]
     return argv
 
 
@@ -189,7 +191,7 @@ def stage_upgrade(h, a):
     if not name:
         return
     signed = bool(a.signatures and a.public_key)
-    cmd = " ".join(shlex.quote(x) for x in remote_upgrade_argv(name, a.listen, signed))
+    cmd = " ".join(shlex.quote(x) for x in remote_upgrade_argv(name, a.listen, signed, a.nightly))
     rc, plan = h.run(cmd + "; echo EXIT=$?", timeout=300)
     rec("upgrade-plan", "EXIT=0" in plan and "PLAN" in plan, "the plan was printed and nothing was changed" if "EXIT=0" in plan else plan[-300:])
     rc, out = h.run(cmd + " --apply; echo EXIT=$?", timeout=1200)
@@ -411,6 +413,10 @@ def stage_rollback(h, a):
         return
     ctl = "sudo /usr/libexec/svavyom/svavyom-ctl rollback --backup %s" % bid
     rc, plan = h.run(ctl + "; echo EXIT=$?", timeout=300)
+    if "refusing" in plan:
+        # the upgrade moved a database schema: the old version cannot read it, so the plan without the database copy is refused (that is the designed safety)
+        rec("rollback-refused-without-the-database-copy", "EXIT=0" not in plan and "pre-upgrade database copy" in plan, "refused, and it names the pre-upgrade copy as the only way back")
+        rc, plan = h.run(ctl + " --restore-db; echo EXIT=$?", timeout=300)
     rec("rollback-plan", "EXIT=0" in plan, "the plan was printed and nothing was changed" if "EXIT=0" in plan else plan[-300:])
     rc, now = h.run("cat /usr/libexec/svavyom/VERSION", timeout=30)
     rec("rollback-plan-changed-nothing", now.strip() == before, "still %s after the plan" % now.strip())
@@ -430,6 +436,14 @@ def stage_rollback(h, a):
         if vm_setup(h, a):
             vm_phase(h, a, "check", prefix="upgraded-again:", timeout=600)
             vm_teardown(h)
+
+
+def stage_features(h, a):
+    """The installed service's console features that are not about VMs (System data, saved SSH keys, users and passwords), driven through the API on the host."""
+    if not vm_setup(h, a):
+        return
+    vm_phase(h, a, "features", prefix="features:", timeout=900)
+    vm_teardown(h)
 
 
 def stage_nightly(h, a):
@@ -497,7 +511,7 @@ def stage_firewall(h, a):
     vm_teardown(h)
 
 
-FUNCS = {"facts": stage_facts, "prepare": stage_prepare, "install": stage_install, "bootstrap": stage_bootstrap, "verify": stage_verify, "image": stage_image, "vm": stage_vm, "upgrade": stage_upgrade, "rollback": stage_rollback, "reboot": stage_reboot, "nightly": stage_nightly, "firewall": stage_firewall}
+FUNCS = {"facts": stage_facts, "prepare": stage_prepare, "install": stage_install, "bootstrap": stage_bootstrap, "verify": stage_verify, "image": stage_image, "vm": stage_vm, "upgrade": stage_upgrade, "rollback": stage_rollback, "reboot": stage_reboot, "nightly": stage_nightly, "firewall": stage_firewall, "features": stage_features}
 
 
 def validate(a):
@@ -512,6 +526,8 @@ def validate(a):
         out.append("--key not found")
     if a.stage not in STAGES:
         out.append("unknown stage")
+    if getattr(a, "nightly", "") and not re.fullmatch(r"([01][0-9]|2[0-3]):[0-5][0-9]", a.nightly):
+        out.append("--nightly must be a time of day written HH:MM")
     if a.stage == "install" and not (a.artifact and os.path.isfile(os.path.join(a.artifact, "MANIFEST.json"))):
         out.append("--artifact must be a release artifact directory")
     if bool(a.signatures) != bool(a.public_key):
@@ -531,6 +547,7 @@ def main(argv=None):
     ap.add_argument("--tls-name", required=True, help="the host name the self-signed certificate is made for")
     ap.add_argument("--listen", default="0.0.0.0:8443")
     ap.add_argument("--out", required=True)
+    ap.add_argument("--nightly", default="", help="upgrade stage: also enable the nightly boot check at HH:MM (host time)")
     ap.add_argument("--restore-db", action="store_true", help="rollback stage: also put the database copy made by the upgrade back")
     ap.add_argument("--run-id", default="qr-" + time.strftime("%Y%m%d") + "-" + secrets.token_hex(3))
     a = ap.parse_args(argv)

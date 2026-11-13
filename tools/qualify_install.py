@@ -5,7 +5,7 @@ in a file, a disposable SSH key pair, and a qualified image id. Every VM, snapsh
 resources it can prove it created (names derived from the run id, VM marker checked through the API).
 
     python3 tools/qualify_install.py --base http://127.0.0.1:8443 --password-file PW --pubkey KEY.pub --ssh-key KEY --image ubuntu-24.04 \
-        --run-id qr-YYYYMMDD-xxxxxx --out DIR [--ctl /usr/libexec/svavyom/svavyom-ctl] [--phase all|up|restart|down|check|afterboot]
+        --run-id qr-YYYYMMDD-xxxxxx --out DIR [--ctl /usr/libexec/svavyom/svavyom-ctl] [--phase all|up|restart|down|check|afterboot|features]
 
 Output: DIR/<run-id>-install.json with PASS / FAIL / NOT_RUN per criterion. No password, cookie, CSRF value, ticket or key is printed or recorded.
 Exit 0 when nothing FAILED, 1 otherwise.
@@ -68,6 +68,11 @@ class Api:
             return r.status if hasattr(r, "status") else r.code, json.loads(raw) if raw else None
         except ValueError:
             return r.status if hasattr(r, "status") else r.code, None
+
+    def sign_in_as(self, user, pw):
+        """Sign in as another user (a fresh cookie jar is the caller's: use a new Api). Returns the status and the session body."""
+        self.call("GET", "/api/v1/auth/session")
+        return self.call("POST", "/api/v1/auth/session", {"username": user, "password": pw})
 
     def sign_in(self):
         self.call("GET", "/api/v1/auth/session")
@@ -199,7 +204,7 @@ def main():
     ap.add_argument("--run-id", required=True)
     ap.add_argument("--out", required=True)
     ap.add_argument("--ctl", default="/usr/libexec/svavyom/svavyom-ctl")
-    ap.add_argument("--phase", default="all", choices=["all", "up", "restart", "down", "check", "afterboot"])
+    ap.add_argument("--phase", default="all", choices=["all", "up", "restart", "down", "check", "afterboot", "features"])
     a = ap.parse_args()
     if not re.fullmatch(r"qr-\d{8}-[0-9a-f]{6}", a.run_id):
         sys.exit("ERROR run id must be qr-YYYYMMDD-xxxxxx")
@@ -242,6 +247,52 @@ def main():
         rec("unauthenticated-refused", "PASS" if e.code == 401 else "FAIL", f"anonymous GET /api/v1/vms -> HTTP {e.code}")
 
     if a.phase == "check":  # the installed-state checks and the sign-in only: after an upgrade, a rollback or a reboot
+        finish()
+    if a.phase == "features":
+        # ---- the features of the console that are not about VMs: the System data, the saved SSH keys, users and passwords (DR-039, DR-040, DR-041)
+        want = sh(["cat", "/usr/libexec/svavyom/VERSION"])[1].strip()
+        s, d = api.call("GET", "/api/v1/hosts/local")
+        o = (d or {}).get("observed", {})
+        rec("system-version", "PASS" if s == 200 and o.get("agent_version") == want else "FAIL", "the host report says version %s (installed %s)" % (o.get("agent_version"), want))
+        states = {x["id"]: x["state"] for x in o.get("services", [])}
+        rec("system-services", "PASS" if states.get("api") == "ok" and states.get("agent") == "ok" and states.get("mutation") == "ok" and states.get("console") == "ok" else "FAIL", "services: %s" % json.dumps(states, sort_keys=True))
+        rec("system-started-at", "PASS" if o.get("started_at") else "FAIL", "the API start time is reported: %s" % o.get("started_at"))
+        # saved SSH keys
+        s, l0 = api.call("GET", "/api/v1/ssh-keys")
+        rec("ssh-keys-list", "PASS" if s == 200 and "add" in (l0 or {}).get("allowed_actions", []) else "FAIL", "GET /api/v1/ssh-keys HTTP %s" % s)
+        s, k = api.call("POST", "/api/v1/ssh-keys", {"name": "qual " + h, "public_key": pub})
+        rec("ssh-keys-add", "PASS" if s == 201 and (k or {}).get("fingerprint", "").startswith("SHA256:") and "delete" in k.get("allowed_actions", []) else "FAIL", "POST HTTP %s; the server computed the fingerprint" % s)
+        s2, _ = api.call("POST", "/api/v1/ssh-keys", {"name": "qual again " + h, "public_key": pub})
+        rec("ssh-keys-duplicate-refused", "PASS" if s2 == 409 else "FAIL", "the same key again: HTTP %s" % s2)
+        s3, body3 = api.call("POST", "/api/v1/ssh-keys", {"name": "qual secret " + h, "public_key": "-----BEGIN OPENSSH " + "PRIVATE KEY-----\nAAAA\n-----END OPENSSH " + "PRIVATE KEY-----"})
+        rec("ssh-keys-private-key-refused", "PASS" if s3 == 400 and "PRIVATE" not in json.dumps(body3) else "FAIL", "a private key: HTTP %s, not echoed" % s3)
+        s4, d4 = api.call("DELETE", "/api/v1/ssh-keys/%s" % (k or {}).get("id", "k-0"))
+        s5, l5 = api.call("GET", "/api/v1/ssh-keys")
+        rec("ssh-keys-delete", "PASS" if s4 == 200 and not any(x["name"] == "qual " + h for x in (l5 or {}).get("items", [])) else "FAIL", "DELETE HTTP %s; the key is gone from the list" % s4)
+        # users: a new user with a temporary password must change it before anything else
+        uname, temp, fresh = "qu" + h, "Tmp-" + secrets.token_hex(8), "New-" + secrets.token_hex(8)
+        s, u = api.call("POST", "/api/v1/users", {"username": uname, "role": "viewer", "password": temp})
+        rec("users-create", "PASS" if s == 201 and u.get("must_change_password") is True and temp not in json.dumps(u) else "FAIL", "POST /api/v1/users HTTP %s; the password is not echoed" % s)
+        nu = Api(a.base, a.password_file, a.insecure_tls)
+        s, ses = nu.sign_in_as(uname, temp)
+        rec("users-temp-password-signs-in", "PASS" if s == 200 and (ses or {}).get("must_change_password") is True else "FAIL", "sign-in with the temporary password: HTTP %s, must_change_password=%s" % (s, (ses or {}).get("must_change_password")))
+        blocked = [nu.call("GET", p)[0] for p in ("/api/v1/vms", "/api/v1/hosts", "/api/v1/ssh-keys", "/api/v1/operations")]
+        rec("users-gate-refuses-everything-else", "PASS" if blocked == [403, 403, 403, 403] else "FAIL", "with a temporary password the data routes answer %s" % blocked)
+        s, _ = nu.call("POST", "/api/v1/auth/password", {"current_password": "wrong password here", "new_password": fresh})
+        rec("users-change-needs-the-current-password", "PASS" if s == 403 else "FAIL", "a wrong current password: HTTP %s" % s)
+        s, ses = nu.call("POST", "/api/v1/auth/password", {"current_password": temp, "new_password": fresh})
+        rec("users-change-password", "PASS" if s == 200 and (ses or {}).get("must_change_password") is False else "FAIL", "the change: HTTP %s" % s)
+        s, _ = nu.call("GET", "/api/v1/vms")
+        rec("users-works-after-change", "PASS" if s == 200 else "FAIL", "a viewer reads the VM list after the change: HTTP %s" % s)
+        s, _ = nu.call("GET", "/api/v1/users")
+        rec("users-viewer-cannot-list-users", "PASS" if s == 403 else "FAIL", "a viewer reading the users list: HTTP %s" % s)
+        s, _ = Api(a.base, a.password_file, a.insecure_tls).sign_in_as(uname, temp)
+        rec("users-old-password-refused", "PASS" if s != 200 else "FAIL", "the temporary password no longer signs in: HTTP %s" % s)
+        s, _ = api.call("POST", "/api/v1/users/%s/disable" % uname)
+        s2, _ = Api(a.base, a.password_file, a.insecure_tls).sign_in_as(uname, fresh)
+        rec("users-disable", "PASS" if s == 200 and s2 != 200 else "FAIL", "disable: HTTP %s; the disabled user cannot sign in: HTTP %s (the account is left disabled: there is no delete)" % (s, s2))
+        s, _ = api.call("POST", "/api/v1/users/admin/disable")
+        rec("users-admin-cannot-disable-themselves", "PASS" if s == 403 else "FAIL", "the administrator disabling themselves from the console: HTTP %s" % s)
         finish()
     if a.phase == "afterboot":
         # ---- after a HOST reboot: what comes back. A VM that was running is not started again by Svavyom itself, so its state is recorded, and the data must be intact.
