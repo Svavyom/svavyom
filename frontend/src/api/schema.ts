@@ -489,7 +489,7 @@ export const SCHEMAS = {
         "maxLength": 2048,
         "minLength": 1,
         "type": "string",
-        "x-data-class": "operational"
+        "x-data-class": "credential"
       }
     },
     "required": [
