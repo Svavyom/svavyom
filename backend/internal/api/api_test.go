@@ -108,6 +108,7 @@ var implementedRoutes = map[string]bool{
 	"GET /api/v1/virtual-networks": true, "GET /api/v1/virtual-networks/{id}": true, "GET /api/v1/volumes": true, "GET /api/v1/volumes/{id}": true, "GET /api/v1/backups": true, "GET /api/v1/backups/{id}": true,
 	"GET /api/v1/events": true, "GET /api/v1/events/{id}": true,
 	"GET /api/v1/ssh-keys": true, "POST /api/v1/ssh-keys": true, "DELETE /api/v1/ssh-keys/{id}": true, // DR-040
+	"POST /api/v1/auth/password": true, "GET /api/v1/users": true, "POST /api/v1/users": true, "POST /api/v1/users/{id}/role": true, "POST /api/v1/users/{id}/disable": true, "POST /api/v1/users/{id}/enable": true, "POST /api/v1/users/{id}/password": true, // DR-041
 }
 
 // The generated route table is the contract: exactly the DR-015 set is implemented.
@@ -138,8 +139,8 @@ func TestRouteTableMatchesTheContractShape(t *testing.T) {
 			t.Fatalf("route %s is not declared", want)
 		}
 	}
-	if len(declaredRoutes) != 29 {
-		t.Fatalf("declared routes = %d, want 29 (25 paths)", len(declaredRoutes))
+	if len(declaredRoutes) != 36 {
+		t.Fatalf("declared routes = %d, want 36 (31 paths)", len(declaredRoutes))
 	}
 }
 

@@ -894,7 +894,8 @@
     "authenticated": false,
     "username": null,
     "expires_at": null,
-    "role": null
+    "role": null,
+    "must_change_password": false
    }
   },
   {
@@ -904,7 +905,8 @@
     "authenticated": true,
     "username": "admin",
     "expires_at": "2026-10-09T08:30:00Z",
-    "role": "admin"
+    "role": "admin",
+    "must_change_password": false
    }
   },
   {
@@ -1433,7 +1435,8 @@
     "authenticated": true,
     "username": "admin",
     "expires_at": "2026-10-09T08:30:00Z",
-    "role": "operator"
+    "role": "operator",
+    "must_change_password": false
    }
   },
   {
@@ -1443,7 +1446,8 @@
     "authenticated": true,
     "username": "admin",
     "expires_at": "2026-10-09T08:30:00Z",
-    "role": "viewer"
+    "role": "viewer",
+    "must_change_password": false
    }
   },
   {
@@ -1940,6 +1944,99 @@
    "value": {
     "name": "Work",
     "public_key": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHm1Vi6P5lT5QHixEuipi6eQH4U65pW+1+DjkQutBJZk"
+   }
+  },
+  {
+   "name": "AuthSession: signed in with a temporary password",
+   "schema": "AuthSession",
+   "value": {
+    "authenticated": true,
+    "username": "newbie",
+    "expires_at": "2026-10-09T08:30:00Z",
+    "role": "viewer",
+    "must_change_password": true
+   }
+  },
+  {
+   "name": "User: an active operator the admin may change",
+   "schema": "User",
+   "value": {
+    "username": "olly",
+    "role": "operator",
+    "disabled": false,
+    "must_change_password": false,
+    "created_at": "2026-11-10T08:00:00Z",
+    "allowed_actions": [
+     "set_role",
+     "reset_password",
+     "disable"
+    ]
+   }
+  },
+  {
+   "name": "User: the admin's own row offers nothing",
+   "schema": "User",
+   "value": {
+    "username": "admin",
+    "role": "admin",
+    "disabled": false,
+    "must_change_password": false,
+    "created_at": "2026-11-10T08:00:00Z",
+    "allowed_actions": []
+   }
+  },
+  {
+   "name": "UserList: two users, the caller may create",
+   "schema": "UserList",
+   "value": {
+    "items": [
+     {
+      "username": "olly",
+      "role": "operator",
+      "disabled": false,
+      "must_change_password": false,
+      "created_at": "2026-11-10T08:00:00Z",
+      "allowed_actions": [
+       "set_role",
+       "reset_password",
+       "disable"
+      ]
+     }
+    ],
+    "allowed_actions": [
+     "create"
+    ]
+   }
+  },
+  {
+   "name": "CreateUserRequest: a name, a role and a temporary password",
+   "schema": "CreateUserRequest",
+   "value": {
+    "username": "newbie",
+    "role": "viewer",
+    "password": "temporary passphrase 1"
+   }
+  },
+  {
+   "name": "SetUserRoleRequest: a role",
+   "schema": "SetUserRoleRequest",
+   "value": {
+    "role": "operator"
+   }
+  },
+  {
+   "name": "ResetUserPasswordRequest: a temporary password",
+   "schema": "ResetUserPasswordRequest",
+   "value": {
+    "password": "temporary passphrase 1"
+   }
+  },
+  {
+   "name": "ChangePasswordRequest: current and new",
+   "schema": "ChangePasswordRequest",
+   "value": {
+    "current_password": "old passphrase here",
+    "new_password": "a brand new passphrase 2"
    }
   }
  ],
@@ -7368,7 +7465,8 @@
     "authenticated": true,
     "username": "admin",
     "expires_at": "2026-10-09T08:30:00Z",
-    "role": "root"
+    "role": "root",
+    "must_change_password": false
    },
    "reason": "enum",
    "path": "$.role"
@@ -8285,6 +8383,84 @@
    },
    "reason": "additionalProperties",
    "path": "$.fingerprint"
+  },
+  {
+   "name": "User: carries a password hash",
+   "schema": "User",
+   "value": {
+    "username": "olly",
+    "role": "operator",
+    "disabled": false,
+    "must_change_password": false,
+    "created_at": "2026-11-10T08:00:00Z",
+    "allowed_actions": [
+     "set_role",
+     "reset_password",
+     "disable"
+    ],
+    "password_phc": "x"
+   },
+   "reason": "additionalProperties",
+   "path": "$.password_phc"
+  },
+  {
+   "name": "User: unknown role",
+   "schema": "User",
+   "value": {
+    "username": "olly",
+    "role": "root",
+    "disabled": false,
+    "must_change_password": false,
+    "created_at": "2026-11-10T08:00:00Z",
+    "allowed_actions": [
+     "set_role",
+     "reset_password",
+     "disable"
+    ]
+   },
+   "reason": "enum",
+   "path": "$.role"
+  },
+  {
+   "name": "CreateUserRequest: unknown field",
+   "schema": "CreateUserRequest",
+   "value": {
+    "username": "newbie",
+    "role": "viewer",
+    "password": "x",
+    "remember": true
+   },
+   "reason": "additionalProperties",
+   "path": "$.remember"
+  },
+  {
+   "name": "SetUserRoleRequest: unknown role",
+   "schema": "SetUserRoleRequest",
+   "value": {
+    "role": "root"
+   },
+   "reason": "enum",
+   "path": "$.role"
+  },
+  {
+   "name": "ResetUserPasswordRequest: password too long",
+   "schema": "ResetUserPasswordRequest",
+   "value": {
+    "password": "ppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp"
+   },
+   "reason": "maxLength",
+   "path": "$.password"
+  },
+  {
+   "name": "ChangePasswordRequest: unknown field",
+   "schema": "ChangePasswordRequest",
+   "value": {
+    "current_password": "a",
+    "new_password": "b",
+    "extra": 1
+   },
+   "reason": "additionalProperties",
+   "path": "$.extra"
   }
  ]
 }

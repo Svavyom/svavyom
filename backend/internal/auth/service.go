@@ -73,7 +73,9 @@ type Session struct {
 	Username  string
 	Role      Role
 	ExpiresAt time.Time // earlier of absolute expiry and idle expiry
-	csrf      string    // the CSRF token bound to this session; derived, never stored
+	// MustChange is true while the user has a temporary password (DR-041 D3): the API refuses everything but the password change, the status and sign-out.
+	MustChange bool
+	csrf       string // the CSRF token bound to this session; derived, never stored
 }
 
 // Role is one of the three fixed roles (DR-023 D1).
@@ -166,7 +168,9 @@ DROP TABLE sessions;
 ALTER TABLE sessions_v2 RENAME TO sessions;
 CREATE INDEX sessions_admin ON sessions (admin_id);`,
 	// Step 3 (DR-038, finding F-10): an authentication audit event names the user it is about (a sanitised closed grammar; empty where no user is involved).
-	`ALTER TABLE auth_audit ADD COLUMN username TEXT NOT NULL DEFAULT ''`}
+	`ALTER TABLE auth_audit ADD COLUMN username TEXT NOT NULL DEFAULT ''`,
+	// Step 4 (DR-041 D3): a user whose password was set by someone else must change it before anything else. Existing users are unaffected (0).
+	`ALTER TABLE users ADD COLUMN must_change INTEGER NOT NULL DEFAULT 0 CHECK (must_change IN (0,1))`}
 
 // New migrates the schema in db and returns a Service. The caller owns db.
 func New(ctx context.Context, db *sql.DB, cfg Config) (*Service, error) {
@@ -338,6 +342,15 @@ func (s *Service) ResetPassword(ctx context.Context, password string) error {
 // SetPassword replaces a user's password (operator recovery with filesystem access to the database) and revokes that user's sessions, so a
 // stolen session does not survive a credential change (DR-013).
 func (s *Service) SetPassword(ctx context.Context, username, password string) error {
+	return s.setPassword(ctx, username, password, false)
+}
+
+// SetTemporaryPassword is SetPassword for an administrator resetting someone else's password from the console: the user must change it at the next sign-in (DR-041 D3).
+func (s *Service) SetTemporaryPassword(ctx context.Context, username, password string) error {
+	return s.setPassword(ctx, username, password, true)
+}
+
+func (s *Service) setPassword(ctx context.Context, username, password string, must bool) error {
 	username = strings.ToLower(username)
 	var id int64
 	if err := s.db.QueryRowContext(ctx, `SELECT id FROM users WHERE username = ?`, username).Scan(&id); err != nil {
@@ -359,26 +372,44 @@ func (s *Service) SetPassword(ctx context.Context, username, password string) er
 		return ErrInternal
 	}
 	defer func() { _ = tx.Rollback() }()
-	if _, err = tx.ExecContext(ctx, `UPDATE users SET password_phc = ?, password_changed_at = ? WHERE id = ?`, phc, now, id); err == nil {
+	mc := 0
+	if must {
+		mc = 1
+	}
+	if _, err = tx.ExecContext(ctx, `UPDATE users SET password_phc = ?, password_changed_at = ?, must_change = ? WHERE id = ?`, phc, now, mc, id); err == nil {
 		_, err = tx.ExecContext(ctx, `UPDATE sessions SET revoked_at = ? WHERE admin_id = ? AND revoked_at IS NULL`, now, id)
 	}
 	if err != nil || tx.Commit() != nil {
 		return ErrInternal
 	}
-	s.emit(ctx, AuditEvent{Event: "password_reset", Outcome: "success", Username: username})
+	reason := ""
+	if must {
+		reason = "must_change"
+	}
+	s.emit(ctx, AuditEvent{Event: "password_reset", Outcome: "success", Reason: reason, Username: username})
 	return nil
 }
 
 // User is one account as the operator's commands show it. It carries no credential.
 type User struct {
-	Username string
-	Role     Role
-	Disabled bool
-	Created  time.Time
+	Username   string
+	Role       Role
+	Disabled   bool
+	MustChange bool // the password is temporary: it must be changed at the next sign-in
+	Created    time.Time
 }
 
 // AddUser creates a user with the given role. The username must be unused.
 func (s *Service) AddUser(ctx context.Context, username, password string, role Role) error {
+	return s.addUser(ctx, username, password, role, false)
+}
+
+// AddUserWithTemporaryPassword creates a user who must change the password at the next sign-in (DR-041 D3).
+func (s *Service) AddUserWithTemporaryPassword(ctx context.Context, username, password string, role Role) error {
+	return s.addUser(ctx, username, password, role, true)
+}
+
+func (s *Service) addUser(ctx context.Context, username, password string, role Role, must bool) error {
 	if !ValidUsername(username) {
 		return ErrBadUsername
 	}
@@ -393,8 +424,12 @@ func (s *Service) AddUser(ctx context.Context, username, password string, role R
 		return ErrInternal
 	}
 	now := s.cfg.Clock().UnixNano()
-	res, err := s.db.ExecContext(ctx, `INSERT INTO users (username, password_phc, role, created_at, password_changed_at) VALUES (?,?,?,?,?) ON CONFLICT DO NOTHING`,
-		username, phc, string(role), now, now)
+	mc := 0
+	if must {
+		mc = 1
+	}
+	res, err := s.db.ExecContext(ctx, `INSERT INTO users (username, password_phc, role, created_at, password_changed_at, must_change) VALUES (?,?,?,?,?,?) ON CONFLICT DO NOTHING`,
+		username, phc, string(role), now, now, mc)
 	if err != nil {
 		return ErrInternal
 	}
@@ -410,7 +445,7 @@ func (s *Service) AddUser(ctx context.Context, username, password string, role R
 
 // ListUsers returns every user, oldest first.
 func (s *Service) ListUsers(ctx context.Context) ([]User, error) {
-	rows, err := s.db.QueryContext(ctx, `SELECT username, role, disabled, created_at FROM users ORDER BY id`)
+	rows, err := s.db.QueryContext(ctx, `SELECT username, role, disabled, must_change, created_at FROM users ORDER BY id`)
 	if err != nil {
 		return nil, ErrInternal
 	}
@@ -421,12 +456,13 @@ func (s *Service) ListUsers(ctx context.Context) ([]User, error) {
 			u        User
 			role     string
 			disabled int
+			must     int
 			at       int64
 		)
-		if err := rows.Scan(&u.Username, &role, &disabled, &at); err != nil {
+		if err := rows.Scan(&u.Username, &role, &disabled, &must, &at); err != nil {
 			return nil, ErrInternal
 		}
-		u.Role, u.Disabled, u.Created = Role(role), disabled == 1, time.Unix(0, at).UTC()
+		u.Role, u.Disabled, u.MustChange, u.Created = Role(role), disabled == 1, must == 1, time.Unix(0, at).UTC()
 		out = append(out, u)
 	}
 	return out, rows.Err()
@@ -560,8 +596,9 @@ func (s *Service) SignIn(ctx context.Context, username, password, source, presen
 		storedBy string
 		role     string
 		disabled int
+		must     int
 	)
-	err := s.db.QueryRowContext(ctx, `SELECT id, username, password_phc, role, disabled FROM users WHERE username = ?`, username).Scan(&id, &storedBy, &stored, &role, &disabled)
+	err := s.db.QueryRowContext(ctx, `SELECT id, username, password_phc, role, disabled, must_change FROM users WHERE username = ?`, username).Scan(&id, &storedBy, &stored, &role, &disabled, &must)
 	known := err == nil && storedBy == username && disabled == 0
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return SignInResult{}, ErrInternal
@@ -591,10 +628,10 @@ func (s *Service) SignIn(ctx context.Context, username, password, source, presen
 			_, _ = s.db.ExecContext(ctx, `UPDATE users SET password_phc = ? WHERE id = ? AND password_phc = ?`, phc, id, stored)
 		}
 	}
-	return s.startSession(ctx, id, storedBy, Role(role), source, presentedSession)
+	return s.startSession(ctx, id, storedBy, Role(role), must == 1, source, presentedSession)
 }
 
-func (s *Service) startSession(ctx context.Context, adminID int64, username string, role Role, source, presented string) (SignInResult, error) {
+func (s *Service) startSession(ctx context.Context, adminID int64, username string, role Role, must bool, source, presented string) (SignInResult, error) {
 	st, err := newToken()
 	if err != nil {
 		return SignInResult{}, ErrInternal
@@ -626,7 +663,7 @@ func (s *Service) startSession(ctx context.Context, adminID int64, username stri
 		return SignInResult{}, ErrInternal
 	}
 	s.emit(ctx, AuditEvent{Event: "sign_in", Outcome: "success", Source: source, Username: username})
-	return SignInResult{SessionToken: st, CSRFToken: ct, Session: Session{AdminID: adminID, Username: username, Role: role,
+	return SignInResult{SessionToken: st, CSRFToken: ct, Session: Session{AdminID: adminID, Username: username, Role: role, MustChange: must,
 		ExpiresAt: s.expiry(now, abs), csrf: ct}}, nil
 }
 
@@ -654,14 +691,15 @@ func (s *Service) Authenticate(ctx context.Context, token string) (Session, erro
 		role           string
 		last, abs      int64
 		revoked        sql.NullInt64
+		must           int
 		now            = s.cfg.Clock()
 		h              = tokenHash(token)
 		lastT, absT    time.Time
 		expiredBecause string
 	)
-	err := s.db.QueryRowContext(ctx, `SELECT s.admin_id, a.username, a.role, s.last_activity, s.absolute_expires_at, s.revoked_at
+	err := s.db.QueryRowContext(ctx, `SELECT s.admin_id, a.username, a.role, s.last_activity, s.absolute_expires_at, s.revoked_at, a.must_change
 		FROM sessions s JOIN users a ON a.id = s.admin_id WHERE s.id_hash = ? AND a.disabled = 0`, h).
-		Scan(&adminID, &username, &role, &last, &abs, &revoked)
+		Scan(&adminID, &username, &role, &last, &abs, &revoked, &must)
 	if errors.Is(err, sql.ErrNoRows) {
 		return Session{}, ErrUnauthenticated
 	}
@@ -694,7 +732,7 @@ func (s *Service) Authenticate(ctx context.Context, token string) (Session, erro
 		}
 		lastT = now
 	}
-	return Session{AdminID: adminID, Username: username, Role: Role(role), ExpiresAt: s.expiry(lastT, absT), csrf: deriveCSRF(token, csrfSession)}, nil
+	return Session{AdminID: adminID, Username: username, Role: Role(role), MustChange: must == 1, ExpiresAt: s.expiry(lastT, absT), csrf: deriveCSRF(token, csrfSession)}, nil
 }
 
 // SignOut revokes the session of token. It is idempotent and does not reveal whether the token was valid.

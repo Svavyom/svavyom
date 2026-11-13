@@ -368,6 +368,39 @@ export interface EventList {
   next_cursor: string | null;
 }
 
+export interface User {
+  username: string;
+  role: "admin" | "operator" | "viewer";
+  disabled: boolean;
+  must_change_password: boolean;
+  created_at: string;
+  allowed_actions: ("set_role" | "reset_password" | "disable" | "enable")[];
+}
+
+export interface UserList {
+  items: User[];
+  allowed_actions: "create"[];
+}
+
+export interface CreateUserRequest {
+  username: string;
+  role: "admin" | "operator" | "viewer";
+  password: string;
+}
+
+export interface SetUserRoleRequest {
+  role: "admin" | "operator" | "viewer";
+}
+
+export interface ResetUserPasswordRequest {
+  password: string;
+}
+
+export interface ChangePasswordRequest {
+  current_password: string;
+  new_password: string;
+}
+
 export interface SshKey {
   id: string;
   name: string;
@@ -394,6 +427,7 @@ export interface AuthSession {
   username: string | null;
   expires_at: string | null;
   role: "admin" | "operator" | "viewer" | null;
+  must_change_password: boolean;
 }
 
 export interface SignInRequest {
@@ -853,6 +887,11 @@ export const SCHEMAS = {
         ],
         "x-data-class": "operational"
       },
+      "must_change_password": {
+        "description": "True while the user has a temporary password (DR-041 D3); the console then offers only the password change and sign-out.",
+        "type": "boolean",
+        "x-data-class": "operational"
+      },
       "role": {
         "enum": [
           "admin",
@@ -880,7 +919,8 @@ export const SCHEMAS = {
       "authenticated",
       "username",
       "expires_at",
-      "role"
+      "role",
+      "must_change_password"
     ],
     "type": "object",
     "x-data-class": "operational"
@@ -1025,6 +1065,64 @@ export const SCHEMAS = {
       "items",
       "allowed_actions",
       "next_cursor"
+    ],
+    "type": "object",
+    "x-data-class": "operational"
+  },
+  "ChangePasswordRequest": {
+    "additionalProperties": false,
+    "description": "Request body (not a response). Both passwords are credential-class and are never returned, logged or audited.",
+    "properties": {
+      "current_password": {
+        "maxLength": 128,
+        "minLength": 1,
+        "type": "string",
+        "x-data-class": "credential"
+      },
+      "new_password": {
+        "maxLength": 128,
+        "minLength": 1,
+        "type": "string",
+        "x-data-class": "credential"
+      }
+    },
+    "required": [
+      "current_password",
+      "new_password"
+    ],
+    "type": "object",
+    "x-data-class": "operational"
+  },
+  "CreateUserRequest": {
+    "additionalProperties": false,
+    "description": "Request body (not a response). password is the temporary password (credential-class); it is never returned, logged or audited.",
+    "properties": {
+      "password": {
+        "maxLength": 128,
+        "minLength": 1,
+        "type": "string",
+        "x-data-class": "credential"
+      },
+      "role": {
+        "enum": [
+          "admin",
+          "operator",
+          "viewer"
+        ],
+        "type": "string",
+        "x-data-class": "operational"
+      },
+      "username": {
+        "maxLength": 64,
+        "minLength": 1,
+        "type": "string",
+        "x-data-class": "operational"
+      }
+    },
+    "required": [
+      "username",
+      "role",
+      "password"
     ],
     "type": "object",
     "x-data-class": "operational"
@@ -2442,6 +2540,43 @@ export const SCHEMAS = {
     "type": "object",
     "x-data-class": "operational"
   },
+  "ResetUserPasswordRequest": {
+    "additionalProperties": false,
+    "description": "Request body (not a response). The temporary password is credential-class and is never returned, logged or audited.",
+    "properties": {
+      "password": {
+        "maxLength": 128,
+        "minLength": 1,
+        "type": "string",
+        "x-data-class": "credential"
+      }
+    },
+    "required": [
+      "password"
+    ],
+    "type": "object",
+    "x-data-class": "operational"
+  },
+  "SetUserRoleRequest": {
+    "additionalProperties": false,
+    "description": "Request body (not a response).",
+    "properties": {
+      "role": {
+        "enum": [
+          "admin",
+          "operator",
+          "viewer"
+        ],
+        "type": "string",
+        "x-data-class": "operational"
+      }
+    },
+    "required": [
+      "role"
+    ],
+    "type": "object",
+    "x-data-class": "operational"
+  },
   "SignInRequest": {
     "additionalProperties": false,
     "description": "Request body (not a response). password is credential-class and is never returned, logged or stored.",
@@ -2837,6 +2972,95 @@ export const SCHEMAS = {
       "kind",
       "id",
       "idempotency_key"
+    ],
+    "type": "object",
+    "x-data-class": "operational"
+  },
+  "User": {
+    "additionalProperties": false,
+    "description": "One account as an administrator sees it (DR-041). It carries no credential. allowed_actions lists what the caller may do to it; an administrator is offered none on their own row.",
+    "properties": {
+      "allowed_actions": {
+        "items": {
+          "enum": [
+            "set_role",
+            "reset_password",
+            "disable",
+            "enable"
+          ],
+          "type": "string"
+        },
+        "maxItems": 3,
+        "type": "array",
+        "x-data-class": "operational"
+      },
+      "created_at": {
+        "format": "date-time",
+        "maxLength": 40,
+        "type": "string",
+        "x-data-class": "operational"
+      },
+      "disabled": {
+        "type": "boolean",
+        "x-data-class": "operational"
+      },
+      "must_change_password": {
+        "type": "boolean",
+        "x-data-class": "operational"
+      },
+      "role": {
+        "enum": [
+          "admin",
+          "operator",
+          "viewer"
+        ],
+        "type": "string",
+        "x-data-class": "operational"
+      },
+      "username": {
+        "maxLength": 32,
+        "pattern": "^[a-z][a-z0-9._-]{2,31}$",
+        "type": "string",
+        "x-data-class": "operational"
+      }
+    },
+    "required": [
+      "username",
+      "role",
+      "disabled",
+      "must_change_password",
+      "created_at",
+      "allowed_actions"
+    ],
+    "type": "object",
+    "x-data-class": "operational"
+  },
+  "UserList": {
+    "additionalProperties": false,
+    "properties": {
+      "allowed_actions": {
+        "items": {
+          "enum": [
+            "create"
+          ],
+          "type": "string"
+        },
+        "maxItems": 1,
+        "type": "array",
+        "x-data-class": "operational"
+      },
+      "items": {
+        "items": {
+          "$ref": "#/components/schemas/User"
+        },
+        "maxItems": 200,
+        "type": "array",
+        "x-data-class": "operational"
+      }
+    },
+    "required": [
+      "items",
+      "allowed_actions"
     ],
     "type": "object",
     "x-data-class": "operational"
@@ -4217,6 +4441,140 @@ export const ROUTES = [
       403,
       404,
       409,
+      429,
+      500,
+      503
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/auth/password",
+    "category": "change_password",
+    "implemented": true,
+    "success": {
+      "status": 200,
+      "schema": "AuthSession"
+    },
+    "error_statuses": [
+      400,
+      401,
+      403,
+      429,
+      500,
+      503
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/users",
+    "category": "list_users",
+    "implemented": true,
+    "success": {
+      "status": 200,
+      "schema": "UserList"
+    },
+    "error_statuses": [
+      400,
+      401,
+      403,
+      429,
+      500,
+      503
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/users",
+    "category": "create_user",
+    "implemented": true,
+    "success": {
+      "status": 201,
+      "schema": "User"
+    },
+    "error_statuses": [
+      400,
+      401,
+      403,
+      409,
+      429,
+      500,
+      503
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/users/{id}/role",
+    "category": "set_user_role",
+    "implemented": true,
+    "success": {
+      "status": 200,
+      "schema": "User"
+    },
+    "error_statuses": [
+      400,
+      401,
+      403,
+      404,
+      409,
+      429,
+      500,
+      503
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/users/{id}/disable",
+    "category": "disable_user",
+    "implemented": true,
+    "success": {
+      "status": 200,
+      "schema": "User"
+    },
+    "error_statuses": [
+      400,
+      401,
+      403,
+      404,
+      409,
+      429,
+      500,
+      503
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/users/{id}/enable",
+    "category": "enable_user",
+    "implemented": true,
+    "success": {
+      "status": 200,
+      "schema": "User"
+    },
+    "error_statuses": [
+      400,
+      401,
+      403,
+      404,
+      409,
+      429,
+      500,
+      503
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/users/{id}/password",
+    "category": "reset_user_password",
+    "implemented": true,
+    "success": {
+      "status": 200,
+      "schema": "User"
+    },
+    "error_statuses": [
+      400,
+      401,
+      403,
+      404,
       429,
       500,
       503

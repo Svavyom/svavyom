@@ -1,7 +1,7 @@
 // Layout primitives (M0-E02-S06 r5 sections 2, 4, 5, 8): skip link, app shell landmarks, view heading focus,
 // data table in its own labelled scroll region.
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { Activity, Bell, Database, History, KeyRound, LayoutDashboard, LogIn, LogOut, Menu, Monitor, Moon, Network, RefreshCw, Search, Server, Sun, type LucideIcon } from "lucide-react";
+import { Activity, Bell, Database, History, KeyRound, LayoutDashboard, LogIn, LogOut, Menu, Monitor, Moon, Network, RefreshCw, Search, Server, Sun, UserRound, Users, type LucideIcon } from "lucide-react";
 
 export function SkipLink() {
   return (
@@ -12,8 +12,8 @@ export function SkipLink() {
   );
 }
 
-export type NavIcon = "dashboard" | "vms" | "storage" | "networks" | "alerts" | "activity" | "system" | "keys" | "signin";
-const NAV_ICONS: Record<NavIcon, LucideIcon> = { dashboard: LayoutDashboard, vms: Server, storage: Database, networks: Network, alerts: Bell, activity: History, system: Activity, keys: KeyRound, signin: LogIn };
+export type NavIcon = "dashboard" | "vms" | "storage" | "networks" | "alerts" | "activity" | "system" | "keys" | "users" | "account" | "signin";
+const NAV_ICONS: Record<NavIcon, LucideIcon> = { dashboard: LayoutDashboard, vms: Server, storage: Database, networks: Network, alerts: Bell, activity: History, system: Activity, keys: KeyRound, users: Users, account: UserRound, signin: LogIn };
 
 export type ThemeMode = "system" | "light" | "dark";
 const THEME_NEXT: Record<ThemeMode, ThemeMode> = { system: "light", light: "dark", dark: "system" };
