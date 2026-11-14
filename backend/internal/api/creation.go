@@ -69,7 +69,7 @@ func lifecycleType(t operation.Type) bool {
 		operation.Resize, operation.Reinstall, operation.Snapshot, operation.RestoreSnapshot, operation.DeleteSnapshot, operation.Backup, operation.Restore, operation.BackupExport,
 		operation.NetworkCreate, operation.NetworkStart, operation.NetworkStop, operation.NetworkAutostart, operation.NetworkDelete,
 		operation.Compute, operation.ReserveIP, operation.ReleaseIP, operation.EjectISO, operation.VolumeCreate, operation.VolumeAttach, operation.VolumeDetach, operation.VolumeDelete,
-		operation.AlertAcknowledge, operation.ScheduleSet, operation.ScheduleClear, operation.GraphicsEnable, operation.ISOAttach, operation.Rescue, operation.Unrescue:
+		operation.AlertAcknowledge, operation.ScheduleSet, operation.ScheduleClear, operation.GraphicsEnable, operation.ISOAttach, operation.Rescue, operation.Unrescue, operation.SetStartOnBoot:
 		return true
 	}
 	return false
@@ -365,6 +365,8 @@ type createBody struct {
 	Network      *string `json:"network"`
 	// GuestProfile is the hardware profile of a VM from installation media (DR-032): "linux" (the default) or "windows".
 	GuestProfile *string `json:"guest_profile"`
+	// StartOnBoot is the owner's "start when the host boots" box (DR-042): omitted means on.
+	StartOnBoot *bool `json:"start_on_boot"`
 }
 
 type submitBody struct {
@@ -501,6 +503,9 @@ func (h *Handler) submitOperation(w http.ResponseWriter, r *http.Request) {
 				req.Spec.Profile = provision.ProfileWindows // "linux" is the default and is stored as no profile, so an explicit linux and an omitted one are the same request
 			}
 		}
+		if c.StartOnBoot != nil && !*c.StartOnBoot {
+			req.Spec.NoStartOnBoot = true
+		}
 		if c.SSHPublicKey != nil {
 			req.Spec.SSHPublicKey = *c.SSHPublicKey
 		}
@@ -520,6 +525,10 @@ func (h *Handler) submitOperation(w http.ResponseWriter, r *http.Request) {
 		switch {
 		case b.Kind == operation.KindEvent:
 			if !h.alertPrechecks(w, r, req) {
+				return
+			}
+		case req.Type == operation.SetStartOnBoot:
+			if !h.bootPrechecks(w, r, req) {
 				return
 			}
 		case req.Type == operation.ScheduleSet || req.Type == operation.ScheduleClear:

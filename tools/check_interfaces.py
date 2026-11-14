@@ -103,7 +103,7 @@ PINNED_SECTIONS = {
     "prohibited.redaction.key_substrings":
         "e345ee00860d558c374286b0f269929a5df6f4bec8efd163e29113efbb1ac721",
     "request-schemas.categories":
-        "d3319e05efc1c0745732c4826f86dbd3d5343efb6b1bb2682b4424ebe58996da",
+        "b15b7186c6c817cc264f399c233c1cc340ae788f835d8d7680808239a08f76ed",
     "request-schemas.value_types":
         "3f56a2cdd2c653fe0526e5457b5f51dd8085edd3a8fce4170ac6ea123e66b5ce",
     "resources.resources":

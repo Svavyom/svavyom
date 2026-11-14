@@ -268,6 +268,43 @@ func TestVMRules(t *testing.T) {
 	}
 }
 
+func TestAVMThatShouldBeRunningButIsStoppedIsReportedAfterTheBootGraceAndSurvivesARestart(t *testing.T) {
+	vm := func(state string, should bool, uptime time.Duration, known bool) Inputs {
+		return Inputs{VMsKnown: true, VMs: []VMState{{Name: "web", Managed: true, State: state}, {Name: "theirs", Managed: false, State: "shutoff"}}, HostID: "h1",
+			ShouldRun: map[string]bool{"web": should, "theirs": true}, ShouldRunKnown: known, HostUptime: uptime}
+	}
+	state := func(obs []Obs) (active, clear, seen bool) {
+		for _, o := range obs {
+			if o.ResourceID == "theirs" {
+				t.Fatal("a VM Svavyom does not manage is not judged")
+			}
+			if o.Type == VMNotStarted {
+				return o.Active, o.Clear, true
+			}
+		}
+		return false, false, false
+	}
+	// a fresh evaluator knows nothing of the past (an API restart after a host reboot): the stored intent alone raises it
+	ev := &Evaluator{}
+	if a, _, seen := state(first(ev.Evaluate(vm("shutoff", true, 2*time.Minute, true)))); !seen || a {
+		t.Fatal("inside the boot grace the VM is given time to come back")
+	}
+	if a, _, _ := state(first(ev.Evaluate(vm("shutoff", true, BootGrace, true)))); !a {
+		t.Fatal("a VM that should be running and is stopped after the grace is reported, with no memory of it running")
+	}
+	if a, c, _ := state(first(ev.Evaluate(vm("running", true, time.Hour, true)))); a || !c {
+		t.Fatal("running clears it")
+	}
+	if a, c, _ := state(first(ev.Evaluate(vm("shutoff", false, time.Hour, true)))); a || !c {
+		t.Fatal("a VM the owner stopped (or unticked) is not an alert")
+	}
+	if _, _, seen := state(first(ev.Evaluate(vm("shutoff", true, time.Hour, false)))); seen {
+		t.Fatal("unknown intent never raises or resolves")
+	}
+}
+
+func first(obs []Obs, _ []string) []Obs { return obs }
+
 func TestValidateWebhook(t *testing.T) {
 	good := []struct {
 		u        string

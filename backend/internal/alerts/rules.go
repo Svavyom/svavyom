@@ -45,6 +45,11 @@ type Inputs struct {
 	VMsKnown               bool
 	// StoppedByOperation names VMs that an operation (stop, force off, delete, reboot, create) touched recently, so a VM that is no longer running is expected.
 	StoppedByOperation map[string]bool
+	// ShouldRun names the VMs the owner meant to be running (DR-042: the box is ticked and the intent is running); ShouldRunKnown is false when the intent
+	// store could not be read. HostUptime is how long the host has been up; a VM is given BootGrace after a boot before it counts as not started.
+	ShouldRun      map[string]bool
+	ShouldRunKnown bool
+	HostUptime     time.Duration
 	// ExhaustedOps are the resources of operations that used all their attempts and are still waiting.
 	ExhaustedOps    []ResourceRef
 	ExhaustedKnown  bool
@@ -123,6 +128,16 @@ func (ev *Evaluator) Evaluate(in Inputs) (obs []Obs, covered []string) {
 		}
 		ev.wasRunning = running
 		covered = append(covered, VMCrashed, VMStoppedUnasked)
+		if in.ShouldRunKnown {
+			for _, v := range in.VMs {
+				if !v.Managed {
+					continue
+				}
+				should := in.ShouldRun[v.Name]
+				obs = append(obs, Obs{Type: VMNotStarted, Kind: "VM", ResourceID: v.Name, Severity: Warning, Active: should && v.State == "shutoff" && in.HostUptime >= BootGrace, Clear: !should || v.State == "running"})
+			}
+			covered = append(covered, VMNotStarted)
+		}
 	}
 	if in.ExhaustedKnown {
 		seen := map[string]bool{}

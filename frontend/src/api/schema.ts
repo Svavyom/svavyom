@@ -140,6 +140,7 @@ export interface VM {
   name: string;
   desired: {
     power: "running" | "stopped";
+    start_on_boot: boolean;
     backup_schedule: {
       every_hours: number | null;
       at: string | null;
@@ -195,7 +196,7 @@ export interface VM {
       })[];
     };
   };
-  allowed_actions: ("start" | "stop" | "reboot" | "force_off" | "delete" | "resize" | "reinstall" | "snapshot" | "backup" | "compute" | "reserve_ip" | "release_ip" | "eject_iso" | "set_schedule" | "clear_schedule" | "graphics_enable" | "iso_attach" | "rescue" | "unrescue")[];
+  allowed_actions: ("start" | "stop" | "reboot" | "force_off" | "delete" | "resize" | "reinstall" | "snapshot" | "backup" | "compute" | "reserve_ip" | "release_ip" | "eject_iso" | "set_schedule" | "clear_schedule" | "graphics_enable" | "iso_attach" | "rescue" | "unrescue" | "set_start_on_boot")[];
 }
 
 export interface VMList {
@@ -331,7 +332,7 @@ export interface Operation {
   project_id: string;
   resource_kind: "VM" | "Volume" | "VirtualNetwork" | "Image" | "Backup" | "App" | "Event";
   resource_id: string;
-  type: "create" | "start" | "stop" | "reboot" | "force_off" | "delete" | "resize" | "reinstall" | "snapshot" | "restore_snapshot" | "delete_snapshot" | "backup" | "restore" | "network_create" | "network_start" | "network_stop" | "network_autostart" | "network_delete" | "compute" | "reserve_ip" | "release_ip" | "volume_create" | "volume_attach" | "volume_detach" | "volume_delete" | "eject_iso" | "backup_export" | "alert_acknowledge" | "schedule_set" | "schedule_clear" | "graphics_enable" | "iso_attach" | "rescue" | "unrescue";
+  type: "create" | "start" | "stop" | "reboot" | "force_off" | "delete" | "resize" | "reinstall" | "snapshot" | "restore_snapshot" | "delete_snapshot" | "backup" | "restore" | "network_create" | "network_start" | "network_stop" | "network_autostart" | "network_delete" | "compute" | "reserve_ip" | "release_ip" | "volume_create" | "volume_attach" | "volume_detach" | "volume_delete" | "eject_iso" | "backup_export" | "alert_acknowledge" | "schedule_set" | "schedule_clear" | "graphics_enable" | "iso_attach" | "rescue" | "unrescue" | "set_start_on_boot";
   status: "pending" | "running" | "succeeded" | "failed" | "retryable_failure" | "cancelled";
   requested_by: string;
   generation: number;
@@ -436,7 +437,7 @@ export interface SignInRequest {
 }
 
 export interface SubmitOperationRequest {
-  type: "create" | "start" | "stop" | "reboot" | "force_off" | "delete" | "resize" | "reinstall" | "snapshot" | "restore_snapshot" | "delete_snapshot" | "backup" | "restore" | "network_create" | "network_start" | "network_stop" | "network_autostart" | "network_delete" | "compute" | "reserve_ip" | "release_ip" | "volume_create" | "volume_attach" | "volume_detach" | "volume_delete" | "eject_iso" | "backup_export" | "alert_acknowledge" | "schedule_set" | "schedule_clear" | "graphics_enable" | "iso_attach" | "rescue" | "unrescue";
+  type: "create" | "start" | "stop" | "reboot" | "force_off" | "delete" | "resize" | "reinstall" | "snapshot" | "restore_snapshot" | "delete_snapshot" | "backup" | "restore" | "network_create" | "network_start" | "network_stop" | "network_autostart" | "network_delete" | "compute" | "reserve_ip" | "release_ip" | "volume_create" | "volume_attach" | "volume_detach" | "volume_delete" | "eject_iso" | "backup_export" | "alert_acknowledge" | "schedule_set" | "schedule_clear" | "graphics_enable" | "iso_attach" | "rescue" | "unrescue" | "set_start_on_boot";
   kind: "VM" | "Volume" | "VirtualNetwork" | "Image" | "Backup" | "App" | "Event";
   id: string;
   idempotency_key: string;
@@ -448,6 +449,7 @@ export interface SubmitOperationRequest {
     ssh_public_key?: string;
     network?: string;
     guest_profile?: "linux" | "windows";
+    start_on_boot?: boolean;
   };
   params?: {
     disk_gib?: number;
@@ -2378,7 +2380,8 @@ export const SCHEMAS = {
           "graphics_enable",
           "iso_attach",
           "rescue",
-          "unrescue"
+          "unrescue",
+          "set_start_on_boot"
         ],
         "type": "string",
         "x-data-class": "operational"
@@ -2749,6 +2752,11 @@ export const SCHEMAS = {
             "type": "string",
             "x-data-class": "operational"
           },
+          "start_on_boot": {
+            "description": "The owner's \"start when the host boots\" box (DR-042); omitted means on.",
+            "type": "boolean",
+            "x-data-class": "operational"
+          },
           "vcpus": {
             "maximum": 64,
             "minimum": 1,
@@ -2792,7 +2800,7 @@ export const SCHEMAS = {
       },
       "params": {
         "additionalProperties": false,
-        "description": "Typed inputs of a storage, recovery, network or VM-configuration operation (DR-020, DR-021); allowed only for the types that take them and forbidden otherwise. resize takes disk_gib; reinstall takes image_id and ssh_public_key; restore_snapshot and delete_snapshot take snapshot_id; restore (kind Backup) takes new_name and ssh_public_key; network_create (kind VirtualNetwork) takes subnet, dhcp_start and dhcp_end, or bridge alone for a bridge-mode network on the host bridge svavyom-ctl recorded as active (DR-024 D5); network_autostart takes autostart; compute takes vcpus and memory_mib; reserve_ip takes ip_address; volume_create (kind Volume, the id is the volume name) takes disk_gib; volume_attach takes vm_id (a Stopped Svavyom VM); volume_detach and volume_delete take none (DR-023 D2); backup_export (kind Backup) takes target_id, one of the declared off-host targets (DR-023 D4); schedule_set (kind VM) takes target_id (optional), keep_local, keep_offsite, downtime_acknowledged and either every_hours or at; schedule_clear and alert_acknowledge (kind Event) take none (DR-024); iso_attach takes image_id (a catalog ISO) and boot (cdrom or disk), rescue takes image_id, graphics_enable and unrescue take none (DR-026); eject_iso takes image_id (optional; required when two media are attached) (DR-031). No path, URL, volume name, XML or script; the server resolves digests and generates every identifier.",
+        "description": "Typed inputs of a storage, recovery, network or VM-configuration operation (DR-020, DR-021); allowed only for the types that take them and forbidden otherwise. resize takes disk_gib; reinstall takes image_id and ssh_public_key; restore_snapshot and delete_snapshot take snapshot_id; restore (kind Backup) takes new_name and ssh_public_key; network_create (kind VirtualNetwork) takes subnet, dhcp_start and dhcp_end, or bridge alone for a bridge-mode network on the host bridge svavyom-ctl recorded as active (DR-024 D5); network_autostart takes autostart; set_start_on_boot (kind VM) takes autostart, \"on\" or \"off\", for the VM's \"start when the host boots\" box (DR-042); compute takes vcpus and memory_mib; reserve_ip takes ip_address; volume_create (kind Volume, the id is the volume name) takes disk_gib; volume_attach takes vm_id (a Stopped Svavyom VM); volume_detach and volume_delete take none (DR-023 D2); backup_export (kind Backup) takes target_id, one of the declared off-host targets (DR-023 D4); schedule_set (kind VM) takes target_id (optional), keep_local, keep_offsite, downtime_acknowledged and either every_hours or at; schedule_clear and alert_acknowledge (kind Event) take none (DR-024); iso_attach takes image_id (a catalog ISO) and boot (cdrom or disk), rescue takes image_id, graphics_enable and unrescue take none (DR-026); eject_iso takes image_id (optional; required when two media are attached) (DR-031). No path, URL, volume name, XML or script; the server resolves digests and generates every identifier.",
         "properties": {
           "at": {
             "maxLength": 5,
@@ -2961,7 +2969,8 @@ export const SCHEMAS = {
           "graphics_enable",
           "iso_attach",
           "rescue",
-          "unrescue"
+          "unrescue",
+          "set_start_on_boot"
         ],
         "type": "string",
         "x-data-class": "operational"
@@ -3089,7 +3098,8 @@ export const SCHEMAS = {
             "graphics_enable",
             "iso_attach",
             "rescue",
-            "unrescue"
+            "unrescue",
+            "set_start_on_boot"
           ],
           "type": "string"
         },
@@ -3164,16 +3174,23 @@ export const SCHEMAS = {
             "x-data-class": "operational"
           },
           "power": {
+            "description": "For a VM Svavyom manages, what the owner last asked for through the console (DR-042); otherwise it mirrors the observation.",
             "enum": [
               "running",
               "stopped"
             ],
             "type": "string",
             "x-data-class": "operational"
+          },
+          "start_on_boot": {
+            "description": "The owner's \"start when the host boots\" box (DR-042), true by default for a managed VM; false for a VM Svavyom does not manage, where it does not apply.",
+            "type": "boolean",
+            "x-data-class": "operational"
           }
         },
         "required": [
           "power",
+          "start_on_boot",
           "backup_schedule"
         ],
         "type": "object",

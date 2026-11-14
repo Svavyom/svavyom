@@ -5,7 +5,7 @@ in a file, a disposable SSH key pair, and a qualified image id. Every VM, snapsh
 resources it can prove it created (names derived from the run id, VM marker checked through the API).
 
     python3 tools/qualify_install.py --base http://127.0.0.1:8443 --password-file PW --pubkey KEY.pub --ssh-key KEY --image ubuntu-24.04 \
-        --run-id qr-YYYYMMDD-xxxxxx --out DIR [--ctl /usr/libexec/svavyom/svavyom-ctl] [--phase all|up|restart|down|check|afterboot|features]
+        --run-id qr-YYYYMMDD-xxxxxx --out DIR [--ctl /usr/libexec/svavyom/svavyom-ctl] [--phase all|up|restart|down|check|bootprep|afterboot|features]
 
 Output: DIR/<run-id>-install.json with PASS / FAIL / NOT_RUN per criterion. No password, cookie, CSRF value, ticket or key is printed or recorded.
 Exit 0 when nothing FAILED, 1 otherwise.
@@ -193,6 +193,35 @@ def ws_console(api, vm_id, seconds=25):
     return got, ""
 
 
+def boot_names(h):
+    """The domains one run makes for the start-on-host-boot check (DR-042): the main VM (box on, left running), one whose box is off, one stopped before the
+    reboot, and one domain Svavyom does not manage."""
+    return {"on": f"qi-{h}", "off": f"qb-off-{h}", "stopped": f"qb-stop-{h}", "unmanaged": f"qbu-{h}"}
+
+
+def boot_verdicts(names, power, autostart):
+    """What must hold after a host reboot, from the observed power ("running"/"stopped"/None) and the libvirt autostart flag (True/False/None) of each:
+    only the VM that was running with its box on comes back; the others stay as they were and the unmanaged one is never touched."""
+    want = {"on": ("running", True), "off": ("stopped", False), "stopped": ("stopped", False), "unmanaged": ("stopped", False)}
+    out = []
+    for k, (p, f) in want.items():
+        got_p, got_f = power.get(names[k]), autostart.get(names[k])
+        out.append((f"boot-{k}-power", got_p == p, f"{names[k]} is {got_p} after the reboot (expected {p})"))
+        out.append((f"boot-{k}-flag", got_f is f, f"{names[k]} libvirt autostart is {got_f} (expected {f})"))
+    return out
+
+
+def domain_autostart(name):
+    rc, out = sh(["sudo", "-n", "virsh", "-c", "qemu:///system", "dominfo", name])
+    if rc != 0:
+        return None
+    m = re.search(r"^Autostart:\s+(\S+)", out, re.M)
+    return None if not m else m.group(1) == "enable"
+
+
+UNMANAGED_XML = "<domain type='kvm'><name>%s</name><memory unit='MiB'>64</memory><vcpu>1</vcpu><os><type arch='x86_64' machine='q35'>hvm</type></os></domain>"
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--base", required=True)
@@ -204,7 +233,7 @@ def main():
     ap.add_argument("--run-id", required=True)
     ap.add_argument("--out", required=True)
     ap.add_argument("--ctl", default="/usr/libexec/svavyom/svavyom-ctl")
-    ap.add_argument("--phase", default="all", choices=["all", "up", "restart", "down", "check", "afterboot", "features"])
+    ap.add_argument("--phase", default="all", choices=["all", "up", "restart", "down", "check", "bootprep", "afterboot", "features"])
     a = ap.parse_args()
     if not re.fullmatch(r"qr-\d{8}-[0-9a-f]{6}", a.run_id):
         sys.exit("ERROR run id must be qr-YYYYMMDD-xxxxxx")
@@ -294,18 +323,62 @@ def main():
         s, _ = api.call("POST", "/api/v1/users/admin/disable")
         rec("users-admin-cannot-disable-themselves", "PASS" if s == 403 else "FAIL", "the administrator disabling themselves from the console: HTTP %s" % s)
         finish()
+    if a.phase == "bootprep":
+        # ---- DR-042: put the host in the state the reboot is judged against. The main VM (box on, running) is left from the "up" phase.
+        names = boot_names(h)
+        v = api.vm_by_name(names["on"])
+        rec("boot-main-desired-on", "PASS" if v and v["desired"].get("start_on_boot") is True and v["desired"]["power"] == "running" else "FAIL", "the main VM has start_on_boot on and should be running")
+        rec("boot-main-flag-set", "PASS" if domain_autostart(names["on"]) is True else "FAIL", "libvirt autostart is on for the VM that is running with its box on")
+        ok, why = api.op_run("create", "VM", names["off"], create={"vcpus": 1, "memory_mib": 512, "image_id": a.image, "disk_gib": 10, "ssh_public_key": pub, "start_on_boot": False})
+        rec("boot-off-create", "PASS" if ok else "FAIL", why)
+        v = api.vm_by_name(names["off"])
+        if v:
+            ok, why = api.op_run("start", "VM", v["id"])
+            rec("boot-off-start", "PASS" if ok and api.wait_vm(names["off"], "running") else "FAIL", why)
+            rec("boot-off-flag-clear", "PASS" if domain_autostart(names["off"]) is False else "FAIL", "libvirt autostart is off when the box is off, though the VM is running")
+        ok, why = api.op_run("create", "VM", names["stopped"], create={"vcpus": 1, "memory_mib": 512, "image_id": a.image, "disk_gib": 10, "ssh_public_key": pub})
+        rec("boot-stopped-create", "PASS" if ok else "FAIL", why)
+        v = api.vm_by_name(names["stopped"])
+        if v:
+            api.op_run("start", "VM", v["id"])
+            api.wait_vm(names["stopped"], "running")
+            ok, why = api.op_run("stop", "VM", v["id"])
+            rec("boot-stopped-stop", "PASS" if ok and api.wait_vm(names["stopped"], "stopped") else "FAIL", why)
+            # the syncer converges within its pass; the stop also kicks it
+            end = time.time() + 120
+            while time.time() < end and domain_autostart(names["stopped"]) is not False:
+                time.sleep(3)
+            rec("boot-stopped-flag-clear", "PASS" if domain_autostart(names["stopped"]) is False else "FAIL", "libvirt autostart is off for a VM the administrator stopped, though its box is on")
+        sh(["sudo", "-n", "sh", "-c", "echo \"$1\" > /var/tmp/%s.xml && virsh -c qemu:///system define /var/tmp/%s.xml && rm -f /var/tmp/%s.xml" % ((names["unmanaged"],) * 3), "x", UNMANAGED_XML % names["unmanaged"]])
+        rec("boot-unmanaged-defined", "PASS" if domain_autostart(names["unmanaged"]) is False else "FAIL", "a domain Svavyom does not manage exists, shut off, autostart off")
+        time.sleep(15)
+        finish()
     if a.phase == "afterboot":
-        # ---- after a HOST reboot: what comes back. A VM that was running is not started again by Svavyom itself, so its state is recorded, and the data must be intact.
-        v = api.vm_by_name(vm_name)
+        # ---- after a HOST reboot (DR-042): the VM that was running with its box on returns by itself; the others stay as they were; the unmanaged domain is untouched.
+        names = boot_names(h)
+        end = time.time() + 420
+        while time.time() < end:
+            v = api.vm_by_name(names["on"])
+            if v and v["observed"]["power"] == "running":
+                break
+            time.sleep(5)
+        power = {}
+        for k in ("on", "off", "stopped"):
+            v = api.vm_by_name(names[k])
+            power[names[k]] = v["observed"]["power"] if v else None
+        rc, out = sh(["sudo", "-n", "virsh", "-c", "qemu:///system", "domstate", names["unmanaged"]])
+        power[names["unmanaged"]] = "running" if "running" in out else "stopped" if rc == 0 else None
+        flags = {n: domain_autostart(n) for n in names.values()}
+        for cid, good, detail in boot_verdicts(names, power, flags):
+            rec(cid, "PASS" if good else "FAIL", detail)
+        v = api.vm_by_name(names["on"])
         rec("vm-listed-after-host-reboot", "PASS" if v else "FAIL", "the VM is still listed by the API after the host rebooted")
         if v:
-            state = v["observed"]["power"]
-            rec("vm-state-after-host-reboot", "PASS", "the VM is %s after the host rebooted (recorded, not judged)" % state)
             ok = True
-            if state != "running":
+            if v["observed"]["power"] != "running":
                 ok, why = api.op_run("start", "VM", v["id"])
                 rec("vm-start-after-host-reboot", "PASS" if ok else "FAIL", why)
-            rv = api.wait_vm(vm_name, "running", ip=True) if ok else None
+            rv = api.wait_vm(names["on"], "running", ip=True) if ok else None
             if rv and wait_ssh(a.ssh_key, rv["observed"]["login_user"] or "ubuntu", rv["observed"]["ip_address"]):
                 out = ssh(a.ssh_key, rv["observed"]["login_user"] or "ubuntu", rv["observed"]["ip_address"], "cat /var/lib/svq-marker1")[1]
                 rec("vm-data-survives-host-reboot", "PASS" if "svq-marker-1" in out else "FAIL", "the data written before the host reboot is in the guest")
@@ -461,6 +534,14 @@ def main():
         clean = rc == 0 and re.search(r"pw=0 pem=0 cookie=0 hash=0 pub=0", scan) and "mode=600" in scan
         rec("support-bundle-redaction", "PASS" if clean else "FAIL", "bundle written 0600; no password, key, cookie/CSRF, hash or SSH key body found: " + scan.strip().replace("\n", " "))
         # ---- cleanup: only what this run made
+        for k in ("off", "stopped"):
+            xv = api.vm_by_name(boot_names(h)[k])
+            if xv:
+                if xv["observed"]["power"] != "stopped":
+                    api.op_run("stop", "VM", xv["id"])
+                    api.wait_vm(boot_names(h)[k], "stopped")
+                api.op_run("delete", "VM", xv["id"])
+        sh(["sudo", "-n", "virsh", "-c", "qemu:///system", "undefine", boot_names(h)["unmanaged"]])
         v = api.vm_by_name(vm_name)
         if v:
             api.op_run("stop", "VM", v["id"])

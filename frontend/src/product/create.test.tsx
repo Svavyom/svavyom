@@ -220,7 +220,20 @@ describe("the guest type of an installation-media VM (M6-E01-S04, DR-032)", () =
     const post = api.posts()[0]!;
     expect(validate("SubmitOperationRequest", post.body)).toEqual({ ok: true });
     expect(post.body.create).toMatchObject({ image_id: "windowsserver2019-iso", guest_profile: "windows" });
-    expect(Object.keys(post.body.create).sort()).toEqual(["disk_gib", "guest_profile", "image_id", "memory_mib", "vcpus"]);
+    expect(Object.keys(post.body.create).sort()).toEqual(["disk_gib", "guest_profile", "image_id", "memory_mib", "start_on_boot", "vcpus"]);
+  });
+
+  it("starts on host boot by default and sends false only when the box is cleared (DR-042)", async () => {
+    created();
+    await atNetworkStep();
+    const box = screen.getByRole("checkbox", { name: /Start this VM when the host boots/ }) as HTMLInputElement;
+    expect(box.checked).toBe(true);
+    await userEvent.click(box);
+    await userEvent.click(screen.getByRole("button", { name: "Review" }));
+    expect(await screen.findByText("Starts when the host boots")).toBeTruthy();
+    await userEvent.click(screen.getByRole("button", { name: "Create VM" }));
+    await screen.findByText(/VM created/, {}, { timeout: 5000 });
+    expect(api.posts()[0]!.body.create.start_on_boot).toBe(false);
   });
 
   it("sends no guest_profile for Linux, so that request is exactly what it always was, and no Windows text on the done screen", async () => {
@@ -230,7 +243,7 @@ describe("the guest type of an installation-media VM (M6-E01-S04, DR-032)", () =
     expect(await screen.findByText("Linux or other", { selector: "dd" })).toBeTruthy();
     await userEvent.click(screen.getByRole("button", { name: "Create VM" }));
     await screen.findByText(/then open the Graphical console to follow the installer/, {}, { timeout: 5000 });
-    expect(Object.keys(api.posts()[0]!.body.create).sort()).toEqual(["disk_gib", "image_id", "memory_mib", "vcpus"]);
+    expect(Object.keys(api.posts()[0]!.body.create).sort()).toEqual(["disk_gib", "image_id", "memory_mib", "start_on_boot", "vcpus"]);
     expect(document.body.textContent).not.toMatch(/follow Windows Setup/);
   });
 
@@ -271,7 +284,7 @@ describe("create journey", () => {
     const post = api.posts()[0]!;
     expect(validate("SubmitOperationRequest", post.body)).toEqual({ ok: true });
     expect(post.body).toMatchObject({ type: "create", kind: "VM", id: "web-1", create: { image_id: "debian-13", vcpus: 1, memory_mib: 512, ssh_public_key: KEY.trim() } });
-    expect(Object.keys(post.body.create).sort()).toEqual(["disk_gib", "image_id", "memory_mib", "ssh_public_key", "vcpus"]);
+    expect(Object.keys(post.body.create).sort()).toEqual(["disk_gib", "image_id", "memory_mib", "ssh_public_key", "start_on_boot", "vcpus"]);
     expect(screen.getByRole("link", { name: "Go to the VM list" })).toBeTruthy();
     // M6-E01-S06: the end of the journey says the VM is stopped and leads to the page that has Start.
     expect(screen.getByText((_, el) => el?.tagName === "P" && /web-1 is created but stopped: creating a VM does not start it/.test(el.textContent ?? ""))).toBeTruthy();

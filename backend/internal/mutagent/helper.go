@@ -95,7 +95,7 @@ func categoryOf(err error) hypervisor.Category {
 
 func isNetworkOp(op string) bool {
 	switch op {
-	case OpNetCreate, OpNetStart, OpNetStop, OpNetAutostart, OpNetDelete, OpCompute, OpReserveIP, OpReleaseIP:
+	case OpNetCreate, OpNetStart, OpNetStop, OpNetAutostart, OpNetDelete, OpCompute, OpReserveIP, OpReleaseIP, OpVMAutostart:
 		return true
 	}
 	return false
@@ -118,6 +118,8 @@ func runNetwork(ctx context.Context, q Request, ops provision.HostOps, cfg provi
 		return provision.NetworkStart(ctx, ops, q.Name, hook)
 	case OpNetStop:
 		return provision.NetworkStop(ctx, ops, q.Name, hook)
+	case OpVMAutostart:
+		return provision.VMAutostart(ctx, ops, q.Name, q.Net.Autostart == "on")
 	case OpNetAutostart:
 		return provision.NetworkAutostart(ctx, ops, q.Name, q.Net.Autostart == "on")
 	case OpNetDelete:

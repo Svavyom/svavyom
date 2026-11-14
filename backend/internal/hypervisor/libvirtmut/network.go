@@ -289,3 +289,19 @@ func (o *Ops) SetDomainCompute(ctx context.Context, name string, vcpus, memoryMi
 }
 
 var _ provision.HostOps = (*Ops)(nil)
+
+// SetDomainAutostart implements provision.HostOps: libvirt starts a flagged domain when the host boots (DR-042).
+func (o *Ops) SetDomainAutostart(ctx context.Context, name string, on bool) error {
+	if err := ctxErr(ctx, "autostart"); err != nil {
+		return err
+	}
+	d, err := o.domain("autostart", name)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = d.Free() }()
+	if err := d.SetAutostart(on); err != nil {
+		return mapErr("autostart", err)
+	}
+	return nil
+}

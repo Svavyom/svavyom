@@ -8,7 +8,7 @@ export const OP_LABEL: Record<Operation["type"], string> = {
   compute: "Change size", reserve_ip: "Reserve address", release_ip: "Release address",
   eject_iso: "Eject installation media", backup_export: "Copy backup off the host", volume_create: "Create volume", volume_attach: "Attach volume", volume_detach: "Detach volume", volume_delete: "Delete volume",
   graphics_enable: "Enable graphical console", iso_attach: "Attach installation media", rescue: "Start rescue mode", unrescue: "Leave rescue mode",
-  alert_acknowledge: "Acknowledge alert", schedule_set: "Set backup schedule", schedule_clear: "Clear backup schedule",
+  alert_acknowledge: "Acknowledge alert", schedule_set: "Set backup schedule", schedule_clear: "Clear backup schedule", set_start_on_boot: "Change start on host boot",
 };
 export const OP_STATUS: Record<Operation["status"], { text: string; tone: "ok" | "warn" | "bad" | "neutral" }> = {
   pending: { text: "Queued", tone: "warn" }, running: { text: "Running", tone: "warn" }, succeeded: { text: "Done", tone: "ok" }, failed: { text: "Failed", tone: "bad" },

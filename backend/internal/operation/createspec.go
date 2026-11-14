@@ -30,6 +30,8 @@ type CreateSpec struct {
 	Network        string // the single server-configured network profile
 	// Profile is the guest profile of a VM from installation media (DR-032): "windows", or "" for linux. The server normalises "linux" to "".
 	Profile string
+	// NoStartOnBoot is true when the owner unticked "start on host boot" at creation (DR-042); the zero value is the default, on. It is not part of the fingerprint.
+	NoStartOnBoot bool
 }
 
 // IsZero reports whether no definition was recorded.

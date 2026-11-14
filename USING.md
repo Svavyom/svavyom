@@ -40,6 +40,7 @@ A VM is also created with an installation-media option: choose an ISO instead of
 Open the VM from **Virtual machines**. Depending on its state and your role you will see:
 * **Start, Stop** (graceful), **Reboot**, **Force off** (like pulling the plug), **Delete** (only a stopped VM; asks first; removes its disks).
 * **Resize** the root disk (grow only, only when the VM has no snapshot) and change vCPUs and memory (only while stopped).
+* **Start on host boot.** Every VM created in the console starts again when the host boots, **if it was running** when the host went down; untick the box when you create it, or on the VM page, to turn that off. A VM you stopped yourself stays stopped, whatever the box says: stopping, forcing off and deleting are remembered, and a reboot never overrides them. VMs that Svavyom does not manage are never touched. If a VM that should be running is found stopped well after the host came up, an alert says so and **System** lists it. For a clean stop of running VMs when the host shuts down, `libvirt-guests` must be enabled with `ON_SHUTDOWN=shutdown` in `/etc/default/libvirt-guests`; `sudo svavyom-ctl status` reports it when it is not (Svavyom does not change it). All flagged VMs start at the same moment, so a host with many large VMs may start slowly.
 * **Snapshot** and restore a snapshot; **Back up**; **Restore** a backup as a new VM.
 * **Reserve an address** on a managed network so the VM always gets the same IP from the network's DHCP.
 * **Backup schedule**: back the VM up every N hours or daily at a time, keep the last N. **Note:** a scheduled backup is a maintenance window: the VM is **stopped** during it and started again afterwards. The console says so before you save.
@@ -80,7 +81,6 @@ Alerts warn about low free space on the VM pool and the backup store, high host 
 
 ## 9. What it will not do (yet)
 * One host per installation; no high availability, live migration or multi-host management.
-* **VMs are not started again after the host reboots.** They keep their disks and data; start them from the console. (Svavyom's own services and libvirt's network and pool do come back by themselves.)
 * No live-VM backup: a backup, a scheduled backup and a restore of a VM work on a **stopped** VM. A restore always makes a **new** VM.
 * The Windows guest profile is Windows Server 2019 (evaluation) on BIOS, a SATA disk and an Intel e1000e card only; no UEFI, TPM, Windows 11 or virtio disk or network. A second installation medium is a data medium: it never boots.
 * No image download, import or conversion beyond qcow2 and ISO; images are registered on the host by root.

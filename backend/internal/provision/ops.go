@@ -27,6 +27,8 @@ type DomainInfo struct {
 	UUID, Fingerprint string
 	Managed           bool
 	Running           bool
+	// Autostart is the domain's libvirt autostart flag: libvirt starts it when the host boots (DR-042).
+	Autostart bool
 	// Root and Seed are the volume names of the domain's two disks, set only when the definition names exactly Svavyom's own volumes
 	// for this domain's UUID (ParseDomain). XML is the domain definition as the host reports it, for ownership proofs (CheckDomainSources).
 	Root, Seed string
@@ -129,6 +131,8 @@ type HostOps interface {
 	NetworkLeases(ctx context.Context, network string) ([]NetLease, error)
 	// SetDomainCompute sets the persistent vCPU count and memory (MiB) of a stopped domain, both the maximum and the current value.
 	SetDomainCompute(ctx context.Context, name string, vcpus, memoryMiB int) error
+	// SetDomainAutostart sets the domain's libvirt autostart flag: libvirt starts a flagged domain when the host boots (DR-042).
+	SetDomainAutostart(ctx context.Context, name string, on bool) error
 }
 
 // NetLease is one DHCP lease as the host reports it.

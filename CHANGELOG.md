@@ -2,6 +2,10 @@
 
 What changed in each release, in words an operator can use. The version is in `VERSION` and in `svavyom-ctl version`. Releases from **0.1.0-preview.16** are signed with the maintainer's Ed25519 key (fingerprint `247e9193c933b6fa`, `ci/sign/README.md`); earlier ones are not. An upgrade across a database change can only be rolled back with the pre-upgrade database copy (`INSTALLING.md`, section 5): the entries that say "database" below are those.
 
+## Unreleased
+* **Start on host boot.** A VM created in the console, and every VM that was running when the host went down, starts again when the host boots; the box is on by default and can be turned off at creation or on the VM page. A VM you stopped, forced off or deleted stays that way. An alert and the System page say when a VM that should be running is stopped. `svavyom-ctl status` reports when `libvirt-guests` would not stop guests cleanly.
+* **Database:** the operations table and a new boot-policy table change. Rolling back needs `--restore-db`.
+
 ## 0.1.0-preview.18 (2026-11-13)
 * **Users and passwords in the console.** Everyone can change their own password under **Account** (the current one is checked under the same limit as sign-in, and your other sessions are signed out). Administrators manage people under **Users**: add a user, change a role, reset a password, disable and enable. A new user and a reset get a **temporary password** that must be changed at the next sign-in; until then the console shows only that screen and the API refuses everything else. An administrator cannot change themselves from the console (the host's `api user-*` commands stay the recovery path).
 * **SSH keys.** One list of saved public keys for the installation, offered when you create, reinstall or restore a VM, so the key is not pasted each time. **Make a key pair here** creates an Ed25519 pair in your browser: the private key is a one-time download that is never sent to Svavyom or stored. The server validates every key and refuses a private key.

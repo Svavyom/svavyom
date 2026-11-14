@@ -230,6 +230,7 @@ func (o *stubOps) AttachDataDisk(context.Context, string, string, string, string
 }
 func (o *stubOps) DetachDataDisk(context.Context, string, string) error     { o.hit(); return nil }
 func (o *stubOps) SetDomainCompute(context.Context, string, int, int) error { o.hit(); return nil }
+func (o *stubOps) SetDomainAutostart(context.Context, string, bool) error   { o.hit(); return nil }
 
 func TestBackingIsTheVerifiedStoreImageAndUnsafeImagesNeverReachTheHost(t *testing.T) {
 	d := newDeployment(t)

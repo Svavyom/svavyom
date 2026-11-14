@@ -35,7 +35,7 @@ func paramOptional(t operation.Type) bool { return t == operation.EjectISO }
 func paramType(t operation.Type) bool {
 	switch t {
 	case operation.Resize, operation.Reinstall, operation.RestoreSnapshot, operation.DeleteSnapshot, operation.Restore,
-		operation.NetworkCreate, operation.NetworkAutostart, operation.Compute, operation.ReserveIP, operation.VolumeCreate, operation.VolumeAttach, operation.BackupExport, operation.ScheduleSet, operation.ISOAttach, operation.EjectISO, operation.Rescue:
+		operation.NetworkCreate, operation.NetworkAutostart, operation.Compute, operation.ReserveIP, operation.VolumeCreate, operation.VolumeAttach, operation.BackupExport, operation.ScheduleSet, operation.ISOAttach, operation.EjectISO, operation.Rescue, operation.SetStartOnBoot:
 		return true
 	}
 	return false

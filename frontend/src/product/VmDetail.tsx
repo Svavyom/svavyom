@@ -3,7 +3,7 @@
 // Delete), only when the operator has enabled the Development Preview mutation switch. Force off and Delete ask for confirmation;
 // Stop never escalates to Force off by itself.
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Button, DataTable, Dialog, EmptyState, ErrorState, LoadingRegion, PageHead, Select, StaleNotice, StatusMessage, StatusPill, TextArea, TextField, UnreachableBanner, UsageChart } from "../design-system";
+import { Button, Checkbox, DataTable, Dialog, EmptyState, ErrorState, LoadingRegion, PageHead, Select, StaleNotice, StatusMessage, StatusPill, TextArea, TextField, UnreachableBanner, UsageChart } from "../design-system";
 import { newIdempotencyKey, read, type ReadResult } from "../api/client";
 import { decodeBackupList, decodeHost, decodeImageList, decodeVmList, decodeVolumeList } from "../api/decoders";
 import { submitOperation } from "../api/session";
@@ -297,7 +297,18 @@ export function VmDetail(props: { vmId: string; refresh: number; onSessionEnded:
             <section className="ds-card" aria-labelledby="vm-details">
               <h2 id="vm-details">Details</h2>
               <dl>
-                <dt>State</dt><dd>{POWER_LABEL[vm.observed.power]}</dd>
+                <dt>State</dt><dd>{POWER_LABEL[vm.observed.power]}{vm.observed.managed && vm.desired.power === "running" && vm.desired.start_on_boot && vm.observed.power === "stopped" ? " (it should be running)" : ""}</dd>
+                {vm.observed.managed ? (
+                  <>
+                    <dt>Starts when the host boots</dt>
+                    <dd>
+                      {vm.allowed_actions.includes("set_start_on_boot") ? (
+                        <Checkbox id="vm-boot" label={vm.desired.start_on_boot ? "Yes (if it was left running)" : "No"} checked={vm.desired.start_on_boot} disabled={storage.pending !== null}
+                          onChange={(v) => { void storage.run({ type: "set_start_on_boot", kind: "VM", id: vm.id, params: { autostart: v ? "on" : "off" } }); }} />
+                      ) : (vm.desired.start_on_boot ? "Yes (if it was left running)" : "No")}
+                    </dd>
+                  </>
+                ) : null}
                 {vm.observed.managed ? <><dt>Guest type</dt><dd>{vm.observed.guest_profile === "windows" ? "Windows" : "Linux"}</dd></> : null}
                 <dt>Size</dt><dd>{vm.observed.vcpus === null || vm.observed.memory_mib === null ? "-" : `${vm.observed.vcpus} vCPU, ${vm.observed.memory_mib} MiB memory`}</dd>
                 {vm.observed.managed && vm.observed.isos.length > 0 ? <><dt>Installation media</dt><dd>{vm.observed.isos.map(mediaName).join(", ")}{vm.observed.power === "stopped" ? "" : " (stop the VM to eject it)"}</dd></> : null}

@@ -190,3 +190,40 @@ class Firewall(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class BootJudge(unittest.TestCase):
+    """DR-042: the on-host harness judges a host reboot against four domains."""
+
+    def setUp(self):
+        spec = importlib.util.spec_from_file_location("qinst", ROOT / "tools" / "qualify_install.py")
+        self.qi = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(self.qi)
+        self.names = self.qi.boot_names("a1b2c3")
+
+    def judged(self, power, flags):
+        return {c: ok for c, ok, _ in self.qi.boot_verdicts(self.names, power, flags)}
+
+    def test_the_names_are_distinct_and_carry_the_run(self):
+        self.assertEqual(len(set(self.names.values())), 4)
+        self.assertTrue(all("a1b2c3" in n for n in self.names.values()))
+
+    def test_only_the_running_vm_with_its_box_on_returns(self):
+        n = self.names
+        power = {n["on"]: "running", n["off"]: "stopped", n["stopped"]: "stopped", n["unmanaged"]: "stopped"}
+        flags = {n["on"]: True, n["off"]: False, n["stopped"]: False, n["unmanaged"]: False}
+        self.assertTrue(all(self.judged(power, flags).values()))
+
+    def test_each_wrong_outcome_fails_its_own_check(self):
+        n = self.names
+        good_p = {n["on"]: "running", n["off"]: "stopped", n["stopped"]: "stopped", n["unmanaged"]: "stopped"}
+        good_f = {n["on"]: True, n["off"]: False, n["stopped"]: False, n["unmanaged"]: False}
+        for key, bad_power in (("on", "stopped"), ("off", "running"), ("stopped", "running"), ("unmanaged", "running")):
+            p = dict(good_p, **{n[key]: bad_power})
+            self.assertEqual([c for c, ok in self.judged(p, good_f).items() if not ok], ["boot-%s-power" % key])
+        for key, bad_flag in (("on", False), ("off", True), ("stopped", True), ("unmanaged", True)):
+            f = dict(good_f, **{n[key]: bad_flag})
+            self.assertEqual([c for c, ok in self.judged(good_p, f).items() if not ok], ["boot-%s-flag" % key])
+
+    def test_a_domain_that_is_missing_is_a_failure_not_a_pass(self):
+        self.assertFalse(all(self.judged({}, {}).values()))

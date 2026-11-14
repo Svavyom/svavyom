@@ -57,6 +57,8 @@ type Deps struct {
 	Alerts *AlertsView
 	// Schedules is the backup schedule store (DR-024 D3). Nil reports every VM without a schedule and offers no schedule action.
 	Schedules ScheduleSource
+	// BootPolicy is the owner's intent per managed VM (DR-042). Nil shows the default (start on boot, intent as observed).
+	BootPolicy BootPolicyView
 	// SSHKeys is the library of saved SSH public keys (DR-040). Nil keeps its routes closed.
 	SSHKeys SSHKeyLibrary
 	// Services reports whether each service the API depends on answers (agent, mutation, console, offsite): "ok", "unreachable" or "not_enabled". Nil reports none.

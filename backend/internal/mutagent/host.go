@@ -191,6 +191,15 @@ func (h *Host) NetworkAutostart(ctx context.Context, name string, on bool) error
 	return h.Mut.NetworkAutostart(ctx, name, s)
 }
 
+// SetAutostart sets the libvirt autostart flag of a managed VM (DR-042); it implements operation.BootHost.
+func (h *Host) SetAutostart(ctx context.Context, name string, on bool) error {
+	s := "off"
+	if on {
+		s = "on"
+	}
+	return h.Mut.VMAutostart(ctx, name, s)
+}
+
 // Compute, ReserveIP and ReleaseIP implement operation.Networking.
 func (h *Host) Compute(ctx context.Context, vm string, vcpus, memoryMiB int) error {
 	return h.Mut.Compute(ctx, vm, vcpus, memoryMiB)

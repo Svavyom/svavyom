@@ -9,8 +9,10 @@ import (
 	"time"
 
 	"example.invalid/dedicatedcloud/backend/internal/auth"
+	"example.invalid/dedicatedcloud/backend/internal/bootpolicy"
 	"example.invalid/dedicatedcloud/backend/internal/hypervisor"
 	"example.invalid/dedicatedcloud/backend/internal/metrics"
+	"example.invalid/dedicatedcloud/backend/internal/operation"
 	"example.invalid/dedicatedcloud/backend/internal/schedule"
 )
 
@@ -31,6 +33,8 @@ type vmJSON struct {
 
 type vmDesired struct {
 	Power string `json:"power"`
+	// StartOnBoot is the owner's "start when the host boots" box (DR-042); false for a VM Svavyom does not manage, where it does not apply.
+	StartOnBoot bool `json:"start_on_boot"`
 	// BackupSchedule is the maintenance-window backup schedule of the VM, or null (DR-024 D3).
 	BackupSchedule *backupScheduleJSON `json:"backup_schedule"`
 }
@@ -118,8 +122,8 @@ type snapshotJSON struct {
 	CreatedAt string `json:"created_at"`
 }
 
-// toVMJSON maps an observed domain. There is no desired-state store yet, so the desired power mirrors the observation
-// (running -> running, anything else -> stopped); allowed_actions is empty unless the VM is managed and the mutation switch is on.
+// toVMJSON maps an observed domain. For a managed VM the desired power is the owner's recorded intent (DR-042); until a VM has a row, and for a
+// VM Svavyom does not manage, it mirrors the observation (running -> running, anything else -> stopped); allowed_actions is empty unless the VM is managed and the mutation switch is on.
 func (h *Handler) toVM(d hypervisor.Domain, seen time.Time, logins map[string]string, nets map[string]hypervisor.Network, netsKnown bool, usage map[string]metrics.VMUsage, vc viewCtx) vmJSON {
 	v := toVMJSON(d, seen)
 	if d.VCPUs > 0 {
@@ -169,6 +173,15 @@ func (h *Handler) toVM(d hypervisor.Domain, seen time.Time, logins map[string]st
 	// Lifecycle actions are offered for a Svavyom-managed VM while the Development Preview mutation switch is on.
 	if h.deps.Creation != nil && h.deps.Creation.Enabled && d.Managed {
 		v.Allowed = restrict(vc.role, "VM", withoutSnapshot(allowedActions(d, nets, netsKnown), vc.snapshots))
+	}
+	if d.Managed {
+		v.Desired.StartOnBoot = true // the default, until the owner unticks it
+		if p, ok := vc.boot[d.Name]; ok {
+			v.Desired.StartOnBoot, v.Desired.Power = p.StartOnBoot, p.Intent // what the owner meant, not what happens to be observed (DR-042)
+		}
+		if h.deps.Creation != nil && h.deps.Creation.Enabled && vc.role.AtLeast(auth.RoleOperator) {
+			v.Allowed = append(v.Allowed, string(operation.SetStartOnBoot))
+		}
 	}
 	v.Observed.Network = vmNetwork(d, nets, netsKnown)
 	if sc, ok := vc.scheds[d.Name]; ok && d.Managed {
@@ -347,10 +360,11 @@ type viewCtx struct {
 	snapshots bool
 	isos      map[string]string // installation media digest -> catalog image id
 	scheds    map[string]schedule.Schedule
+	boot      map[string]bootpolicy.Policy // the owner's intent and box per managed VM (DR-042)
 }
 
 func (h *Handler) viewCtx(r *http.Request) viewCtx {
-	return viewCtx{role: h.roleOf(r), snapshots: h.snapshotsAvailable(r.Context()), isos: h.isoImages(), scheds: h.schedules(r.Context())}
+	return viewCtx{role: h.roleOf(r), snapshots: h.snapshotsAvailable(r.Context()), isos: h.isoImages(), scheds: h.schedules(r.Context()), boot: h.bootPolicies(r.Context())}
 }
 
 // ScheduleSource is the schedule store as the API sees it (read only; changes are the operations schedule_set and schedule_clear).
@@ -428,4 +442,43 @@ func withoutSnapshot(allowed []string, snapshots bool) []string {
 		}
 	}
 	return out
+}
+
+// BootPolicyView is the owner's intent per managed VM as the API reads it (DR-042). Nil means every managed VM shows the default.
+type BootPolicyView interface {
+	All(ctx context.Context) (map[string]bootpolicy.Policy, error)
+}
+
+func (h *Handler) bootPolicies(ctx context.Context) map[string]bootpolicy.Policy {
+	if h.deps.BootPolicy == nil {
+		return nil
+	}
+	m, err := h.deps.BootPolicy.All(ctx)
+	if err != nil {
+		return nil
+	}
+	return m
+}
+
+// bootPrechecks refuses a start-on-boot change for a VM that is unknown or that Svavyom does not manage.
+func (h *Handler) bootPrechecks(w http.ResponseWriter, r *http.Request, req operation.Request) bool {
+	if h.deps.VMs == nil {
+		h.reject(w, categoryUnavailable)
+		return false
+	}
+	d, err := h.deps.VMs.Lookup(r.Context(), req.ResourceID)
+	switch hypervisor.CategoryOf(err) {
+	case "":
+	case hypervisor.NotFound:
+		h.reject(w, categoryNotFound)
+		return false
+	default:
+		h.reject(w, categoryUnavailable)
+		return false
+	}
+	if !d.Managed {
+		h.reject(w, categoryProhibited) // not created by Svavyom: not ours to set
+		return false
+	}
+	return true
 }

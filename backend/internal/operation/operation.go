@@ -83,6 +83,8 @@ const (
 	ISOAttach      Type = "iso_attach"
 	Rescue         Type = "rescue"
 	Unrescue       Type = "unrescue"
+	// SetStartOnBoot ticks or unticks a VM's "start on host boot" box (DR-042); Params.Autostart is "on" or "off". It changes only the platform's own record.
+	SetStartOnBoot Type = "set_start_on_boot"
 )
 
 // The resource kinds this package executes: VMs, and backups (restore creates a VM from one; delete removes one).
@@ -187,7 +189,7 @@ type Request struct {
 
 // kindTypes is the closed matrix of which operation types apply to which resource kind.
 var kindTypes = map[string][]Type{
-	KindVM:      {Create, Start, Stop, Reboot, ForceOff, Delete, Resize, Reinstall, Snapshot, RestoreSnapshot, DeleteSnapshot, Backup, Compute, ReserveIP, ReleaseIP, EjectISO, ScheduleSet, ScheduleClear, GraphicsEnable, ISOAttach, Rescue, Unrescue},
+	KindVM:      {Create, Start, Stop, Reboot, ForceOff, Delete, Resize, Reinstall, Snapshot, RestoreSnapshot, DeleteSnapshot, Backup, Compute, ReserveIP, ReleaseIP, EjectISO, ScheduleSet, ScheduleClear, GraphicsEnable, ISOAttach, Rescue, Unrescue, SetStartOnBoot},
 	KindBackup:  {Restore, Delete, BackupExport},
 	KindNetwork: {NetworkCreate, NetworkStart, NetworkStop, NetworkAutostart, NetworkDelete},
 	KindVolume:  {VolumeCreate, VolumeAttach, VolumeDetach, VolumeDelete},

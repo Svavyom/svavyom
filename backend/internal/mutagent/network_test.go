@@ -77,6 +77,69 @@ func TestNetworkOperationsThroughTheSupervisor(t *testing.T) {
 	}
 }
 
+func TestAVMAutostartFlagIsSetAndClearedThroughTheSupervisorAndOnlyForAManagedVM(t *testing.T) {
+	r := newRig(t, 30*time.Second, "")
+	ctx := context.Background()
+	if err := r.client.Provision(ctx, r.spec); err != nil {
+		t.Fatal(err)
+	}
+	if r.sim.Load().Domains["web-1"].Autostart {
+		t.Fatal("a new VM has no autostart flag until Svavyom sets it")
+	}
+	if err := r.client.VMAutostart(ctx, "web-1", "on"); err != nil {
+		t.Fatal(err)
+	}
+	if !r.sim.Load().Domains["web-1"].Autostart {
+		t.Fatal("the flag was not set")
+	}
+	if err := r.client.VMAutostart(ctx, "web-1", "on"); err != nil {
+		t.Fatalf("a repeat is success: %v", err)
+	}
+	if err := r.client.Start(ctx, "web-1"); err != nil || !r.sim.Load().Domains["web-1"].Autostart {
+		t.Fatalf("starting leaves the flag alone: %v", err)
+	}
+	if err := r.client.VMAutostart(ctx, "web-1", "off"); err != nil || r.sim.Load().Domains["web-1"].Autostart {
+		t.Fatalf("off: %v", err)
+	}
+	if err := r.client.VMAutostart(ctx, "nope-1", "on"); cat(err) != hypervisor.NotFound {
+		t.Fatalf("an unknown VM: %v", err)
+	}
+	// a domain Svavyom did not create is never touched
+	st := r.sim.Load()
+	d := st.Domains["web-1"]
+	d.Managed = false
+	st.Domains["foreign-1"] = d
+	if err := r.sim.Save(st); err != nil {
+		t.Skip("the simulation cannot add a foreign domain in this build")
+	}
+	if err := r.client.VMAutostart(ctx, "foreign-1", "on"); cat(err) != hypervisor.Prohibited && cat(err) != hypervisor.NotFound {
+		t.Fatalf("a foreign domain: %v", err)
+	}
+	if r.sim.Load().Domains["foreign-1"].Autostart {
+		t.Fatal("a foreign domain was changed")
+	}
+}
+
+func TestVMAutostartRequestsAreClosed(t *testing.T) {
+	good := Request{V: Version, Op: OpVMAutostart, Name: "web-1", Net: &Net{Autostart: "on"}}
+	if !good.Valid() {
+		t.Fatal("a well-formed request is valid")
+	}
+	for name, q := range map[string]Request{
+		"without a body": {V: Version, Op: OpVMAutostart, Name: "web-1"},
+		"junk value":     {V: Version, Op: OpVMAutostart, Name: "web-1", Net: &Net{Autostart: "maybe"}},
+		"an extra field": {V: Version, Op: OpVMAutostart, Name: "web-1", Net: &Net{Autostart: "on", IP: "10.0.0.1"}},
+		"a bad name":     {V: Version, Op: OpVMAutostart, Name: "../etc", Net: &Net{Autostart: "on"}},
+		"no name":        {V: Version, Op: OpVMAutostart, Net: &Net{Autostart: "on"}},
+		"a disk size":    {V: Version, Op: OpVMAutostart, Name: "web-1", Net: &Net{Autostart: "on"}, DiskGiB: 5},
+		"a host bridge":  {V: Version, Op: OpVMAutostart, Name: "web-1", Net: &Net{Autostart: "on", HostBridge: "svbr0"}},
+	} {
+		if q.Valid() {
+			t.Errorf("%s must be refused", name)
+		}
+	}
+}
+
 func TestNetworkRequestsAreClosed(t *testing.T) {
 	long := make([]string, MaxAvoid+1)
 	for i := range long {

@@ -2,7 +2,7 @@
 // path, XML, URL or script: the server chooses the network and derives every host path itself. Create makes a STOPPED VM; Start
 // is a separate action in the VM list.
 import { useEffect, useRef, useState } from "react";
-import { Button, ErrorSummary, LoadingRegion, PageHead, RadioGroup, Select, StatusMessage, TextArea, TextField, Link } from "../design-system";
+import { Button, Checkbox, ErrorSummary, LoadingRegion, PageHead, RadioGroup, Select, StatusMessage, TextArea, TextField, Link } from "../design-system";
 import { newIdempotencyKey, read } from "../api/client";
 import { decodeHost, decodeImageList, decodeNetworkList } from "../api/decoders";
 import { submitOperation } from "../api/session";
@@ -27,7 +27,7 @@ export async function keyFingerprint(key: string): Promise<string | null> {
   }
 }
 
-type Draft = { name: string; image: string; vcpus: string; memory: string; disk: string; key: string; network: string; profile: string; guest: string };
+type Draft = { name: string; image: string; vcpus: string; memory: string; disk: string; key: string; network: string; profile: string; guest: string; boot: boolean };
 type Phase = { kind: "form" } | { kind: "review" } | { kind: "submitting" } | { kind: "progress"; id: string } | { kind: "done"; op: Operation };
 
 export function CreateVm(props: { onSessionEnded: () => void }) {
@@ -36,7 +36,7 @@ export function CreateVm(props: { onSessionEnded: () => void }) {
   const [images, setImages] = useState<Image[]>([]);
   const [failed, setFailed] = useState(false);
   const [networks, setNetworks] = useState<VirtualNetwork[]>([]);
-  const [draft, setDraft] = useState<Draft>({ name: "", image: "", vcpus: "", memory: "", disk: "", key: "", network: "", profile: "custom", guest: "linux" });
+  const [draft, setDraft] = useState<Draft>({ name: "", image: "", vcpus: "", memory: "", disk: "", key: "", network: "", profile: "custom", guest: "linux", boot: true });
   const [errors, setErrors] = useState<ReadonlyArray<{ fieldId: string; message: string }>>([]);
   const [phase, setPhase] = useState<Phase>({ kind: "form" });
   const [step, setStep] = useState<1 | 2>(1);
@@ -111,6 +111,7 @@ export function CreateVm(props: { onSessionEnded: () => void }) {
   async function submit() {
     const body: Record<string, unknown> = { vcpus: Number(draft.vcpus), memory_mib: Number(draft.memory), image_id: draft.image, disk_gib: Number(draft.disk) };
     if (!isIso) body.ssh_public_key = draft.key.trim();
+    body.start_on_boot = draft.boot;
     if (draft.network !== "") body.network = draft.network; // omitted = the configured default network
     if (isIso && draft.guest === "windows") body.guest_profile = "windows"; // omitted = linux: a Linux request is exactly what it always was
     const sig = JSON.stringify([draft.name, body]);
@@ -201,6 +202,7 @@ export function CreateVm(props: { onSessionEnded: () => void }) {
                     description="One public key (for example the contents of id_ed25519.pub). It is the only way to sign in to the VM; passwords are disabled. Never paste a private key."
                     error={errors.find((x) => x.fieldId === "create-key")?.message} />
                 )}
+                <Checkbox id="create-boot" label="Start this VM when the host boots (if it was left running)" checked={draft.boot} onChange={(v) => setDraft((d) => ({ ...d, boot: v }))} />
               </>
             )}
             <div className="ds-button-row">
@@ -219,6 +221,7 @@ export function CreateVm(props: { onSessionEnded: () => void }) {
               <dt>Size</dt><dd>{draft.vcpus} vCPU, {draft.memory} MiB memory, {draft.disk} GiB root disk</dd>
               <dt>Guest type</dt><dd>{isIso && draft.guest === "windows" ? "Windows" : isIso ? "Linux or other" : "Linux (cloud image)"}</dd>
               <dt>Network</dt><dd>{draft.network === "" ? "Default network" : draft.network}</dd>
+              <dt>Starts when the host boots</dt><dd>{draft.boot ? "Yes, if it was left running" : "No"}</dd>
               <dt>SSH key</dt><dd>{isIso ? "None: the installer sets up access" : fp ?? "fingerprint unavailable"}</dd>
               <dt>Result</dt><dd>A stopped VM. Starting it is a separate step.</dd>
               <dt>Access</dt><dd>{isIso ? "The VM starts the installer from the ISO. Follow it in the graphical console; the serial console helps only if the installer offers one." : imageAccessText(image?.observed.qualification ?? "verified")}</dd>
