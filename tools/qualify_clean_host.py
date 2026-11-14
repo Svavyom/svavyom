@@ -24,7 +24,7 @@ import time
 sys.dont_write_bytecode = True
 
 R = []
-STAGES = ["facts", "prepare", "install", "bootstrap", "verify", "image", "vm", "upgrade", "rollback", "reboot", "nightly", "firewall", "features"]
+STAGES = ["facts", "prepare", "install", "bootstrap", "verify", "image", "vm", "upgrade", "rollback", "reboot", "nightly", "firewall", "features", "acme"]
 HOST_RE = re.compile(r"^[0-9]{1,3}(\.[0-9]{1,3}){3}$")
 NAME_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9.-]{0,251}[A-Za-z0-9]$")
 RUN_RE = re.compile(r"^qr-[0-9]{8}-[0-9a-f]{6}$")
@@ -512,7 +512,60 @@ def stage_firewall(h, a):
     vm_teardown(h)
 
 
-FUNCS = {"facts": stage_facts, "prepare": stage_prepare, "install": stage_install, "bootstrap": stage_bootstrap, "verify": stage_verify, "image": stage_image, "vm": stage_vm, "upgrade": stage_upgrade, "rollback": stage_rollback, "reboot": stage_reboot, "nightly": stage_nightly, "firewall": stage_firewall, "features": stage_features}
+CTL = "sudo /usr/libexec/svavyom/svavyom-ctl"
+
+
+def acme_command(name, email, staging, challenge="http-01"):
+    """The svavyom-ctl line of one issuance (DR-034). The e-mail address and the name are checked by validate() before this is built, so nothing here needs quoting."""
+    return "%s tls acme-issue --name %s --email %s --accept-terms --challenge %s%s; echo EXIT=$?" % (CTL, name, email, challenge, " --staging" if staging else "")
+
+
+def judge_acme(step, out):
+    """(ok, detail) of one step's output: the staging rehearsal installs nothing and the production run installs the certificate, both with exit 0."""
+    ok = "EXIT=0" in out
+    if step == "staging":
+        ok = ok and "Nothing was installed" in out
+    elif step == "production":
+        ok = ok and "is installed" in out
+    elif step == "renew":
+        ok = ok and "not due for renewal" in out
+    return ok, out.strip().splitlines()[-2][:200] if ok and len(out.strip().splitlines()) > 1 else out.strip()[-300:]
+
+
+def stage_acme(h, a):
+    """A real certificate from Let's Encrypt for a public DNS-only name that points at this host (DR-034): the name resolves here, a staging rehearsal installs nothing,
+    production installs a certificate that an ordinary client trusts on the console's own port, the renewal timer is enabled and does nothing yet, and the host goes
+    back to a self-signed certificate. Port 80 must be reachable from the internet; if ufw is active this opens 80 for the run and closes it again."""
+    name, email = a.acme_name, a.acme_email
+    res = subprocess.run(["getent", "hosts", name], capture_output=True, text=True, check=False)  # noqa: S603,S607
+    rec("acme-name-resolves-here", a.host in res.stdout.split(), "%s resolves to %s (expected %s)" % (name, res.stdout.split()[0] if res.stdout.split() else "nothing", a.host))
+    ufw = h.run("sudo ufw status | head -1", timeout=30)[1]
+    opened = "Status: active" in ufw
+    if opened:
+        h.run("sudo ufw allow 80/tcp", timeout=60)
+    try:
+        for step, staging in (("staging", True), ("production", False)):
+            rc, out = h.run(acme_command(name, email, staging), timeout=600)
+            ok, detail = judge_acme(step, out)
+            rec("acme-%s" % step, ok, detail)
+            if not ok:
+                return
+        got = wait_for(lambda: subprocess.run(["curl", "-s", "-o", "/dev/null", "-w", "%{http_code}", "--max-time", "15", "https://%s:8443/healthz" % name], capture_output=True, text=True, check=False).stdout.strip() == "200", 150, every=10)  # noqa: S603,S607
+        rec("acme-console-trusted-without-override", bool(got), "GET https://%s:8443/healthz with the system's trust store, no -k: %s" % (name, "200" if got else "refused or no answer within 150 seconds"))
+        rc, text = h.run("echo | openssl s_client -connect 127.0.0.1:8443 -servername %s 2>/dev/null | openssl x509 -noout -issuer -dates" % name, timeout=60)
+        rec("acme-issuer-is-lets-encrypt", "Let's Encrypt" in text and "STAGING" not in text, text.strip().replace("\n", "; ")[:200])
+        rc, out = h.run("%s tls acme-renew; echo EXIT=$?" % CTL, timeout=120)
+        ok, detail = judge_acme("renew", out)
+        rec("acme-renew-not-due", ok, detail)
+        rec("acme-renew-timer-enabled", "enabled" in h.run("systemctl is-enabled svavyom-tls-renew.timer", timeout=30)[1], "svavyom-tls-renew.timer is enabled")
+    finally:
+        rc, out = h.run("%s tls use-self-signed --name %s; echo EXIT=$?" % (CTL, a.tls_name), timeout=120)
+        rec("acme-back-to-self-signed", "EXIT=0" in out, out.strip().splitlines()[-2][:160] if "EXIT=0" in out else out.strip()[-200:])
+        if opened:
+            h.run("sudo ufw delete allow 80/tcp", timeout=60)
+
+
+FUNCS = {"facts": stage_facts, "prepare": stage_prepare, "install": stage_install, "bootstrap": stage_bootstrap, "verify": stage_verify, "image": stage_image, "vm": stage_vm, "upgrade": stage_upgrade, "rollback": stage_rollback, "reboot": stage_reboot, "nightly": stage_nightly, "firewall": stage_firewall, "features": stage_features, "acme": stage_acme}
 
 
 def validate(a):
@@ -531,6 +584,11 @@ def validate(a):
         out.append("--nightly must be a time of day written HH:MM")
     if a.stage == "install" and not (a.artifact and os.path.isfile(os.path.join(a.artifact, "MANIFEST.json"))):
         out.append("--artifact must be a release artifact directory")
+    if a.stage == "acme":
+        if not NAME_RE.fullmatch(getattr(a, "acme_name", "") or ""):
+            out.append("--acme-name must be the public DNS name that points at the host")
+        if not re.fullmatch(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}", getattr(a, "acme_email", "") or ""):
+            out.append("--acme-email must be an e-mail address")
     if bool(a.signatures) != bool(a.public_key):
         out.append("--signatures and --public-key go together")
     return out
@@ -547,6 +605,8 @@ def main(argv=None):
     ap.add_argument("--public-key", default="")
     ap.add_argument("--tls-name", required=True, help="the host name the self-signed certificate is made for")
     ap.add_argument("--listen", default="0.0.0.0:8443")
+    ap.add_argument("--acme-name", default="", help="acme stage: a public DNS-only name that points at the host")
+    ap.add_argument("--acme-email", default="", help="acme stage: the contact address given to Let's Encrypt")
     ap.add_argument("--out", required=True)
     ap.add_argument("--nightly", default="", help="upgrade stage: also enable the nightly boot check at HH:MM (host time)")
     ap.add_argument("--restore-db", action="store_true", help="rollback stage: also put the database copy made by the upgrade back")
