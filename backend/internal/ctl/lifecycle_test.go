@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"context"
 	"database/sql"
+	"example.invalid/dedicatedcloud/backend/internal/tlsacme"
+	"example.invalid/dedicatedcloud/backend/internal/tlsacme/acmetest"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -222,6 +224,9 @@ func TestInstallCreatesATLSPairWithTheRightModes(t *testing.T) {
 	}
 	if strings.Contains(out.String(), "BEGIN PRIVATE KEY") {
 		t.Fatal("key material was printed")
+	}
+	if !strings.Contains(out.String(), "note: the console will be reachable from the network on 0.0.0.0:8443") {
+		t.Fatal("the plan prints the line about the default address (DR-034 D5)")
 	}
 }
 
@@ -624,5 +629,56 @@ func TestInstallRendersTheRealPackageTemplates(t *testing.T) {
 	}
 	if !h.exists(SysusersFile) || !h.exists(TmpfilesFile) {
 		t.Error("account and directory definitions were not installed")
+	}
+}
+
+func TestInstallWithTLSAcmeIssuesStagingThenProductionAndKeepsTheSelfSignedOneOnFailure(t *testing.T) {
+	art := makeArtifact(t, "0.1.0", curSchema, nil)
+	run := func(t *testing.T, reject bool, mut func(*InstallOptions)) (string, string, *acmetest.Server) {
+		h, listen := serverHost(t)
+		_, f, d := acmeRigOn(h)
+		f.RejectAuth = reject
+		out, err := install(t, h, listen, art, func(o *InstallOptions) {
+			o.TLSAcme, o.ACMEEmail, o.AcceptTerms, o.acmeDeps = "console.example.org", "admin@example.org", true, &d
+			if mut != nil {
+				mut(o)
+			}
+		})
+		if err != nil {
+			t.Fatalf("%v\n%s", err, out)
+		}
+		return out, mustRead(t, h.root+"/etc/svavyom/tls/cert.pem"), f
+	}
+	out, cert, f := run(t, false, nil)
+	if f.Orders != 2 || !strings.Contains(out, "Nothing was installed") || strings.Contains(out, "no Let's Encrypt certificate yet") {
+		t.Fatalf("orders=%d\n%s", f.Orders, out)
+	}
+	if in, err := tlsacme.Inspect([]byte(cert)); err != nil || in.SelfSigned {
+		t.Fatalf("the production certificate replaces the self-signed one: %+v %v", in, err)
+	}
+	out, cert, f = run(t, true, nil)
+	if !strings.Contains(out, "WARNING no Let's Encrypt certificate yet (validation_failed)") || !strings.Contains(out, "self-signed") {
+		t.Fatal(out)
+	}
+	if in, _ := tlsacme.Inspect([]byte(cert)); !in.SelfSigned {
+		t.Fatal("a failed issuance leaves the self-signed certificate")
+	}
+}
+
+func TestInstallTLSAcmeNeedsAnEmailTheTermsAndOneName(t *testing.T) {
+	art := makeArtifact(t, "0.1.0", curSchema, nil)
+	for name, m := range map[string]func(*InstallOptions){
+		"no e-mail":      func(o *InstallOptions) { o.ACMEEmail = "" },
+		"terms":          func(o *InstallOptions) { o.AcceptTerms = false },
+		"another name":   func(o *InstallOptions) { o.TLSSelfSigned = "other.example.org" },
+		"not a dns name": func(o *InstallOptions) { o.TLSAcme = "1.2.3.4" },
+	} {
+		h, l := serverHost(t)
+		if _, err := install(t, h, l, art, func(o *InstallOptions) {
+			o.TLSAcme, o.ACMEEmail, o.AcceptTerms = "console.example.org", "admin@example.org", true
+			m(o)
+		}); err == nil {
+			t.Errorf("%s was accepted", name)
+		}
 	}
 }

@@ -17,6 +17,11 @@ import (
 
 func acmeRig(t *testing.T) (*testHost, *acmetest.Server, ACMEDeps) {
 	h := newHost(t)
+	return acmeRigOn(h)
+}
+
+func acmeRigOn(h *testHost) (*testHost, *acmetest.Server, ACMEDeps) {
+	t := h.t
 	l, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		t.Fatal(err)
