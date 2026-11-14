@@ -4,6 +4,7 @@ import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
+	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
@@ -179,5 +180,55 @@ func TestReloaderPicksUpANewPairAtMostOncePerMinuteAndKeepsTheOldOneOnABadPair(t
 	}
 	if len(logs) != 2 || logs[1] != "certificate_reload_failed" {
 		t.Fatalf("a bad pair is logged once, not every minute: %v", logs)
+	}
+}
+
+func TestAServerUsingTheReloaderServesTheRenewedCertificateWithoutARestart(t *testing.T) {
+	dir := t.TempDir()
+	s := Store{Dir: dir}
+	c1, k1, x1, _ := mk(t, []string{"a.example.org"}, t0, time.Hour*24, "x", nil, nil)
+	c2, k2, x2, _ := mk(t, []string{"a.example.org"}, t0, time.Hour*48, "x", nil, nil)
+	if err := s.Install(c1, k1, ""); err != nil {
+		t.Fatal(err)
+	}
+	now := t0
+	r := &Reloader{CertFile: s.CertFile(), KeyFile: s.KeyFile(), Now: func() time.Time { return now }}
+	if err := r.Load(); err != nil {
+		t.Fatal(err)
+	}
+	ln, err := tls.Listen("tcp", "127.0.0.1:0", &tls.Config{GetCertificate: r.GetCertificate, MinVersion: tls.VersionTLS12})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer ln.Close()
+	go func() {
+		for {
+			c, err := ln.Accept()
+			if err != nil {
+				return
+			}
+			go func() { _ = c.(*tls.Conn).Handshake(); c.Close() }()
+		}
+	}()
+	serial := func() string {
+		c, err := tls.Dial("tcp", ln.Addr().String(), &tls.Config{InsecureSkipVerify: true, ServerName: "a.example.org"}) //nolint:gosec // reading which certificate is served
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer c.Close()
+		return c.ConnectionState().PeerCertificates[0].SerialNumber.String()
+	}
+	if serial() != x1.SerialNumber.String() {
+		t.Fatal("the first certificate is served")
+	}
+	if err := s.Install(c2, k2, ""); err != nil {
+		t.Fatal(err)
+	}
+	future := t0.Add(time.Hour)
+	os.Chtimes(s.CertFile(), future, future)
+	os.Chtimes(s.KeyFile(), future, future)
+	now = t0.Add(2 * time.Minute)
+	if serial() != x2.SerialNumber.String() {
+		t.Fatal("the renewed certificate is served on the next handshake")
 	}
 }
