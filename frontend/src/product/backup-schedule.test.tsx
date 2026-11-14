@@ -76,7 +76,7 @@ describe("BackupScheduleCard", () => {
 
   it("shows the schedule, the next window and how the last one ended, and can clear it", async () => {
     const run = vi.fn(async () => true);
-    const v = base({ desired: { power: "running", backup_schedule: SCHEDULE } }, ["set_schedule", "clear_schedule"]);
+    const v = base({ desired: { power: "running", start_on_boot: true, backup_schedule: SCHEDULE } }, ["set_schedule", "clear_schedule"]);
     v.observed.backup = { next_run_at: "2026-10-16T02:30:00Z", last_run: { at: "2026-10-15T02:31:00Z", result: "failed" } };
     render(<BackupScheduleCard vm={v} host={HOST_OK} busy={false} run={run} />);
     expect(screen.getByText(describeSchedule(SCHEDULE))).toBeTruthy();

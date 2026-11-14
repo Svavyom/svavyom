@@ -40,7 +40,7 @@ COLLECTION = {"Host": "hosts", "Project": "projects", "VM": "vms", "Volume": "vo
 SUBMIT_KINDS = ["VM", "Volume", "VirtualNetwork", "Image", "Backup", "App"]
 # Section 1.5: action ids valid per item kind; `create` only on collections of a submit_operation kind.
 # DR-020 (M2): resize, reinstall, snapshot and backup join the VM actions; a Backup can also be restored.
-ITEM_ACTIONS = {"VM": {"start", "stop", "reboot", "force_off", "delete", "resize", "reinstall", "snapshot", "backup", "compute", "reserve_ip", "release_ip", "eject_iso", "set_schedule", "clear_schedule", "graphics_enable", "iso_attach", "rescue", "unrescue"}, "App": {"start", "stop", "delete"}, "Volume": {"attach", "detach", "delete"},
+ITEM_ACTIONS = {"VM": {"start", "stop", "reboot", "force_off", "delete", "resize", "reinstall", "snapshot", "backup", "compute", "reserve_ip", "release_ip", "eject_iso", "set_schedule", "clear_schedule", "graphics_enable", "iso_attach", "rescue", "unrescue", "set_start_on_boot"}, "App": {"start", "stop", "delete"}, "Volume": {"attach", "detach", "delete"},
                 "VirtualNetwork": {"start", "stop", "delete", "enable_autostart", "disable_autostart"}, "Image": {"delete"}, "Backup": {"restore", "delete", "export"}, "Operation": {"cancel"},
                 "Host": set(), "Project": set(), "Event": {"acknowledge"}}
 # Section 1.3 table: the extra properties and the desired/observed leaves of every kind except Operation and Event.
@@ -65,7 +65,7 @@ DESIRED_OBSERVED = {
               "alerts": ({"object"}, None), "nightly_boot": ({"object", "null"}, None), "bridge": ({"object", "null"}, None),
               "services": ({"array"}, None), "started_at": ({"string", "null"}, None)}),  # DR-024 D2, D4, D5; system page
     "Project": ({}, {}),
-    "VM": ({"power": _e("running", "stopped"), "backup_schedule": ({"object", "null"}, None)},  # DR-024 D3
+    "VM": ({"power": _e("running", "stopped"), "backup_schedule": ({"object", "null"}, None), "start_on_boot": (_B, None)},  # DR-024 D3; DR-042
            
            {"power": _e("running", "stopped", "paused", "crashed", "unknown"), "last_seen_at": (_S, None),
             # DR-016: ownership, an observed DHCP lease and the image's login user
@@ -584,9 +584,11 @@ def create_shape_ok(node):
     node = as_dict(node)
     props = as_dict(node.get("properties"))
     if node.get("type") != "object" or node.get("additionalProperties") is not False \
-            or set(props) != set(CREATE_FIELDS) | {"image_id", "ssh_public_key", "network", "guest_profile"} \
-            or set(node.get("required") or []) != set(props) - {"network", "ssh_public_key", "guest_profile"}:
+            or set(props) != set(CREATE_FIELDS) | {"image_id", "ssh_public_key", "network", "guest_profile", "start_on_boot"} \
+            or set(node.get("required") or []) != set(props) - {"network", "ssh_public_key", "guest_profile", "start_on_boot"}:
         return False
+    if as_dict(props["start_on_boot"]).get("type") != "boolean":
+        return False  # DR-042: the owner's box, optional, on by default
     profile = as_dict(props["guest_profile"])
     if profile.get("type") != "string" or profile.get("enum") != ["linux", "windows"]:
         return False  # DR-032: a closed choice of two hardware profiles

@@ -23,7 +23,7 @@ export const HOST: Host = {
 };
 
 export const VM_RUNNING: VM = {
-  id: "vm-a", project_id: "default", generation: 3, name: "web-1", desired: { power: "running", backup_schedule: null },
+  id: "vm-a", project_id: "default", generation: 3, name: "web-1", desired: { power: "running", start_on_boot: true, backup_schedule: null },
   observed: { power: "running", last_seen_at: "2026-10-08T10:00:00Z", managed: false, ip_address: null, login_user: null, disk_gib: null, snapshots: [], network: null, vcpus: null, memory_mib: null, iso: null, isos: [], guest_profile: "linux", usage: NO_VM_USAGE, backup: NO_BACKUP, graphical_console: "absent", rescue: false }, allowed_actions: ["start", "stop", "delete"],
 };
 

@@ -99,7 +99,7 @@ describe("storage overview", () => {
 
   it("lists the scheduled backups with their next and last window and repeats the downtime warning", async () => {
     const v = stopped();
-    v.desired = { power: "stopped", backup_schedule: { every_hours: 12, at: null, keep_local: 3, keep_offsite: 0, target_id: null, downtime_acknowledged: true } };
+    v.desired = { power: "stopped", start_on_boot: true, backup_schedule: { every_hours: 12, at: null, keep_local: 3, keep_offsite: 0, target_id: null, downtime_acknowledged: true } };
     v.observed.backup = { next_run_at: "2026-10-16T02:30:00Z", last_run: { at: "2026-10-15T02:31:00Z", result: "ok" } };
     api.vms = [v, { ...stopped(), id: "other-1", name: "other-1" }];
     render(<Root />);
@@ -204,6 +204,25 @@ describe("storage actions on the VM page", () => {
     await userEvent.click(screen.getByRole("button", { name: "Grow the disk" }));
     expect(await screen.findByText(/Root disk grown/, {}, { timeout: 5000 })).toBeTruthy();
     expect(api.posts()[0]!.body).toMatchObject({ type: "resize", kind: "VM", id: "web-1", params: { disk_gib: 30 } });
+  });
+
+  it("turns start on host boot off and on with the typed set_start_on_boot param (DR-042)", async () => {
+    api.vms = [stopped({ allowed_actions: ["start", "delete", "set_start_on_boot"] })];
+    render(<Root />);
+    const box = await screen.findByRole("checkbox", { name: /Yes \(if it was left running\)/ });
+    expect((box as HTMLInputElement).checked).toBe(true);
+    api.ops = [operation({ id: "op-1", type: "set_start_on_boot", resource_id: "web-1", status: "succeeded", attempts: 1, allowed_actions: [] })];
+    await userEvent.click(box);
+    await waitFor(() => expect(api.posts()).toHaveLength(1));
+    expect(validate("SubmitOperationRequest", api.posts()[0]!.body)).toEqual({ ok: true });
+    expect(api.posts()[0]!.body).toMatchObject({ type: "set_start_on_boot", kind: "VM", id: "web-1", params: { autostart: "off" } });
+  });
+
+  it("shows the setting as text, with no control, when the role cannot change it", async () => {
+    api.vms = [stopped({ allowed_actions: ["start"] })];
+    render(<Root />);
+    expect(await screen.findByText("Starts when the host boots")).toBeTruthy();
+    expect(screen.queryByRole("checkbox", { name: /left running/ })).toBeNull();
   });
 
   it("snapshots and backs up without a dialog, with no params", async () => {

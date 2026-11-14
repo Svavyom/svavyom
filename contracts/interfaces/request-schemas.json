@@ -75,7 +75,8 @@
         "graphics_enable",
         "iso_attach",
         "rescue",
-        "unrescue"
+        "unrescue",
+        "set_start_on_boot"
       ],
       "kind": [
         "VM",

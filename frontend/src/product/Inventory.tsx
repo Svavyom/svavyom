@@ -106,6 +106,7 @@ export function Inventory(props: { query: string; refresh: number; onSessionEnde
               <DataTable caption="Virtual machines on this host" rows={shown} rowKey={(v) => v.id} columns={[
                 { header: "Name", cell: (v: VM) => <a className="ds-link" href={`#/vms/${v.id}`}>{v.name}</a>, rowHeader: true },
                 { header: "Power state", cell: (v: VM) => <StatusPill tone={POWER_TONE[v.observed.power]}>{POWER_LABEL[v.observed.power]}</StatusPill> },
+                { header: "Starts at host boot", cell: (v: VM) => (!v.observed.managed ? "-" : v.desired.start_on_boot ? (v.desired.power === "running" ? "Yes" : "Yes (when left running)") : "No") },
                 { header: "Disk (virtual size)", cell: (v: VM) => (v.observed.disk_gib === null ? "-" : `${v.observed.disk_gib} GiB`) },
                 { header: "Connection", cell: (v: VM) => <Connection vm={v} /> },
                 { header: "Network", cell: (v: VM) => <NetworkInfo vm={v} /> },

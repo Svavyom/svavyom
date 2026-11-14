@@ -4,8 +4,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { DataTable, ErrorState, LoadingRegion, PageHead, StaleNotice, StatusMessage, StatusPill, UnreachableBanner } from "../design-system";
 import { read, type ReadResult } from "../api/client";
-import { decodeHost } from "../api/decoders";
-import type { Host } from "../api/schema";
+import { decodeHost, decodeVmList } from "../api/decoders";
+import type { Host, VM } from "../api/schema";
 
 type Service = Host["observed"]["services"][number];
 
@@ -40,6 +40,7 @@ const when = (iso: string) => iso.replace("T", " ").replace("Z", " UTC");
 export function System(props: { refresh: number; onSessionEnded: () => void }) {
   const [loading, setLoading] = useState(true);
   const [host, setHost] = useState<Host | null>(null);
+  const [vms, setVms] = useState<VM[]>([]);
   const [lastAt, setLastAt] = useState<Date | null>(null);
   const [failure, setFailure] = useState<ReadResult<unknown> | null>(null);
   const alive = useRef(true);
@@ -47,8 +48,10 @@ export function System(props: { refresh: number; onSessionEnded: () => void }) {
   const load = useCallback(async () => {
     setLoading(true);
     const r = await read("/api/v1/hosts/local", decodeHost);
+    const v = await read("/api/v1/vms?limit=200", decodeVmList); // only for the list of VMs that should be running: a failure here changes nothing else
     if (!alive.current) return;
     setLoading(false);
+    setVms(v.kind === "ok" ? v.data.items : []);
     if (r.kind === "ok") { setHost(r.data); setLastAt(new Date()); setFailure(null); }
     else if (r.kind === "error" && r.category === "unauthenticated") props.onSessionEnded();
     else setFailure(r);
@@ -70,6 +73,7 @@ export function System(props: { refresh: number; onSessionEnded: () => void }) {
 
   const o = host?.observed;
   const down = (o?.services ?? []).filter((s) => s.state === "unreachable");
+  const missing = vms.filter((v) => v.observed.managed && v.desired.power === "running" && v.desired.start_on_boot && v.observed.power === "stopped");
   return (
     <>
       <PageHead title="System"><p>Which Svavyom is running here, which services it depends on, and what to do when one is not answering.</p></PageHead>
@@ -101,6 +105,12 @@ export function System(props: { refresh: number; onSessionEnded: () => void }) {
                 { header: "What to do", cell: (s: Service) => fix(s) },
               ]} />
             </section>
+            {missing.length > 0 ? (
+              <section aria-labelledby="sys-missing-title">
+                <h2 id="sys-missing-title">Virtual machines that should be running</h2>
+                <StatusMessage tone="warning">{missing.length === 1 ? "This VM is stopped but was left running with its start-on-boot box ticked" : "These VMs are stopped but were left running with their start-on-boot box ticked"}: {missing.map((m) => m.name).join(", ")}. After a host reboot give them a few minutes; then open each one, look at its console and the host log for the reason, and start it.</StatusMessage>
+              </section>
+            ) : null}
             <section className="ds-card" aria-labelledby="sys-help-title">
               <h2 id="sys-help-title">If something is wrong</h2>
               <ol>

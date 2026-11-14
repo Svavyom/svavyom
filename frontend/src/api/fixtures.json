@@ -129,7 +129,8 @@
     ],
     "desired": {
      "power": "running",
-     "backup_schedule": null
+     "backup_schedule": null,
+     "start_on_boot": true
     },
     "observed": {
      "power": "crashed",
@@ -498,7 +499,8 @@
       ],
       "desired": {
        "power": "running",
-       "backup_schedule": null
+       "backup_schedule": null,
+       "start_on_boot": true
       },
       "observed": {
        "power": "crashed",
@@ -1052,7 +1054,8 @@
     "name": "web-1",
     "desired": {
      "power": "running",
-     "backup_schedule": null
+     "backup_schedule": null,
+     "start_on_boot": true
     },
     "observed": {
      "power": "running",
@@ -1225,7 +1228,8 @@
     "name": "web-1",
     "desired": {
      "power": "running",
-     "backup_schedule": null
+     "backup_schedule": null,
+     "start_on_boot": true
     },
     "observed": {
      "power": "running",
@@ -1387,7 +1391,8 @@
     ],
     "desired": {
      "power": "running",
-     "backup_schedule": null
+     "backup_schedule": null,
+     "start_on_boot": true
     },
     "observed": {
      "power": "crashed",
@@ -1588,7 +1593,8 @@
       "keep_offsite": 0,
       "target_id": null,
       "downtime_acknowledged": true
-     }
+     },
+     "start_on_boot": true
     },
     "observed": {
      "power": "crashed",
@@ -1639,7 +1645,8 @@
     ],
     "desired": {
      "power": "running",
-     "backup_schedule": null
+     "backup_schedule": null,
+     "start_on_boot": true
     },
     "observed": {
      "power": "crashed",
@@ -2552,7 +2559,8 @@
     ],
     "desired": {
      "power": "running",
-     "backup_schedule": null
+     "backup_schedule": null,
+     "start_on_boot": true
     },
     "observed": {
      "power": "off",
@@ -2602,7 +2610,8 @@
     ],
     "desired": {
      "power": "paused",
-     "backup_schedule": null
+     "backup_schedule": null,
+     "start_on_boot": true
     },
     "observed": {
      "power": "crashed",
@@ -2652,7 +2661,8 @@
     ],
     "desired": {
      "power": "running",
-     "backup_schedule": null
+     "backup_schedule": null,
+     "start_on_boot": true
     },
     "observed": {
      "power": "crashed",
@@ -2702,7 +2712,8 @@
     ],
     "desired": {
      "power": "running",
-     "backup_schedule": null
+     "backup_schedule": null,
+     "start_on_boot": true
     },
     "observed": {
      "power": "crashed",
@@ -2752,7 +2763,8 @@
     ],
     "desired": {
      "power": "running",
-     "backup_schedule": null
+     "backup_schedule": null,
+     "start_on_boot": true
     },
     "observed": {
      "power": "crashed",
@@ -2802,7 +2814,8 @@
     ],
     "desired": {
      "power": "running",
-     "backup_schedule": null
+     "backup_schedule": null,
+     "start_on_boot": true
     },
     "observed": {
      "power": "crashed",
@@ -2852,7 +2865,8 @@
     ],
     "desired": {
      "power": "running",
-     "backup_schedule": null
+     "backup_schedule": null,
+     "start_on_boot": true
     },
     "observed": {
      "power": "crashed",
@@ -2900,7 +2914,8 @@
     ],
     "desired": {
      "power": "running",
-     "backup_schedule": null
+     "backup_schedule": null,
+     "start_on_boot": true
     },
     "observed": {
      "power": "crashed",
@@ -2949,7 +2964,8 @@
     ],
     "desired": {
      "power": "running",
-     "backup_schedule": null
+     "backup_schedule": null,
+     "start_on_boot": true
     },
     "observed": {
      "power": "crashed",
@@ -2998,7 +3014,8 @@
     ],
     "desired": {
      "power": "running",
-     "backup_schedule": null
+     "backup_schedule": null,
+     "start_on_boot": true
     },
     "observed": {
      "power": "crashed",
@@ -3048,7 +3065,8 @@
     ],
     "desired": {
      "power": "running",
-     "backup_schedule": null
+     "backup_schedule": null,
+     "start_on_boot": true
     },
     "observed": {
      "power": "crashed",
@@ -3098,7 +3116,8 @@
     ],
     "desired": {
      "power": "running",
-     "backup_schedule": null
+     "backup_schedule": null,
+     "start_on_boot": true
     },
     "observed": {
      "power": "crashed",
@@ -3148,7 +3167,8 @@
     ],
     "desired": {
      "power": "running",
-     "backup_schedule": null
+     "backup_schedule": null,
+     "start_on_boot": true
     },
     "observed": {
      "power": "crashed",
@@ -3198,7 +3218,8 @@
     ],
     "desired": {
      "power": "running",
-     "backup_schedule": null
+     "backup_schedule": null,
+     "start_on_boot": true
     },
     "observed": {
      "power": "crashed",
@@ -3248,7 +3269,8 @@
     ],
     "desired": {
      "power": "running",
-     "backup_schedule": null
+     "backup_schedule": null,
+     "start_on_boot": true
     },
     "observed": {
      "power": "crashed",
@@ -3298,7 +3320,8 @@
     ],
     "desired": {
      "power": "running",
-     "backup_schedule": null
+     "backup_schedule": null,
+     "start_on_boot": true
     },
     "observed": {
      "power": "crashed",
@@ -3349,7 +3372,8 @@
     ],
     "desired": {
      "power": "running",
-     "backup_schedule": null
+     "backup_schedule": null,
+     "start_on_boot": true
     },
     "observed": {
      "power": "crashed",
@@ -3786,7 +3810,8 @@
       ],
       "desired": {
        "power": "running",
-       "backup_schedule": null
+       "backup_schedule": null,
+       "start_on_boot": true
       },
       "observed": {
        "power": "crashed",
@@ -3841,7 +3866,8 @@
       ],
       "desired": {
        "power": "running",
-       "backup_schedule": null
+       "backup_schedule": null,
+       "start_on_boot": true
       },
       "observed": {
        "power": "crashed",
@@ -3897,7 +3923,8 @@
       ],
       "desired": {
        "power": "running",
-       "backup_schedule": null
+       "backup_schedule": null,
+       "start_on_boot": true
       },
       "observed": {
        "power": "crashed",
@@ -3953,7 +3980,8 @@
       ],
       "desired": {
        "power": "running",
-       "backup_schedule": null
+       "backup_schedule": null,
+       "start_on_boot": true
       },
       "observed": {
        "power": "crashed",
@@ -4011,7 +4039,8 @@
       ],
       "desired": {
        "power": "running",
-       "backup_schedule": null
+       "backup_schedule": null,
+       "start_on_boot": true
       },
       "observed": {
        "power": "off",
@@ -4862,7 +4891,8 @@
     "name": "web-1",
     "desired": {
      "power": "running",
-     "backup_schedule": null
+     "backup_schedule": null,
+     "start_on_boot": true
     },
     "observed": {
      "power": "running",
@@ -5115,7 +5145,8 @@
     "name": "web-1",
     "desired": {
      "power": "running",
-     "backup_schedule": null
+     "backup_schedule": null,
+     "start_on_boot": true
     },
     "observed": {
      "power": "running",
@@ -7298,7 +7329,8 @@
     ],
     "desired": {
      "power": "running",
-     "backup_schedule": null
+     "backup_schedule": null,
+     "start_on_boot": true
     },
     "observed": {
      "power": "crashed",
@@ -7356,7 +7388,8 @@
     ],
     "desired": {
      "power": "running",
-     "backup_schedule": null
+     "backup_schedule": null,
+     "start_on_boot": true
     },
     "observed": {
      "power": "crashed",
@@ -7414,7 +7447,8 @@
     ],
     "desired": {
      "power": "running",
-     "backup_schedule": null
+     "backup_schedule": null,
+     "start_on_boot": true
     },
     "observed": {
      "power": "crashed",
@@ -7762,7 +7796,8 @@
       "keep_offsite": 0,
       "target_id": null,
       "downtime_acknowledged": true
-     }
+     },
+     "start_on_boot": true
     },
     "observed": {
      "power": "crashed",
@@ -7819,7 +7854,8 @@
       "keep_offsite": 0,
       "target_id": null,
       "downtime_acknowledged": true
-     }
+     },
+     "start_on_boot": true
     },
     "observed": {
      "power": "crashed",
@@ -7869,7 +7905,8 @@
     ],
     "desired": {
      "power": "running",
-     "backup_schedule": null
+     "backup_schedule": null,
+     "start_on_boot": true
     },
     "observed": {
      "power": "crashed",
@@ -7922,7 +7959,8 @@
     ],
     "desired": {
      "power": "running",
-     "backup_schedule": null
+     "backup_schedule": null,
+     "start_on_boot": true
     },
     "observed": {
      "power": "crashed",
@@ -7972,7 +8010,8 @@
     ],
     "desired": {
      "power": "running",
-     "backup_schedule": null
+     "backup_schedule": null,
+     "start_on_boot": true
     },
     "observed": {
      "power": "crashed",
@@ -8020,7 +8059,8 @@
     ],
     "desired": {
      "power": "running",
-     "backup_schedule": null
+     "backup_schedule": null,
+     "start_on_boot": true
     },
     "observed": {
      "power": "crashed",
