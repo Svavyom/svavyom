@@ -20,7 +20,7 @@ SPDX-FileCopyrightText = "2026 Dhanraj Sheth"
 SPDX-License-Identifier = "Apache-2.0"
 
 [[annotations]]
-path = ["docs/**", "THIRD-PARTY-NOTICES.md", "NOTICE", "LICENSING.md", "CONTRIBUTING.md", "SECURITY.md", "CLA.md", "REUSE.toml", "BUILDING.md", "INSTALLING.md", "USING.md", "SOURCE-OFFER.md"]
+path = ["docs/**", "THIRD-PARTY-NOTICES.md", "NOTICE", "LICENSING.md", "CONTRIBUTING.md", "SECURITY.md", "CLA.md", "REUSE.toml", "BUILDING.md", "INSTALLING.md", "USING.md", "CHANGELOG.md", "SOURCE-OFFER.md"]
 precedence = "aggregate"
 SPDX-FileCopyrightText = "2026 Dhanraj Sheth"
 SPDX-License-Identifier = "Apache-2.0"

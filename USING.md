@@ -79,4 +79,14 @@ Alerts warn about low free space on the VM pool and the backup store, high host 
 * `sudo svavyom-ctl support-bundle --out DIR` writes a scrubbed archive for a bug report; read it before you share it.
 
 ## 9. What it will not do (yet)
-One host per installation; no high availability; no live migration; no multi-host management; no live-VM backup; no automatic password or key reset; no Windows profile; no image import or conversion beyond qcow2 and ISO; the release is unsigned. The full list is [Known limitations](https://docs.svavyom.com/known-limitations/).
+* One host per installation; no high availability, live migration or multi-host management.
+* **VMs are not started again after the host reboots.** They keep their disks and data; start them from the console. (Svavyom's own services and libvirt's network and pool do come back by themselves.)
+* No live-VM backup: a backup, a scheduled backup and a restore of a VM work on a **stopped** VM. A restore always makes a **new** VM.
+* The Windows guest profile is Windows Server 2019 (evaluation) on BIOS, a SATA disk and an Intel e1000e card only; no UEFI, TPM, Windows 11 or virtio disk or network. A second installation medium is a data medium: it never boots.
+* No image download, import or conversion beyond qcow2 and ISO; images are registered on the host by root.
+* Local users with three fixed roles; no single sign-on, no second factor, no per-VM grants. Passwords are reset by an administrator (a temporary one) or on the host; the person's SSH key is not reset for them (rescue mode is the way in).
+* The web console's certificate is self-signed unless you install your own.
+* **Rolling back across a database change** (preview.18 to preview.17, for example) is possible only with the pre-upgrade database copy, which loses the users, keys and settings made since the upgrade; the installer refuses the rollback otherwise and says so.
+* Releases from 0.1.0-preview.16 are signed; verify before you install (`INSTALLING.md`).
+
+The full list is [Known limitations](https://docs.svavyom.com/known-limitations/).

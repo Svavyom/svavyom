@@ -61,4 +61,4 @@ Changing the version: edit `VERSION`, run `toolchain/regen-sbom.sh` (regenerates
 | `make boundary` fails on a new file | add it to a tier in `release/open-core.json` and to `release/boundary.json`; run `python3 tools/check_open_core.py --write` to regenerate `REUSE.toml` |
 
 ## 7. Honest limits
-The build is not yet proven reproducible byte for byte, no hosted CI has run it, and the artifact is unsigned ([Known limitations](https://docs.svavyom.com/known-limitations/)). Signing options are in [Security](https://docs.svavyom.com/security/).
+The build is not yet proven reproducible byte for byte. The hosted CI runs every gate on each pull request, but the release build itself (`make docker-release`) is run by the maintainer, and the release is signed by the maintainer on their own machine with their own key (`ci/sign/README.md`); neither happens in CI. See [Known limitations](https://docs.svavyom.com/known-limitations/).

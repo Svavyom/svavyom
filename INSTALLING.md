@@ -3,7 +3,7 @@
 **Svavyom is a Development Preview / Pre-Alpha.** One host, **Ubuntu 24.04 LTS, x86_64, KVM, libvirt `qemu:///system`**. Use it to evaluate and for non-critical work; read [Known limitations](https://docs.svavyom.com/known-limitations/) first. The installer is `svavyom-ctl`; **every command that changes the host prints its plan and changes nothing until you add `--apply`.**
 
 ## 1. Get the release and check it
-From the project's releases page download the archive `svavyom-<version>.tar.gz` and its `SHA256SUMS`. The release is **not signed yet**, so verify it against checksums obtained over a channel you trust (the release page and, ideally, a second source):
+From the project's releases page download the archive `svavyom-<version>.tar.gz` and its `SHA256SUMS`. Releases from 0.1.0-preview.16 are **signed** (earlier ones are not). Whatever its signature, first check the files against the checksums, and obtain those over a channel you trust (the release page and, ideally, a second source):
 ```
 tar xzf svavyom-<version>.tar.gz && cd svavyom-<version>
 sha256sum -c SHA256SUMS                               # every file, nothing unlisted
@@ -81,7 +81,7 @@ After five failed sign-ins for a user from one address, that **pair** is blocked
 5. Read `USING.md`.
 
 ## 5. Upgrade, roll back, uninstall
-* Upgrade: `sudo bin/svavyom-ctl upgrade --artifact NEW_DIR --signatures SIGS --public-key release-signing-key.pub --enable-mutation --enable-console --backup-dir DIR --listen ADDR [--enable-nightly-boot HH:MM]` (plan) then `--apply`. **Repeat the options you installed with:** an omitted `--listen` falls back to the default and can leave the service unable to start; the upgrade rolls itself back if it does not become healthy. A backup of binaries, units and the database is kept for `sudo svavyom-ctl rollback [--backup ID] --apply` ([Upgrade and rollback](https://docs.svavyom.com/operations/upgrade/)). The tool refuses an older artifact.
+* Upgrade: `sudo bin/svavyom-ctl upgrade --artifact NEW_DIR --signatures SIGS --public-key release-signing-key.pub --enable-mutation --enable-console --backup-dir DIR --listen ADDR [--enable-nightly-boot HH:MM]` (plan) then `--apply`. **Repeat the options you installed with:** an omitted `--listen` falls back to the default and can leave the service unable to start; the upgrade rolls itself back if it does not become healthy. A backup of binaries, units and the database is kept for `sudo svavyom-ctl rollback [--backup ID] --apply` ([Upgrade and rollback](https://docs.svavyom.com/operations/upgrade/)). The tool refuses an older artifact. **A rollback across a database change** (the auth schema moved in preview.18, for example) is refused unless you give `--restore-db`, which puts back the database copy made before the upgrade: users, keys and settings made since then are lost. Without a schema change `rollback` needs no copy. **After a host reboot** Svavyom's services come back by themselves but VMs that were running stay stopped: start them from the console.
 * Uninstall: `sudo svavyom-ctl uninstall --apply` removes the binaries, web assets and units and **keeps** configuration, database, VM disks, images and backups. `--purge --confirm-purge DELETE-SVAVYOM-DATA` also removes Svavyom's own configuration, database and service accounts. It never deletes the libvirt pool, image store, VM disks or backups.
 
 ## 6. Where things are
