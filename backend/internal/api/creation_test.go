@@ -359,7 +359,7 @@ func TestCreateThenStartWholeJourneyThroughTheAPI(t *testing.T) {
 	vm := b.do("GET", "/api/v1/vms/web-1", "", nil)
 	var v vmJSON
 	_ = json.Unmarshal(vm.body, &v)
-	if v.Observed.Power != "stopped" || !v.Observed.Managed || v.Observed.IPAddress != nil || v.Observed.LoginUser == nil || *v.Observed.LoginUser != "debian" || strings.Join(v.Allowed, ",") != "start,delete,resize,reinstall,snapshot,backup,iso_attach,rescue,compute,set_schedule" || v.Observed.DiskGiB == nil || *v.Observed.DiskGiB != 20 || len(v.Observed.Snapshots) != 0 {
+	if v.Observed.Power != "stopped" || !v.Observed.Managed || v.Observed.IPAddress != nil || v.Observed.LoginUser == nil || *v.Observed.LoginUser != "debian" || strings.Join(v.Allowed, ",") != "start,delete,resize,reinstall,snapshot,backup,iso_attach,rescue,compute,set_start_on_boot,set_schedule" || v.Observed.DiskGiB == nil || *v.Observed.DiskGiB != 20 || len(v.Observed.Snapshots) != 0 {
 		t.Fatalf("%s", vm.body)
 	}
 	// the host holds what the spec said, and the seed carries the normalised key without its comment
@@ -373,7 +373,7 @@ func TestCreateThenStartWholeJourneyThroughTheAPI(t *testing.T) {
 	vm = b.do("GET", "/api/v1/vms/web-1", "", nil)
 	v = vmJSON{}
 	_ = json.Unmarshal(vm.body, &v)
-	if v.Observed.Power != "running" || v.Observed.IPAddress == nil || !provision.IsIPv4(*v.Observed.IPAddress) || strings.Join(v.Allowed, ",") != "stop,reboot,force_off,set_schedule" {
+	if v.Observed.Power != "running" || v.Observed.IPAddress == nil || !provision.IsIPv4(*v.Observed.IPAddress) || strings.Join(v.Allowed, ",") != "stop,reboot,force_off,set_start_on_boot,set_schedule" {
 		t.Fatalf("%s", vm.body)
 	}
 	// sign out ends it all
