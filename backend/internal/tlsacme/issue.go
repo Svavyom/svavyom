@@ -74,6 +74,8 @@ type Options struct {
 	Now          func() time.Time
 	// Poll is how long to wait between looking at an order (a test shortens it).
 	Wait time.Duration
+	// DryRun does the whole order and installs nothing: the staging rehearsal, whose certificate no browser trusts.
+	DryRun bool
 }
 
 var nameRE = regexp.MustCompile(`^([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$`)
@@ -257,6 +259,9 @@ func Issue(ctx context.Context, o Options) (Info, error) {
 	}
 	kder, _ := x509.MarshalECPrivateKey(ckey)
 	keyPEM := pem.EncodeToMemory(&pem.Block{Type: "EC PRIVATE KEY", Bytes: kder})
+	if o.DryRun {
+		return Inspect(chain)
+	}
 	if err := o.Store.Install(chain, keyPEM, o.Name); err != nil {
 		return Info{}, fail(CodeIssue, "the certificate was issued but could not be installed: %v", err)
 	}
@@ -346,6 +351,9 @@ type State struct {
 	LastAttempt time.Time `json:"last_attempt"`
 	LastResult  string    `json:"last_result"`
 	LastDetail  string    `json:"last_detail,omitempty"`
+	// StagingOKName and StagingOKAt record the last successful rehearsal against the staging service: production is only tried for a name that passed it.
+	StagingOKName string    `json:"staging_ok_name,omitempty"`
+	StagingOKAt   time.Time `json:"staging_ok_at,omitempty"`
 }
 
 func (s Store) statePath() string { return filepath.Join(s.Dir, "state.json") }

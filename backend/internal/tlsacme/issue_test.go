@@ -212,3 +212,95 @@ func TestStateRoundTripsAndHoldsNoSecret(t *testing.T) {
 		t.Fatal("the state holds no e-mail address and no key")
 	}
 }
+
+func TestADryRunDoesTheWholeOrderAndInstallsNothing(t *testing.T) {
+	f := newFakeACME(t)
+	o := rig(t, f, "http-01")
+	o.DryRun = true
+	in, err := Issue(context.Background(), o)
+	if err != nil || in.Names[0] != o.Name {
+		t.Fatalf("%+v %v", in, err)
+	}
+	if _, err := os.Stat(o.Store.CertFile()); err == nil {
+		t.Fatal("a rehearsal installs no certificate")
+	}
+	if f.orders != 1 {
+		t.Fatal("it did ask the authority")
+	}
+}
+
+func TestRenewHappensOnlyWhenAThirdOfTheLifetimeIsLeft(t *testing.T) {
+	f := newFakeACME(t)
+	o := rig(t, f, "http-01")
+	first, err := Issue(context.Background(), o)
+	if err != nil {
+		t.Fatal(err)
+	}
+	day := 24 * time.Hour
+	for _, c := range []struct {
+		after time.Duration
+		due   bool
+	}{{59 * day, false}, {61 * day, true}} {
+		o.Now = func() time.Time { return first.NotBefore.Add(c.after) }
+		before := f.orders
+		renewed, in, err := Renew(context.Background(), o)
+		if err != nil || renewed != c.due || (f.orders > before) != c.due {
+			t.Fatalf("after %v: renewed=%v err=%v orders=%d", c.after, renewed, err, f.orders)
+		}
+		_ = in
+	}
+	if _, err := os.Stat(filepath.Join(o.Store.Dir, "previous", "cert.pem")); err != nil {
+		t.Fatal("the replaced certificate is kept for one renewal")
+	}
+}
+
+func TestARateLimitedRenewalIsNotAskedAgainForTwelveHours(t *testing.T) {
+	f := newFakeACME(t)
+	o := rig(t, f, "http-01")
+	first, err := Issue(context.Background(), o)
+	if err != nil {
+		t.Fatal(err)
+	}
+	now := first.NotBefore.Add(70 * 24 * time.Hour)
+	o.Now = func() time.Time { return now }
+	f.rateLimit = true
+	_, _, err = Renew(context.Background(), o)
+	if code(err) != CodeRateLimited {
+		t.Fatal(err)
+	}
+	if err := o.Store.WriteState(State{Name: o.Name, LastAttempt: now, LastResult: CodeRateLimited}); err != nil {
+		t.Fatal(err)
+	}
+	f.rateLimit = false
+	orders := f.orders
+	now = now.Add(2 * time.Hour)
+	if _, _, err = Renew(context.Background(), o); code(err) != CodeRateLimited || f.orders != orders {
+		t.Fatalf("not asked again within twelve hours: %v", err)
+	}
+	now = now.Add(11 * time.Hour)
+	if renewed, _, err := Renew(context.Background(), o); err != nil || !renewed {
+		t.Fatalf("asked again afterwards: %v", err)
+	}
+}
+
+func TestTheRenewalSettingsAreRootOnly(t *testing.T) {
+	s := Store{Dir: t.TempDir()}
+	if _, ok := s.ReadConfig(); ok {
+		t.Fatal("none yet")
+	}
+	if err := s.WriteConfig(Config{Name: "console.example.org", Email: "admin@example.org", Challenge: "http-01"}); err != nil {
+		t.Fatal(err)
+	}
+	if fi, _ := os.Stat(s.configPath()); fi.Mode().Perm() != 0o600 {
+		t.Fatalf("%v", fi.Mode())
+	}
+	if c, ok := s.ReadConfig(); !ok || c.Email != "admin@example.org" {
+		t.Fatalf("%+v", c)
+	}
+	if err := s.RemoveConfig(); err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := s.ReadConfig(); ok {
+		t.Fatal("removed")
+	}
+}
