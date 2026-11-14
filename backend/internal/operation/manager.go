@@ -30,6 +30,9 @@ type Config struct {
 	// Local runs the operations that change only the platform's own records (alert_acknowledge, schedule_set, schedule_clear). Every method is
 	// idempotent. Nil makes those operations fail as not available.
 	Local Local
+	// Boot records what the owner intends for each VM (DR-042): the intent after a start, reboot, stop or force-off, the row of a new or restored VM, the removal
+	// of a deleted one, and the "start on host boot" box. Nil records nothing (the simulation adapters).
+	Boot Boot
 }
 
 // Local is implemented by the platform records an operation of DR-024 changes. A not-found VM or alert is reported as hypervisor.NotFound, a refused
@@ -38,6 +41,15 @@ type Local interface {
 	AlertAcknowledge(ctx context.Context, id, actor string) error
 	ScheduleSet(ctx context.Context, vm string, p Params, actor string) error
 	ScheduleClear(ctx context.Context, vm string) error
+}
+
+// Boot is the owner's intent store as the manager sees it (DR-042). Every method is idempotent: it runs when an operation reaches Succeeded, which can happen
+// again after a reconciliation.
+type Boot interface {
+	VMCreated(ctx context.Context, name string, startOnBoot bool, actor string) error
+	VMDeleted(ctx context.Context, name string) error
+	PowerIntent(ctx context.Context, name string, running bool, actor string) error
+	SetStartOnBoot(ctx context.Context, name string, on bool, actor string) error
 }
 
 // Rebooter is implemented by hosts that can ask a guest to reboot. It is separate from hypervisor.Hypervisor so the simulation
@@ -376,7 +388,38 @@ func (m *Manager) save(op Operation, actor, event, category string) (Operation, 
 	if err != nil {
 		return Operation{}, fail(storeCategory(err))
 	}
+	if saved.Status == Succeeded {
+		m.recordBoot(saved)
+	}
 	return saved, nil
+}
+
+// recordBoot tells the intent store what a succeeded operation means (DR-042). It is idempotent and never changes the operation: the owner's operation
+// did succeed; if the record cannot be written an audit event says so and the syncer's next pass repairs what it can.
+func (m *Manager) recordBoot(op Operation) {
+	if m.cfg.Boot == nil {
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	var err error
+	switch {
+	case op.Type == Create && op.ResourceKind == KindVM:
+		err = m.cfg.Boot.VMCreated(ctx, op.ResourceID, !op.Spec.NoStartOnBoot, op.RequestedBy)
+	case op.Type == Restore && op.ResourceKind == KindBackup && op.Params.NewName != "":
+		err = m.cfg.Boot.VMCreated(ctx, op.Params.NewName, true, op.RequestedBy)
+	case (op.Type == Start || op.Type == Reboot) && op.ResourceKind == KindVM:
+		err = m.cfg.Boot.PowerIntent(ctx, op.ResourceID, true, op.RequestedBy)
+	case (op.Type == Stop || op.Type == ForceOff) && op.ResourceKind == KindVM:
+		err = m.cfg.Boot.PowerIntent(ctx, op.ResourceID, false, op.RequestedBy)
+	case op.Type == Delete && op.ResourceKind == KindVM:
+		err = m.cfg.Boot.VMDeleted(ctx, op.ResourceID)
+	default:
+		return
+	}
+	if err != nil {
+		m.emit(op, "system", "operation.boot_record", "failed", CatInternal)
+	}
 }
 
 // Run executes one attempt of a pending or retryable operation. The attempt number is persisted before the host
@@ -430,6 +473,14 @@ func (m *Manager) execute(ctx context.Context, op Operation) error {
 		}
 		_, err := m.hv.Define(ctx, op.Spec.DomainSpec(op.ResourceID))
 		return err
+	case SetStartOnBoot:
+		if m.cfg.Boot == nil {
+			return hypervisor.NewError(hypervisor.Prohibited, "set_start_on_boot", op.ResourceID, "not available")
+		}
+		if err := m.cfg.Boot.SetStartOnBoot(ctx, op.ResourceID, op.Params.Autostart == "on", op.RequestedBy); err != nil {
+			return hypervisor.NewError(hypervisor.Unavailable, "set_start_on_boot", op.ResourceID, "the record could not be written")
+		}
+		return nil
 	case Start:
 		return m.hv.Start(ctx, op.ResourceID)
 	case Stop:
@@ -674,7 +725,7 @@ func (m *Manager) reconcile(ctx context.Context, op Operation) (Operation, error
 // observe decides the status of a running operation from host state. ok is false when the host could not be read.
 func (m *Manager) observe(ctx context.Context, op Operation) (Status, string, bool) {
 	switch op.Type {
-	case Resize, Reinstall, Snapshot, RestoreSnapshot, DeleteSnapshot, Backup, Restore, BackupExport, EjectISO, GraphicsEnable, ISOAttach, Rescue, Unrescue, VolumeCreate, VolumeAttach, VolumeDetach, VolumeDelete, NetworkCreate, NetworkStart, NetworkStop, NetworkAutostart, NetworkDelete, Compute, ReserveIP, ReleaseIP, AlertAcknowledge, ScheduleSet, ScheduleClear:
+	case SetStartOnBoot, Resize, Reinstall, Snapshot, RestoreSnapshot, DeleteSnapshot, Backup, Restore, BackupExport, EjectISO, GraphicsEnable, ISOAttach, Rescue, Unrescue, VolumeCreate, VolumeAttach, VolumeDetach, VolumeDelete, NetworkCreate, NetworkStart, NetworkStop, NetworkAutostart, NetworkDelete, Compute, ReserveIP, ReleaseIP, AlertAcknowledge, ScheduleSet, ScheduleClear:
 		// These operations identify their own work (sizes, revision tokens, snapshot and backup ids, a new UUID), so running one again after an
 		// unknown outcome finishes it or finds it finished; there is nothing to guess from a VM lookup.
 		return RetryableFailure, CatTimeout, true

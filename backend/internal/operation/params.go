@@ -100,6 +100,8 @@ func (p Params) validFor(t Type) bool {
 	}
 	key := func(s string) bool { return len(s) >= 1 && len(s) <= 2048 && !strings.ContainsAny(s, "\r\n\x00") }
 	switch t {
+	case SetStartOnBoot:
+		return (p.Autostart == "on" || p.Autostart == "off") && p == Params{Autostart: p.Autostart}
 	case Resize:
 		return p.DiskGiB >= 1 && p.DiskGiB <= 4096 && p == Params{DiskGiB: p.DiskGiB}
 	case Reinstall:
