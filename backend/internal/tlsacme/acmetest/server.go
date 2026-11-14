@@ -204,7 +204,7 @@ func (f *Server) validate() bool {
 		b, _ := io.ReadAll(res.Body)
 		return res.StatusCode == 200 && string(b) == keyAuth
 	case "tls-alpn-01":
-		c, err := tls.Dial("tcp", f.TLSAddr, &tls.Config{ServerName: f.names[0], NextProtos: []string{"acme-tls/1"}, InsecureSkipVerify: true}) //nolint:gosec // a test CA validating a challenge certificate
+		c, err := tls.Dial("tcp", f.TLSAddr, &tls.Config{ServerName: f.names[0], NextProtos: []string{"acme-tls/1"}, InsecureSkipVerify: true}) // #nosec G402 -- a test CA reading the challenge certificate, which is self-signed by design
 		if err != nil {
 			return false
 		}

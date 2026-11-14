@@ -28,15 +28,15 @@ func writeAtomic(path string, data []byte, mode os.FileMode) error {
 	name := tmp.Name()
 	defer os.Remove(name)
 	if _, err := tmp.Write(data); err != nil {
-		tmp.Close()
+		_ = tmp.Close()
 		return err
 	}
 	if err := tmp.Chmod(mode); err != nil {
-		tmp.Close()
+		_ = tmp.Close()
 		return err
 	}
 	if err := tmp.Sync(); err != nil {
-		tmp.Close()
+		_ = tmp.Close()
 		return err
 	}
 	if err := tmp.Close(); err != nil {
@@ -52,7 +52,7 @@ func (s Store) Install(certPEM, keyPEM []byte, name string) error {
 	if _, err := Pair(certPEM, keyPEM, name); err != nil {
 		return err
 	}
-	if err := os.MkdirAll(s.Dir, 0o755); err != nil {
+	if err := os.MkdirAll(s.Dir, 0o750); err != nil {
 		return err
 	}
 	if oc, err := os.ReadFile(s.cert()); err == nil {

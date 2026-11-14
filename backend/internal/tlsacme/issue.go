@@ -158,7 +158,7 @@ func CheckDNS(ctx context.Context, o Options) error {
 }
 
 func accountKey(path string) (crypto.Signer, error) {
-	if b, err := os.ReadFile(path); err == nil {
+	if b, err := os.ReadFile(path); err == nil { // #nosec G304 -- the account key file the caller names under the root-owned TLS directory
 		blk, _ := pem.Decode(b)
 		if blk == nil {
 			return nil, errors.New("the account key file is damaged")

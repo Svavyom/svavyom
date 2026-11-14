@@ -13,7 +13,7 @@ import (
 // on each call: the host page is read rarely and the files are small. Nothing it returns is secret.
 func certificateView(certFile string, now func() time.Time) func() *api.CertificateView {
 	return func() *api.CertificateView {
-		b, err := os.ReadFile(certFile)
+		b, err := os.ReadFile(certFile) // #nosec G304 -- the --tls-cert path the operator gave the service
 		if err != nil {
 			return nil
 		}
