@@ -55,10 +55,12 @@ const (
 	OpNetStart     = "net_start"
 	OpNetStop      = "net_stop"
 	OpNetAutostart = "net_autostart"
-	OpNetDelete    = "net_delete"
-	OpCompute      = "compute"
-	OpReserveIP    = "reserve_ip"
-	OpReleaseIP    = "release_ip"
+	// OpVMAutostart sets the libvirt autostart flag of a managed VM (DR-042); its value travels in Net.Autostart like a network's.
+	OpVMAutostart = "vm_autostart"
+	OpNetDelete   = "net_delete"
+	OpCompute     = "compute"
+	OpReserveIP   = "reserve_ip"
+	OpReleaseIP   = "release_ip"
 	// Standalone data volumes (DR-023 D2): Name is the volume's own name; volume_create takes DiskGiB and volume_attach the VM.
 	OpVolCreate = "volume_create"
 	OpVolAttach = "volume_attach"
@@ -254,6 +256,10 @@ func (q Request) Valid() bool {
 			}
 		}
 		return true
+	case OpVMAutostart:
+		n := q.Net
+		return vm && q.Provision == nil && n != nil && (n.Autostart == "on" || n.Autostart == "off") && n.only(Net{Autostart: n.Autostart}) &&
+			q.DiskGiB == 0 && q.ID == "" && q.Reinstall == nil && q.Restore == nil
 	case OpNetAutostart:
 		n := q.Net
 		return provision.NetNameOK(q.Name) && q.Provision == nil && n != nil && (n.Autostart == "on" || n.Autostart == "off") && n.only(Net{Autostart: n.Autostart}) &&

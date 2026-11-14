@@ -28,12 +28,14 @@ type Domain struct {
 	Managed     bool   `json:"managed"`
 	Image       string `json:"image"`
 	Running     bool   `json:"running"`
-	VCPUs       int    `json:"vcpus"`
-	MemoryMiB   int    `json:"memory_mib"`
-	IP          string `json:"ip"`
-	Root        string `json:"root"`
-	Seed        string `json:"seed"`
-	XML         string `json:"xml"`
+	// Autostart is the libvirt autostart flag (DR-042).
+	Autostart bool   `json:"autostart"`
+	VCPUs     int    `json:"vcpus"`
+	MemoryMiB int    `json:"memory_mib"`
+	IP        string `json:"ip"`
+	Root      string `json:"root"`
+	Seed      string `json:"seed"`
+	XML       string `json:"xml"`
 	// Reboots counts guest reboot requests (a simulation observable). SlowStop makes ShutdownDomain accepted but ineffective,
 	// like a guest that ignores the power button.
 	Reboots  int  `json:"reboots"`
@@ -157,7 +159,7 @@ func (h *Host) LookupDomain(_ context.Context, name string) (provision.DomainInf
 	if !ok {
 		return provision.DomainInfo{}, nf("lookup")
 	}
-	info := provision.DomainInfo{Name: name, UUID: d.UUID, Fingerprint: d.Fingerprint, Managed: d.Managed, Running: d.Running, Root: d.Root, Seed: d.Seed, XML: d.XML, VCPUs: d.VCPUs, MemoryMiB: d.MemoryMiB, ImageID: d.Image}
+	info := provision.DomainInfo{Name: name, UUID: d.UUID, Fingerprint: d.Fingerprint, Managed: d.Managed, Running: d.Running, Autostart: d.Autostart, Root: d.Root, Seed: d.Seed, XML: d.XML, VCPUs: d.VCPUs, MemoryMiB: d.MemoryMiB, ImageID: d.Image}
 	if pd, err := provision.ParseDomain(d.XML); err == nil {
 		info.Data, info.Media, info.Profile, info.ISO, info.ISOs, info.Graphics, info.Rescue = pd.Data, pd.Media, pd.Profile, pd.ISO, pd.ISOs, pd.Graphics, pd.Rescue
 	}

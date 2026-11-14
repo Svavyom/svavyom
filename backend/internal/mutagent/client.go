@@ -277,6 +277,15 @@ func (c *Client) NetworkDelete(ctx context.Context, name string) error {
 	return err
 }
 
+// VMAutostart sets the libvirt autostart flag of a managed VM, "on" or "off" (DR-042).
+func (c *Client) VMAutostart(ctx context.Context, name, state string) error {
+	if !provision.VMNameRE.MatchString(name) {
+		return hypervisor.NewError(hypervisor.Validation, "mutagent", "", "invalid name")
+	}
+	_, err := c.call(ctx, Request{Op: OpVMAutostart, Name: name, Net: &Net{Autostart: state}})
+	return err
+}
+
 // NetworkAutostart turns autostart of a managed network on ("on") or off ("off").
 func (c *Client) NetworkAutostart(ctx context.Context, name, state string) error {
 	_, err := c.call(ctx, Request{Op: OpNetAutostart, Name: name, Net: &Net{Autostart: state}})

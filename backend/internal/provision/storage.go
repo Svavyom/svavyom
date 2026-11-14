@@ -559,3 +559,16 @@ func sweepVolumes(ctx context.Context, ops HostOps, cfg Config, name string, hoo
 	hook(StepReinstallCleaned)
 	return nil
 }
+
+// VMAutostart sets the libvirt autostart flag of a Svavyom-managed VM, running or stopped (DR-042): libvirt starts a flagged VM when the host boots.
+// Idempotent: the flag already at the value is success.
+func VMAutostart(ctx context.Context, ops HostOps, name string, on bool) error {
+	d, err := managed(ctx, ops, name, "autostart")
+	if err != nil {
+		return err
+	}
+	if d.Autostart == on {
+		return nil
+	}
+	return ops.SetDomainAutostart(ctx, name, on)
+}

@@ -356,3 +356,16 @@ func (r Reader) DataVolumes(context.Context) ([]hypervisor.DataVolume, error) {
 }
 
 var _ hypervisor.DataVolumeReader = Reader{}
+
+// SetDomainAutostart implements provision.HostOps.
+func (h *Host) SetDomainAutostart(_ context.Context, name string, on bool) error {
+	return h.update(func(st *State) error {
+		d, ok := st.Domains[name]
+		if !ok {
+			return nf("autostart")
+		}
+		d.Autostart = on
+		st.Domains[name] = d
+		return nil
+	})
+}
