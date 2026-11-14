@@ -37,16 +37,21 @@ const (
 	HostMemoryHigh     = "host_memory_high"
 	VMCrashed          = "vm_crashed"
 	VMStoppedUnasked   = "vm_stopped_unexpectedly"
-	RetriesExhausted   = "operation_retries_exhausted"
-	ScheduledBackup    = "scheduled_backup_failed"
-	NightlyBootFailed  = "nightly_boot_failed"
-	AuditWriteFailed   = "audit_write_failed"
+	// VMNotStarted is raised for a VM the owner meant to be running (the box is ticked and it was left running) that is stopped ten minutes after the host
+	// booted or later (DR-042). Unlike VMStoppedUnasked it is read from the stored intent, so it survives a host reboot.
+	VMNotStarted      = "vm_not_started_after_boot"
+	RetriesExhausted  = "operation_retries_exhausted"
+	ScheduledBackup   = "scheduled_backup_failed"
+	NightlyBootFailed = "nightly_boot_failed"
+	AuditWriteFailed  = "audit_write_failed"
 )
 
 // Limits.
 const (
 	// MaxRows bounds the table; ClearAfter is how many evaluations in a row a condition must be clear before the alert resolves; KeepResolved is how
 	// long a resolved alert stays listed.
+	// BootGrace is how long after the host boots a VM that should be running is given to come back before it is reported.
+	BootGrace    = 10 * time.Minute
 	MaxRows      = 1000
 	ClearAfter   = 2
 	KeepResolved = 30 * 24 * time.Hour

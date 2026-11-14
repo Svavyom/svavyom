@@ -5,6 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
+	"strconv"
+	"strings"
 	"time"
 
 	"example.invalid/dedicatedcloud/backend/internal/alerts"
@@ -34,6 +37,10 @@ type alertSources struct {
 	MaxAttempts int
 	// SchedulesFailed returns the VM names whose last scheduled backup failed; ok is false when it cannot be read.
 	SchedulesFailed func(ctx context.Context) (vms []string, ok bool)
+	// ShouldRun returns the VMs the owner meant to be running (DR-042); ok is false when the intent store cannot be read.
+	ShouldRun func(ctx context.Context) (names map[string]bool, ok bool)
+	// Uptime is how long the host has been up (0 when unknown).
+	Uptime func() time.Duration
 	// NightlyFailed reports whether the last nightly boot failed.
 	NightlyFailed func() bool
 	// AuditFailing reports whether an authentication audit event could not be stored recently.
@@ -91,6 +98,11 @@ func (s alertSources) gather(ctx context.Context) alerts.Inputs {
 					}
 				}
 			}
+		}
+	}
+	if s.ShouldRun != nil && s.Uptime != nil {
+		if names, ok := s.ShouldRun(ctx); ok {
+			in.ShouldRunKnown, in.ShouldRun, in.HostUptime = true, names, s.Uptime()
 		}
 	}
 	if s.SchedulesFailed != nil {
@@ -275,6 +287,21 @@ func startAlerts(ctx context.Context, stderr io.Writer, deps *api.Deps, engine *
 	if info, err := hosts.Host(ctx); err == nil {
 		src.HostID = info.ID
 	}
+	if deps.BootPolicy != nil { // the owner's intent (DR-042): a VM that should be running and is not raises vm_not_started_after_boot
+		bp := deps.BootPolicy
+		src.ShouldRun = func(c context.Context) (map[string]bool, bool) {
+			all, err := bp.All(c)
+			if err != nil {
+				return nil, false
+			}
+			m := map[string]bool{}
+			for n, p := range all {
+				m[n] = p.Autostart()
+			}
+			return m, true
+		}
+		src.Uptime = hostUptime
+	}
 	if cr := deps.Creation; cr != nil && cr.Stats != nil {
 		stats := func(c context.Context) (api.StorageStats, bool) {
 			c2, cancel := context.WithTimeout(c, 10*time.Second)
@@ -336,4 +363,21 @@ func (d domainSource) Domains(ctx context.Context) ([]bootpolicy.Domain, error) 
 		out = append(out, bootpolicy.Domain{Name: x.Name, Managed: x.Managed, Running: x.State == hypervisor.StateRunning})
 	}
 	return out, nil
+}
+
+// hostUptime is how long the host has been up, from /proc/uptime (0 when unreadable).
+func hostUptime() time.Duration {
+	b, err := os.ReadFile("/proc/uptime")
+	if err != nil {
+		return 0
+	}
+	f := strings.Fields(string(b))
+	if len(f) == 0 {
+		return 0
+	}
+	secs, err := strconv.ParseFloat(f[0], 64)
+	if err != nil || secs < 0 {
+		return 0
+	}
+	return time.Duration(secs * float64(time.Second))
 }
