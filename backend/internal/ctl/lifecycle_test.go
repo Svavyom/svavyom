@@ -656,7 +656,7 @@ func TestInstallWithTLSAcmeIssuesStagingThenProductionAndKeepsTheSelfSignedOneOn
 	if in, err := tlsacme.Inspect([]byte(cert)); err != nil || in.SelfSigned {
 		t.Fatalf("the production certificate replaces the self-signed one: %+v %v", in, err)
 	}
-	out, cert, f = run(t, true, nil)
+	out, cert, _ = run(t, true, nil)
 	if !strings.Contains(out, "WARNING no Let's Encrypt certificate yet (validation_failed)") || !strings.Contains(out, "self-signed") {
 		t.Fatal(out)
 	}

@@ -115,7 +115,8 @@ func (f *Server) serve(w http.ResponseWriter, r *http.Request) {
 		jwk, _ := json.Marshal(hdr["jwk"])
 		var k struct{ X, Y string }
 		_ = json.Unmarshal(jwk, &k)
-		f.jwk = &ecdsa.PublicKey{Curve: elliptic.P256(), X: new(big.Int).SetBytes(b64(k.X)), Y: new(big.Int).SetBytes(b64(k.Y))}
+		raw := append([]byte{4}, append(b64(k.X), b64(k.Y)...)...)
+		f.jwk, _ = ecdsa.ParseUncompressedPublicKey(elliptic.P256(), raw)
 		f.Registered++
 		w.Header().Set("Location", base+"/acct/1")
 		reply(201, map[string]any{"status": "valid"})
