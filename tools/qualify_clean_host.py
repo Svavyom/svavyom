@@ -359,11 +359,12 @@ UNITS_CMD = "for u in %s; do echo \"$u $(systemctl is-enabled $u 2>&1) $(systemc
 
 
 def stage_reboot(h, a):
-    """A VM running, the HOST rebooted, then: the services and libvirt objects come back by themselves, the VM is still there with its data (what Svavyom does with a
-    running VM at a host reboot is recorded, not judged), and the harness cleans up."""
+    """Four domains (a VM running with start on host boot on, one running with it off, one stopped by the administrator, one Svavyom does not manage), the HOST
+    rebooted, then: the services and libvirt objects come back by themselves, only the first VM is running again (DR-042), the VM has its data, and the harness cleans up."""
     if not vm_setup(h, a):
         return
     pre = vm_phase(h, a, "up", prefix="pre:")
+    vm_phase(h, a, "bootprep", prefix="pre:", timeout=1800)
     before = boot_id(h)
     rec("boot-id-read", bool(before), "the host's boot id before the reboot was read")
     t0 = time.time()
