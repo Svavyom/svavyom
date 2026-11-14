@@ -53,8 +53,14 @@ func TestReconcileCreate_SameNameDifferentSpecIsAConflictNotSuccess(t *testing.T
 // fingerprint matches too (the UUID alone, or the size alone, is never ownership).
 func TestReconcileCreate_UUIDOrFingerprintMismatchIsAConflict(t *testing.T) {
 	for name, alter := range map[string]func(*hypervisor.DomainSpec){
-		"fingerprint": func(d *hypervisor.DomainSpec) { d.Fingerprint = "00" + d.Fingerprint[2:] },
-		"uuid":        func(d *hypervisor.DomainSpec) { d.UUID = "00000000-0000-4000-8000-000000000000" },
+		"fingerprint": func(d *hypervisor.DomainSpec) {
+			prefix := "00"
+			if d.Fingerprint[:2] == prefix { // a fingerprint that already starts with 00 must still change
+				prefix = "11"
+			}
+			d.Fingerprint = prefix + d.Fingerprint[2:]
+		},
+		"uuid": func(d *hypervisor.DomainSpec) { d.UUID = "00000000-0000-4000-8000-000000000000" },
 	} {
 		t.Run(name, func(t *testing.T) {
 			stores(t, func(t *testing.T, s Store) {

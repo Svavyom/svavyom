@@ -20,6 +20,7 @@ import (
 
 	"example.invalid/dedicatedcloud/backend/internal/alerts"
 	"example.invalid/dedicatedcloud/backend/internal/backupstore"
+	"example.invalid/dedicatedcloud/backend/internal/bootpolicy"
 	"example.invalid/dedicatedcloud/backend/internal/hypervisor"
 	"example.invalid/dedicatedcloud/backend/internal/offsite"
 	"example.invalid/dedicatedcloud/backend/internal/operation"
@@ -108,6 +109,7 @@ type crig struct {
 	engine   *alerts.Engine
 	sched    *schedule.Scheduler
 	sstore   *schedule.Store
+	boot     *bootpolicy.Syncer
 }
 
 func newCRig(t *testing.T, enabled bool) *crig {
@@ -160,15 +162,21 @@ func newCRig(t *testing.T, enabled bool) *crig {
 		t.Fatal(err)
 	}
 	sched := &schedule.Scheduler{Store: sstore, Loc: time.UTC}
+	bstore, err := bootpolicy.OpenSQLite(context.Background(), db)
+	if err != nil {
+		t.Fatal(err)
+	}
+	bsync := bootpolicy.NewSyncer(bstore, simDomains{sim}, simFlagger{sim}, nil)
 	info := sampleHost()
 	prep := NewCreatePreparer(catFn, "svavyom-nat", func() (int, int) { return info.CPUCount, int(info.MemoryMiB) })
-	mgr := operation.NewManager(store, host, Authorizer(), nil, operation.Config{PrepareCreate: prep, PrepareParams: NewParamsPreparer(catFn), MaxAttempts: 3, Local: ackOnly{engine, sched}})
+	mgr := operation.NewManager(store, host, Authorizer(), nil, operation.Config{PrepareCreate: prep, PrepareParams: NewParamsPreparer(catFn), MaxAttempts: 3, Local: ackOnly{engine, sched}, Boot: bsync})
 	worker := operation.NewWorker(mgr, operation.WorkerConfig{Concurrency: 2, Poll: 10 * time.Millisecond, BackoffBase: 10 * time.Millisecond, BackoffMax: 40 * time.Millisecond,
 		OpTimeout: 10 * time.Second, RecoverRetry: 10 * time.Millisecond, ObserveEvery: 50 * time.Millisecond})
 	ctx, cancel := context.WithCancel(context.Background())
 	done := make(chan struct{})
 	go func() { _ = worker.Run(ctx); close(done) }()
-	r := &crig{env: e, host: host, sim: sim, cat: cat, catDir: catDir, mgr: mgr, worker: worker, enabled: enabled, astore: astore, engine: engine, sched: sched, sstore: sstore}
+	go bsync.Run(ctx)
+	r := &crig{env: e, host: host, sim: sim, cat: cat, catDir: catDir, mgr: mgr, worker: worker, enabled: enabled, astore: astore, engine: engine, sched: sched, sstore: sstore, boot: bsync}
 	sched.World = testWorld{r}
 	sched.Ops = mgr
 	r.stop = func() { cancel(); <-done }
@@ -276,7 +284,7 @@ func (r *crig) wire() {
 			ps, err := r.sim.PoolStats(ctx, r.host.cfg.Pool)
 			return StorageStats{PoolCapacity: ps.CapacityBytes, PoolAvailable: ps.AvailableBytes, PoolAllocation: ps.AllocationBytes, BackupsKnown: true, BackupBytes: r.host.bak.UsageBytes(), Snapshots: provision.SnapshotSupport(cmp.Or(r.poolType, ps.Type))}, err
 		}}
-	r.h = NewHandlerWith(Deps{Auth: r.svc, Hosts: r.hosts, VMs: simhost.Reader{H: r.sim}, Creation: cr, Alerts: &AlertsView{Source: r.astore}, Schedules: r.sstore, Console: r.cons, Usage: r.usage, Now: func() time.Time { return time.Date(2026, 10, 10, 9, 0, 0, 0, time.UTC) }})
+	r.h = NewHandlerWith(Deps{Auth: r.svc, Hosts: r.hosts, VMs: simhost.Reader{H: r.sim}, Creation: cr, Alerts: &AlertsView{Source: r.astore}, Schedules: r.sstore, BootPolicy: r.boot.Store, Console: r.cons, Usage: r.usage, Now: func() time.Time { return time.Date(2026, 10, 10, 9, 0, 0, 0, time.UTC) }})
 	r.srv = httptest.NewServer(r.h)
 	r.t.Cleanup(r.srv.Close)
 }
@@ -730,4 +738,25 @@ func TestLifecycleThroughTheAPI(t *testing.T) {
 	if !r.sim.Load().Domains["foreign"].Running {
 		t.Fatal("a foreign VM was touched")
 	}
+}
+
+// simDomains and simFlagger put the simulated host behind the boot policy syncer.
+type simDomains struct{ h *simhost.Host }
+
+func (d simDomains) Domains(ctx context.Context) ([]bootpolicy.Domain, error) {
+	list, err := simhost.Reader{H: d.h}.List(ctx)
+	if err != nil {
+		return nil, err
+	}
+	var out []bootpolicy.Domain
+	for _, x := range list {
+		out = append(out, bootpolicy.Domain{Name: x.Name, Managed: x.Managed, Running: x.State == hypervisor.StateRunning})
+	}
+	return out, nil
+}
+
+type simFlagger struct{ h *simhost.Host }
+
+func (f simFlagger) SetAutostart(ctx context.Context, name string, on bool) error {
+	return provision.VMAutostart(ctx, f.h, name, on)
 }

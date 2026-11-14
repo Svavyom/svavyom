@@ -9,6 +9,7 @@ import (
 
 	"example.invalid/dedicatedcloud/backend/internal/alerts"
 	"example.invalid/dedicatedcloud/backend/internal/api"
+	"example.invalid/dedicatedcloud/backend/internal/bootpolicy"
 	"example.invalid/dedicatedcloud/backend/internal/hostinfo"
 	"example.invalid/dedicatedcloud/backend/internal/hypervisor"
 	"example.invalid/dedicatedcloud/backend/internal/operation"
@@ -320,4 +321,19 @@ func startAlerts(ctx context.Context, stderr io.Writer, deps *api.Deps, engine *
 	}
 	loop := &alertLoop{Engine: engine, Evaluator: &alerts.Evaluator{Thresholds: th}, Sources: src, Notify: notify, Log: stderr}
 	go loop.run(ctx)
+}
+
+// domainSource lists the host's domains for the boot policy syncer, from the read-only agent.
+type domainSource struct{ r hypervisor.Reader }
+
+func (d domainSource) Domains(ctx context.Context) ([]bootpolicy.Domain, error) {
+	list, err := d.r.List(ctx)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]bootpolicy.Domain, 0, len(list))
+	for _, x := range list {
+		out = append(out, bootpolicy.Domain{Name: x.Name, Managed: x.Managed, Running: x.State == hypervisor.StateRunning})
+	}
+	return out, nil
 }

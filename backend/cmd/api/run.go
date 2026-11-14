@@ -22,6 +22,7 @@ import (
 	"example.invalid/dedicatedcloud/backend/internal/api"
 	"example.invalid/dedicatedcloud/backend/internal/auth"
 	"example.invalid/dedicatedcloud/backend/internal/backupstore"
+	"example.invalid/dedicatedcloud/backend/internal/bootpolicy"
 	"example.invalid/dedicatedcloud/backend/internal/bridgestatus"
 	"example.invalid/dedicatedcloud/backend/internal/console"
 	"example.invalid/dedicatedcloud/backend/internal/fwstatus"
@@ -329,6 +330,14 @@ func serve(ctx context.Context, args []string, stderr io.Writer) int {
 		_, _ = fmt.Fprintln(stderr, "ERROR cannot initialise the schedule store")
 		return 1
 	}
+	bootStore, err := bootpolicy.OpenSQLite(ctx, db)
+	if err != nil {
+		_, _ = fmt.Fprintln(stderr, "ERROR cannot initialise the boot policy store")
+		return 1
+	}
+	bootSync := bootpolicy.NewSyncer(bootStore, nil, nil, func(m string) { _, _ = fmt.Fprintln(stderr, m) })
+	deps.BootPolicy = bootStore
+	bootRunning := false
 	sched := &schedule.Scheduler{Store: schedStore, Log: func(m string) { _, _ = fmt.Fprintln(stderr, m) }}
 	var schedRunning bool
 	var (
@@ -488,7 +497,8 @@ func serve(ctx context.Context, args []string, stderr io.Writer) int {
 				cr.Copies = oc.Copies
 			}
 			mgr := operation.NewManager(store, mh, api.Authorizer(), newLogAudit(stderr),
-				operation.Config{PrepareCreate: api.NewCreatePreparer(catFn, pc.Network, capacity), PrepareParams: api.NewParamsPreparer(catFn), Local: localOps{engine: alertEngine, sched: sched}})
+				operation.Config{PrepareCreate: api.NewCreatePreparer(catFn, pc.Network, capacity), PrepareParams: api.NewParamsPreparer(catFn), Local: localOps{engine: alertEngine, sched: sched}, Boot: bootSync})
+			bootSync.Src, bootSync.Host, bootRunning = domainSource{deps.VMs}, mh, deps.VMs != nil
 			// A backup or restore may run for the supervisor's longest deadline; the worker waits a little longer than that.
 			worker = operation.NewWorker(mgr, operation.WorkerConfig{OpTimeout: mutagent.MaxDeadline + 30*time.Second})
 			cr.Enabled, cr.Ops, cr.Notify = true, mgr, worker.Notify
@@ -585,6 +595,9 @@ func serve(ctx context.Context, args []string, stderr io.Writer) int {
 	if schedRunning {
 		deps.Schedules = schedStore
 		go sched.Run(uctx)
+	}
+	if bootRunning {
+		go bootSync.Run(uctx) // keeps the libvirt autostart flag of every managed VM equal to the owner's intent (DR-042)
 	}
 	startAlerts(uctx, stderr, &deps, alertEngine, astore, alertSettings, opStore, hosts, schedStore, func() bool { return svc.AuditWriteFailedSince(time.Now().Add(-auditFailureWindow)) })
 	var h http.Handler = api.NewHandlerWith(deps)
