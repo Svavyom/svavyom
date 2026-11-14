@@ -6,6 +6,7 @@ import { DataTable, ErrorState, LoadingRegion, PageHead, StaleNotice, StatusMess
 import { read, type ReadResult } from "../api/client";
 import { decodeHost, decodeVmList } from "../api/decoders";
 import type { Host, VM } from "../api/schema";
+import { CertificateSection } from "./Certificate";
 
 type Service = Host["observed"]["services"][number];
 
@@ -105,6 +106,7 @@ export function System(props: { refresh: number; onSessionEnded: () => void }) {
                 { header: "What to do", cell: (s: Service) => fix(s) },
               ]} />
             </section>
+            <CertificateSection cert={o.certificate} />
             {missing.length > 0 ? (
               <section aria-labelledby="sys-missing-title">
                 <h2 id="sys-missing-title">Virtual machines that should be running</h2>
