@@ -12,6 +12,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"example.invalid/dedicatedcloud/backend/internal/tlsacme/acmetest"
 )
 
 func freeAddr(t *testing.T) string {
@@ -25,11 +27,11 @@ func freeAddr(t *testing.T) string {
 }
 
 // rig makes options that point at the fake CA, with the DNS check satisfied and the validation listener on a free local port.
-func rig(t *testing.T, f *fakeACME, challenge string) Options {
+func rig(t *testing.T, f *acmetest.Server, challenge string) Options {
 	addr := freeAddr(t)
-	f.httpAddr, f.tlsAddr = addr, addr
+	f.HTTPAddr, f.TLSAddr = addr, addr
 	dir := t.TempDir()
-	return Options{Name: "console.example.org", Email: "admin@example.org", Directory: f.dir(), Challenge: challenge, AcceptTerms: true, Store: Store{Dir: filepath.Join(dir, "tls")},
+	return Options{Name: "console.example.org", Email: "admin@example.org", Directory: f.Dir(), Challenge: challenge, AcceptTerms: true, Store: Store{Dir: filepath.Join(dir, "tls")},
 		AccountKey: filepath.Join(dir, "tls", "acme", "account.key"), Addr: addr, Wait: time.Millisecond,
 		Resolve:    func(context.Context, string) ([]net.IP, error) { return []net.IP{net.ParseIP("203.0.113.7")}, nil },
 		LocalAddrs: func() ([]net.IP, error) { return []net.IP{net.ParseIP("203.0.113.7")}, nil }}
@@ -44,7 +46,7 @@ func code(err error) string {
 }
 
 func TestIssueOverHTTP01InstallsACertificateAndAnAccountKey(t *testing.T) {
-	f := newFakeACME(t)
+	f := acmetest.New(t)
 	o := rig(t, f, "http-01")
 	in, err := Issue(context.Background(), o)
 	if err != nil {
@@ -70,8 +72,8 @@ func TestIssueOverHTTP01InstallsACertificateAndAnAccountKey(t *testing.T) {
 		t.Fatal("the validation listener must stop")
 	}
 	// a second issuance reuses the account
-	if _, err := Issue(context.Background(), o); err != nil || f.registered != 2 {
-		t.Fatalf("%v registrations=%d", err, f.registered)
+	if _, err := Issue(context.Background(), o); err != nil || f.Registered != 2 {
+		t.Fatalf("%v registrations=%d", err, f.Registered)
 	}
 }
 
@@ -84,7 +86,7 @@ func mustRead(t *testing.T, p string) []byte {
 }
 
 func TestIssueOverTLSALPN01(t *testing.T) {
-	f := newFakeACME(t)
+	f := acmetest.New(t)
 	o := rig(t, f, "tls-alpn-01")
 	if _, err := Issue(context.Background(), o); err != nil {
 		t.Fatal(err)
@@ -99,25 +101,25 @@ func TestEachFailureIsTypedAndLeavesTheCertificateInUseAlone(t *testing.T) {
 	cases := []struct {
 		name string
 		want string
-		set  func(f *fakeACME, o *Options)
+		set  func(f *acmetest.Server, o *Options)
 	}{
-		{"validation rejected", CodeValidation, func(f *fakeACME, o *Options) { f.rejectAuth = true }},
-		{"rate limited", CodeRateLimited, func(f *fakeACME, o *Options) { f.rateLimit = true }},
-		{"account registration fails", CodeAccount, func(f *fakeACME, o *Options) { f.failRegister = true }},
-		{"terms not accepted", CodeTermsNotAccepted, func(f *fakeACME, o *Options) { o.AcceptTerms = false }},
-		{"bad e-mail", CodeBadInput, func(f *fakeACME, o *Options) { o.Email = "nobody" }},
-		{"a wildcard", CodeBadInput, func(f *fakeACME, o *Options) { o.Name = "*.example.org" }},
-		{"an IP address", CodeBadInput, func(f *fakeACME, o *Options) { o.Name = "203.0.113.7" }},
-		{"dns points elsewhere", CodeDNSMismatch, func(f *fakeACME, o *Options) {
+		{"validation rejected", CodeValidation, func(f *acmetest.Server, o *Options) { f.RejectAuth = true }},
+		{"rate limited", CodeRateLimited, func(f *acmetest.Server, o *Options) { f.RateLimit = true }},
+		{"account registration fails", CodeAccount, func(f *acmetest.Server, o *Options) { f.FailRegister = true }},
+		{"terms not accepted", CodeTermsNotAccepted, func(f *acmetest.Server, o *Options) { o.AcceptTerms = false }},
+		{"bad e-mail", CodeBadInput, func(f *acmetest.Server, o *Options) { o.Email = "nobody" }},
+		{"a wildcard", CodeBadInput, func(f *acmetest.Server, o *Options) { o.Name = "*.example.org" }},
+		{"an IP address", CodeBadInput, func(f *acmetest.Server, o *Options) { o.Name = "203.0.113.7" }},
+		{"dns points elsewhere", CodeDNSMismatch, func(f *acmetest.Server, o *Options) {
 			o.LocalAddrs = func() ([]net.IP, error) { return []net.IP{net.ParseIP("198.51.100.1")}, nil }
 		}},
-		{"dns does not resolve", CodeDNSMismatch, func(f *fakeACME, o *Options) {
+		{"dns does not resolve", CodeDNSMismatch, func(f *acmetest.Server, o *Options) {
 			o.Resolve = func(context.Context, string) ([]net.IP, error) { return nil, errors.New("nxdomain") }
 		}},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			f := newFakeACME(t)
+			f := acmetest.New(t)
 			o := rig(t, f, "http-01")
 			if err := o.Store.Install(c0, k0, ""); err != nil {
 				t.Fatal(err)
@@ -135,7 +137,7 @@ func TestEachFailureIsTypedAndLeavesTheCertificateInUseAlone(t *testing.T) {
 }
 
 func TestAPortThatIsTakenIsTypedBeforeAnythingIsAskedOfTheAuthority(t *testing.T) {
-	f := newFakeACME(t)
+	f := acmetest.New(t)
 	o := rig(t, f, "http-01")
 	l, err := net.Listen("tcp", o.Addr)
 	if err != nil {
@@ -143,13 +145,13 @@ func TestAPortThatIsTakenIsTypedBeforeAnythingIsAskedOfTheAuthority(t *testing.T
 	}
 	defer l.Close()
 	_, err = Issue(context.Background(), o)
-	if code(err) != CodePortInUse || f.registered != 0 || f.orders != 0 {
-		t.Fatalf("%v registrations=%d orders=%d", err, f.registered, f.orders)
+	if code(err) != CodePortInUse || f.Registered != 0 || f.Orders != 0 {
+		t.Fatalf("%v registrations=%d orders=%d", err, f.Registered, f.Orders)
 	}
 }
 
 func TestTheSkipDNSCheckLetsAHostBehindNATIssue(t *testing.T) {
-	f := newFakeACME(t)
+	f := acmetest.New(t)
 	o := rig(t, f, "http-01")
 	o.LocalAddrs = func() ([]net.IP, error) { return []net.IP{net.ParseIP("10.0.0.5")}, nil }
 	if _, err := Issue(context.Background(), o); code(err) != CodeDNSMismatch {
@@ -162,12 +164,12 @@ func TestTheSkipDNSCheckLetsAHostBehindNATIssue(t *testing.T) {
 }
 
 func TestTheChallengeListenerAnswersOnlyTheTokenPath(t *testing.T) {
-	f := newFakeACME(t)
+	f := acmetest.New(t)
 	o := rig(t, f, "http-01")
 	var got []string
 	noFollow := &http.Client{CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }, Timeout: 5 * time.Second}
-	f.probe = func(addr string) {
-		for _, c := range []struct{ method, path string }{{"GET", "/"}, {"GET", "/.well-known/acme-challenge/other"}, {"GET", "/.well-known/"}, {"POST", "/.well-known/acme-challenge/" + f.token}, {"GET", "/api/v1/hosts"}} {
+	f.Probe = func(addr string) {
+		for _, c := range []struct{ method, path string }{{"GET", "/"}, {"GET", "/.well-known/acme-challenge/other"}, {"GET", "/.well-known/"}, {"POST", "/.well-known/acme-challenge/" + f.Token}, {"GET", "/api/v1/hosts"}} {
 			req, _ := http.NewRequest(c.method, "http://"+addr+c.path, nil)
 			res, err := noFollow.Do(req)
 			if err != nil {
@@ -214,7 +216,7 @@ func TestStateRoundTripsAndHoldsNoSecret(t *testing.T) {
 }
 
 func TestADryRunDoesTheWholeOrderAndInstallsNothing(t *testing.T) {
-	f := newFakeACME(t)
+	f := acmetest.New(t)
 	o := rig(t, f, "http-01")
 	o.DryRun = true
 	in, err := Issue(context.Background(), o)
@@ -224,13 +226,13 @@ func TestADryRunDoesTheWholeOrderAndInstallsNothing(t *testing.T) {
 	if _, err := os.Stat(o.Store.CertFile()); err == nil {
 		t.Fatal("a rehearsal installs no certificate")
 	}
-	if f.orders != 1 {
+	if f.Orders != 1 {
 		t.Fatal("it did ask the authority")
 	}
 }
 
 func TestRenewHappensOnlyWhenAThirdOfTheLifetimeIsLeft(t *testing.T) {
-	f := newFakeACME(t)
+	f := acmetest.New(t)
 	o := rig(t, f, "http-01")
 	first, err := Issue(context.Background(), o)
 	if err != nil {
@@ -242,10 +244,10 @@ func TestRenewHappensOnlyWhenAThirdOfTheLifetimeIsLeft(t *testing.T) {
 		due   bool
 	}{{59 * day, false}, {61 * day, true}} {
 		o.Now = func() time.Time { return first.NotBefore.Add(c.after) }
-		before := f.orders
+		before := f.Orders
 		renewed, in, err := Renew(context.Background(), o)
-		if err != nil || renewed != c.due || (f.orders > before) != c.due {
-			t.Fatalf("after %v: renewed=%v err=%v orders=%d", c.after, renewed, err, f.orders)
+		if err != nil || renewed != c.due || (f.Orders > before) != c.due {
+			t.Fatalf("after %v: renewed=%v err=%v orders=%d", c.after, renewed, err, f.Orders)
 		}
 		_ = in
 	}
@@ -255,7 +257,7 @@ func TestRenewHappensOnlyWhenAThirdOfTheLifetimeIsLeft(t *testing.T) {
 }
 
 func TestARateLimitedRenewalIsNotAskedAgainForTwelveHours(t *testing.T) {
-	f := newFakeACME(t)
+	f := acmetest.New(t)
 	o := rig(t, f, "http-01")
 	first, err := Issue(context.Background(), o)
 	if err != nil {
@@ -263,7 +265,7 @@ func TestARateLimitedRenewalIsNotAskedAgainForTwelveHours(t *testing.T) {
 	}
 	now := first.NotBefore.Add(70 * 24 * time.Hour)
 	o.Now = func() time.Time { return now }
-	f.rateLimit = true
+	f.RateLimit = true
 	_, _, err = Renew(context.Background(), o)
 	if code(err) != CodeRateLimited {
 		t.Fatal(err)
@@ -271,10 +273,10 @@ func TestARateLimitedRenewalIsNotAskedAgainForTwelveHours(t *testing.T) {
 	if err := o.Store.WriteState(State{Name: o.Name, LastAttempt: now, LastResult: CodeRateLimited}); err != nil {
 		t.Fatal(err)
 	}
-	f.rateLimit = false
-	orders := f.orders
+	f.RateLimit = false
+	orders := f.Orders
 	now = now.Add(2 * time.Hour)
-	if _, _, err = Renew(context.Background(), o); code(err) != CodeRateLimited || f.orders != orders {
+	if _, _, err = Renew(context.Background(), o); code(err) != CodeRateLimited || f.Orders != orders {
 		t.Fatalf("not asked again within twelve hours: %v", err)
 	}
 	now = now.Add(11 * time.Hour)

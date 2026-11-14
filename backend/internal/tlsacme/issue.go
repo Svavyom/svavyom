@@ -41,6 +41,7 @@ const (
 	CodeRateLimited      = "rate_limited"
 	CodeValidation       = "validation_failed"
 	CodeIssue            = "issue_failed"
+	CodeStagingFirst     = "staging_first"
 )
 
 // Error is a typed failure. Detail never holds a key.

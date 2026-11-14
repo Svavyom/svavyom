@@ -441,6 +441,31 @@ func (e *Env) waitHealthy(ctx context.Context, d time.Duration) error {
 	return fmt.Errorf("the services are not healthy: %s", strings.Join(why, ", "))
 }
 
+// selfSignedPair makes a Development Preview self-signed certificate and its key for host (PEM).
+func (e *Env) selfSignedPair(host string) (certPEM, keyPEM []byte, err error) {
+	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	if err != nil {
+		return nil, nil, err
+	}
+	serial, _ := rand.Int(rand.Reader, new(big.Int).Lsh(big.NewInt(1), 120))
+	tpl := &x509.Certificate{SerialNumber: serial, Subject: pkix.Name{CommonName: host, Organization: []string{"Svavyom Development Preview (self-signed)"}},
+		NotBefore: e.Now().Add(-time.Hour), NotAfter: e.Now().AddDate(1, 0, 0), KeyUsage: x509.KeyUsageDigitalSignature, ExtKeyUsage: []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
+		DNSNames: []string{host, "localhost"}, IPAddresses: []net.IP{net.ParseIP("127.0.0.1"), net.ParseIP("::1")}}
+	if ip := net.ParseIP(host); ip != nil {
+		tpl.IPAddresses = append(tpl.IPAddresses, ip)
+		tpl.DNSNames = []string{"localhost"}
+	}
+	der, err := x509.CreateCertificate(rand.Reader, tpl, tpl, &key.PublicKey, key)
+	if err != nil {
+		return nil, nil, err
+	}
+	kb, err := x509.MarshalPKCS8PrivateKey(key)
+	if err != nil {
+		return nil, nil, err
+	}
+	return pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: der}), pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: kb}), nil
+}
+
 // selfSignedTLS creates cert.pem and key.pem for a Development Preview. An existing pair is never replaced.
 func (e *Env) selfSignedTLS(host string) error {
 	dir := e.P(ConfigDir + "/tls")
@@ -455,30 +480,14 @@ func (e *Env) selfSignedTLS(host string) error {
 	if err := e.ensureDir(dir, 0o750, 0, apiG); err != nil {
 		return err
 	}
-	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	certPEM, keyPEM, err := e.selfSignedPair(host)
 	if err != nil {
 		return err
 	}
-	serial, _ := rand.Int(rand.Reader, new(big.Int).Lsh(big.NewInt(1), 120))
-	tpl := &x509.Certificate{SerialNumber: serial, Subject: pkix.Name{CommonName: host, Organization: []string{"Svavyom Development Preview (self-signed)"}},
-		NotBefore: e.Now().Add(-time.Hour), NotAfter: e.Now().AddDate(1, 0, 0), KeyUsage: x509.KeyUsageDigitalSignature, ExtKeyUsage: []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
-		DNSNames: []string{host, "localhost"}, IPAddresses: []net.IP{net.ParseIP("127.0.0.1"), net.ParseIP("::1")}}
-	if ip := net.ParseIP(host); ip != nil {
-		tpl.IPAddresses = append(tpl.IPAddresses, ip)
-		tpl.DNSNames = []string{"localhost"}
-	}
-	der, err := x509.CreateCertificate(rand.Reader, tpl, tpl, &key.PublicKey, key)
-	if err != nil {
+	if _, err := e.writeAtomic(keyPath, keyPEM, 0o640, 0, apiG); err != nil {
 		return err
 	}
-	kb, err := x509.MarshalPKCS8PrivateKey(key)
-	if err != nil {
-		return err
-	}
-	if _, err := e.writeAtomic(keyPath, pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: kb}), 0o640, 0, apiG); err != nil {
-		return err
-	}
-	_, err = e.writeAtomic(certPath, pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: der}), 0o644, 0, apiG)
+	_, err = e.writeAtomic(certPath, certPEM, 0o644, 0, apiG)
 	return err
 }
 

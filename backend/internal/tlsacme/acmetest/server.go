@@ -1,4 +1,6 @@
-package tlsacme
+// Package acmetest is a small ACME server (RFC 8555) for tests of the certificate code: accounts, one order at a time, HTTP-01 and TLS-ALPN-01 validation
+// against listeners the test names, and a certificate signed by its own CA. It does not check request signatures.
+package acmetest
 
 import (
 	"crypto/ecdsa"
@@ -25,10 +27,10 @@ import (
 	"golang.org/x/crypto/acme"
 )
 
-// fakeACME is a small ACME server (RFC 8555) for the tests: accounts, one order at a time, HTTP-01 and TLS-ALPN-01 validation against the listeners the
+// Server is a small ACME server (RFC 8555) for the tests: accounts, one order at a time, HTTP-01 and TLS-ALPN-01 validation against the listeners the
 // test names, and a certificate signed by its own CA. It does not verify request signatures: it exists to exercise this client's side of the protocol.
-type fakeACME struct {
-	t        *testing.T
+type Server struct {
+	t        testing.TB
 	srv      *httptest.Server
 	ca       *x509.Certificate
 	caKey    *ecdsa.PrivateKey
@@ -36,27 +38,28 @@ type fakeACME struct {
 	nonce    int
 	jwk      *ecdsa.PublicKey
 	names    []string
-	token    string
+	Token    string
 	status   map[string]string // authz and order status
 	chType   string
-	lifetime time.Duration
+	Lifetime time.Duration
 
 	// knobs
-	httpAddr, tlsAddr string // where validation connects
-	rejectAuth        bool   // validation always fails
-	rateLimit         bool   // new-order answers 429 rateLimited
-	failRegister      bool
-	registered        int
-	orders            int
-	issuerOrg         string
+	HTTPAddr, TLSAddr string // where validation connects
+	RejectAuth        bool   // validation always fails
+	RateLimit         bool   // new-order answers 429 rateLimited
+	FailRegister      bool
+	Registered        int
+	Orders            int
+	IssuerOrg         string
 	// probe runs just before validation, with the listener's address
-	probe func(addr string)
+	Probe func(addr string)
 }
 
-func newFakeACME(t *testing.T) *fakeACME {
-	f := &fakeACME{t: t, status: map[string]string{}, lifetime: 90 * 24 * time.Hour, issuerOrg: "Fake Test CA"}
+// New starts the server; it is closed with the test.
+func New(t testing.TB) *Server {
+	f := &Server{t: t, status: map[string]string{}, Lifetime: 90 * 24 * time.Hour, IssuerOrg: "Fake Test CA"}
 	f.caKey, _ = ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	tpl := &x509.Certificate{SerialNumber: big.NewInt(1), Subject: pkix.Name{CommonName: "fake ca", Organization: []string{f.issuerOrg}}, NotBefore: time.Now().Add(-time.Hour), NotAfter: time.Now().Add(10 * 365 * 24 * time.Hour), IsCA: true, BasicConstraintsValid: true, KeyUsage: x509.KeyUsageCertSign}
+	tpl := &x509.Certificate{SerialNumber: big.NewInt(1), Subject: pkix.Name{CommonName: "fake ca", Organization: []string{f.IssuerOrg}}, NotBefore: time.Now().Add(-time.Hour), NotAfter: time.Now().Add(10 * 365 * 24 * time.Hour), IsCA: true, BasicConstraintsValid: true, KeyUsage: x509.KeyUsageCertSign}
 	der, _ := x509.CreateCertificate(rand.Reader, tpl, tpl, &f.caKey.PublicKey, f.caKey)
 	f.ca, _ = x509.ParseCertificate(der)
 	f.srv = httptest.NewServer(http.HandlerFunc(f.serve))
@@ -64,9 +67,9 @@ func newFakeACME(t *testing.T) *fakeACME {
 	return f
 }
 
-func (f *fakeACME) dir() string { return f.srv.URL + "/directory" }
+func (f *Server) Dir() string { return f.srv.URL + "/directory" }
 
-func (f *fakeACME) problem(w http.ResponseWriter, code int, typ, detail string) {
+func (f *Server) problem(w http.ResponseWriter, code int, typ, detail string) {
 	w.Header().Set("Content-Type", "application/problem+json")
 	if code == 429 {
 		w.Header().Set("Retry-After", "3600")
@@ -78,7 +81,7 @@ func (f *fakeACME) problem(w http.ResponseWriter, code int, typ, detail string) 
 func b64(s string) []byte { b, _ := base64.RawURLEncoding.DecodeString(s); return b }
 
 // jws returns the protected header and payload of a request.
-func (f *fakeACME) jws(r *http.Request) (map[string]any, []byte) {
+func (f *Server) jws(r *http.Request) (map[string]any, []byte) {
 	var env struct{ Protected, Payload string }
 	b, _ := io.ReadAll(r.Body)
 	_ = json.Unmarshal(b, &env)
@@ -87,7 +90,7 @@ func (f *fakeACME) jws(r *http.Request) (map[string]any, []byte) {
 	return hdr, b64(env.Payload)
 }
 
-func (f *fakeACME) serve(w http.ResponseWriter, r *http.Request) {
+func (f *Server) serve(w http.ResponseWriter, r *http.Request) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	f.nonce++
@@ -105,7 +108,7 @@ func (f *fakeACME) serve(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(200)
 	case r.URL.Path == "/acct":
 		hdr, _ := f.jws(r)
-		if f.failRegister {
+		if f.FailRegister {
 			f.problem(w, 400, "serverInternal", "registration is down")
 			return
 		}
@@ -113,11 +116,11 @@ func (f *fakeACME) serve(w http.ResponseWriter, r *http.Request) {
 		var k struct{ X, Y string }
 		_ = json.Unmarshal(jwk, &k)
 		f.jwk = &ecdsa.PublicKey{Curve: elliptic.P256(), X: new(big.Int).SetBytes(b64(k.X)), Y: new(big.Int).SetBytes(b64(k.Y))}
-		f.registered++
+		f.Registered++
 		w.Header().Set("Location", base+"/acct/1")
 		reply(201, map[string]any{"status": "valid"})
 	case r.URL.Path == "/order":
-		if f.rateLimit {
+		if f.RateLimit {
 			f.problem(w, 429, "rateLimited", "too many certificates already issued")
 			return
 		}
@@ -130,8 +133,8 @@ func (f *fakeACME) serve(w http.ResponseWriter, r *http.Request) {
 		for _, id := range req.Identifiers {
 			f.names = append(f.names, id.Value)
 		}
-		f.orders++
-		f.token = fmt.Sprintf("tok%d", f.orders)
+		f.Orders++
+		f.Token = fmt.Sprintf("tok%d", f.Orders)
 		f.status["authz"], f.status["order"] = "pending", "pending"
 		w.Header().Set("Location", base+"/o/1")
 		reply(201, f.order())
@@ -139,8 +142,8 @@ func (f *fakeACME) serve(w http.ResponseWriter, r *http.Request) {
 		reply(200, f.order())
 	case r.URL.Path == "/authz/1":
 		reply(200, map[string]any{"status": f.status["authz"], "identifier": map[string]string{"type": "dns", "value": f.names[0]}, "challenges": []map[string]any{
-			{"type": "http-01", "url": base + "/chal/http-01", "token": f.token, "status": "pending"},
-			{"type": "tls-alpn-01", "url": base + "/chal/tls-alpn-01", "token": f.token, "status": "pending"}}})
+			{"type": "http-01", "url": base + "/chal/http-01", "token": f.Token, "status": "pending"},
+			{"type": "tls-alpn-01", "url": base + "/chal/tls-alpn-01", "token": f.Token, "status": "pending"}}})
 	case strings.HasPrefix(r.URL.Path, "/chal/"):
 		f.chType = strings.TrimPrefix(r.URL.Path, "/chal/")
 		if f.validate() {
@@ -148,7 +151,7 @@ func (f *fakeACME) serve(w http.ResponseWriter, r *http.Request) {
 		} else {
 			f.status["authz"], f.status["order"] = "invalid", "invalid"
 		}
-		reply(200, map[string]any{"type": f.chType, "url": base + r.URL.Path, "token": f.token, "status": f.status["authz"]})
+		reply(200, map[string]any{"type": f.chType, "url": base + r.URL.Path, "token": f.Token, "status": f.status["authz"]})
 	case r.URL.Path == "/finalize/1":
 		_, p := f.jws(r)
 		var req struct{ CSR string }
@@ -159,7 +162,7 @@ func (f *fakeACME) serve(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		serial, _ := rand.Int(rand.Reader, big.NewInt(1<<62))
-		tpl := &x509.Certificate{SerialNumber: serial, Subject: pkix.Name{CommonName: csr.DNSNames[0]}, DNSNames: csr.DNSNames, NotBefore: time.Now().Add(-time.Minute), NotAfter: time.Now().Add(f.lifetime), KeyUsage: x509.KeyUsageDigitalSignature, ExtKeyUsage: []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth}}
+		tpl := &x509.Certificate{SerialNumber: serial, Subject: pkix.Name{CommonName: csr.DNSNames[0]}, DNSNames: csr.DNSNames, NotBefore: time.Now().Add(-time.Minute), NotAfter: time.Now().Add(f.Lifetime), KeyUsage: x509.KeyUsageDigitalSignature, ExtKeyUsage: []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth}}
 		der, _ := x509.CreateCertificate(rand.Reader, tpl, f.ca, csr.PublicKey, f.caKey)
 		f.status["order"] = "valid"
 		f.status["cert"] = string(pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: der})) + string(pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: f.ca.Raw}))
@@ -172,7 +175,7 @@ func (f *fakeACME) serve(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (f *fakeACME) order() map[string]any {
+func (f *Server) order() map[string]any {
 	o := map[string]any{"status": f.status["order"], "identifiers": []map[string]string{{"type": "dns", "value": f.names[0]}}, "authorizations": []string{f.srv.URL + "/authz/1"}, "finalize": f.srv.URL + "/finalize/1"}
 	if f.status["order"] == "valid" {
 		o["certificate"] = f.srv.URL + "/cert/1"
@@ -181,18 +184,18 @@ func (f *fakeACME) order() map[string]any {
 }
 
 // validate does what a certificate authority does: connect to the name's host and look for the key authorisation.
-func (f *fakeACME) validate() bool {
-	if f.rejectAuth || f.jwk == nil {
+func (f *Server) validate() bool {
+	if f.RejectAuth || f.jwk == nil {
 		return false
 	}
 	tp, _ := acme.JWKThumbprint(f.jwk)
-	keyAuth := f.token + "." + tp
+	keyAuth := f.Token + "." + tp
 	switch f.chType {
 	case "http-01":
-		if f.probe != nil {
-			f.probe(f.httpAddr)
+		if f.Probe != nil {
+			f.Probe(f.HTTPAddr)
 		}
-		res, err := http.Get("http://" + f.httpAddr + "/.well-known/acme-challenge/" + f.token)
+		res, err := http.Get("http://" + f.HTTPAddr + "/.well-known/acme-challenge/" + f.Token)
 		if err != nil {
 			return false
 		}
@@ -200,7 +203,7 @@ func (f *fakeACME) validate() bool {
 		b, _ := io.ReadAll(res.Body)
 		return res.StatusCode == 200 && string(b) == keyAuth
 	case "tls-alpn-01":
-		c, err := tls.Dial("tcp", f.tlsAddr, &tls.Config{ServerName: f.names[0], NextProtos: []string{"acme-tls/1"}, InsecureSkipVerify: true}) //nolint:gosec // a test CA validating a challenge certificate
+		c, err := tls.Dial("tcp", f.TLSAddr, &tls.Config{ServerName: f.names[0], NextProtos: []string{"acme-tls/1"}, InsecureSkipVerify: true}) //nolint:gosec // a test CA validating a challenge certificate
 		if err != nil {
 			return false
 		}
