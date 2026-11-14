@@ -203,6 +203,23 @@ func TestStatusReportsUnitsSocketsAndTheAPI(t *testing.T) {
 		r.Text(&b)
 		t.Fatalf("%s", b.String())
 	}
+	h.run.reply["systemctl is-enabled -- libvirt-guests.service"] = "disabled\n"
+	r = Status(context.Background(), h.env, StatusOptions{})
+	if f := find(r, "libvirt-guests"); f.Code != "LIBVIRT_GUESTS_OFF" || f.Required {
+		t.Fatalf("a host without libvirt-guests gets a finding that never changes the verdict: %+v", f)
+	}
+	h.run.reply["systemctl is-enabled -- libvirt-guests.service"] = "enabled\n"
+	if f := find(Status(context.Background(), h.env, StatusOptions{}), "libvirt-guests"); f.Status != Pass {
+		t.Fatalf("enabled with the default mode is fine: %+v", f)
+	}
+	h.write("/etc/default/libvirt-guests", "# comment\nON_SHUTDOWN=ignore\n")
+	if f := find(Status(context.Background(), h.env, StatusOptions{}), "libvirt-guests"); f.Code != "LIBVIRT_GUESTS_MODE" || f.Required {
+		t.Fatalf("a mode that does not stop guests is reported: %+v", f)
+	}
+	h.write("/etc/default/libvirt-guests", "ON_SHUTDOWN=\"shutdown\"\n")
+	if f := find(Status(context.Background(), h.env, StatusOptions{}), "libvirt-guests"); f.Status != Pass {
+		t.Fatalf("a quoted shutdown is fine: %+v", f)
+	}
 	h.run.reply["systemctl is-active -- svavyom-mutation.service"] = "failed\n"
 	h.run.reply["systemctl is-active -- svavyom-console.service"] = "inactive\n"
 	r = Status(context.Background(), h.env, StatusOptions{})
