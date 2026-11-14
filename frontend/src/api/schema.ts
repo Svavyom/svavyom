@@ -104,6 +104,19 @@ export interface Host {
       state: "ok" | "unreachable" | "not_enabled";
     })[];
     started_at: string | null;
+    certificate: {
+      names: string[];
+      issuer: string;
+      not_before: string;
+      not_after: string;
+      days_left: number;
+      source: "self_signed" | "lets_encrypt" | "lets_encrypt_staging" | "other";
+      renews_from: string;
+      managed: boolean;
+      last_attempt: string | null;
+      last_result: string | null;
+      last_detail: string | null;
+    } | null;
     capability_findings: ({
       code: string;
       remediation: string;
@@ -1457,6 +1470,113 @@ export const SCHEMAS = {
             "type": "string",
             "x-data-class": "operational"
           },
+          "certificate": {
+            "additionalProperties": false,
+            "description": "The TLS certificate the console serves (DR-034); null when TLS is ended by a proxy in front of the API. Nothing secret. Issuing and renewing are done on the host with svavyom-ctl; this only reports.",
+            "properties": {
+              "days_left": {
+                "description": "Whole days until expiry; negative once it has expired.",
+                "maximum": 3650,
+                "minimum": -3650,
+                "type": "integer",
+                "x-data-class": "operational"
+              },
+              "issuer": {
+                "maxLength": 200,
+                "type": "string",
+                "x-data-class": "operational"
+              },
+              "last_attempt": {
+                "format": "date-time",
+                "maxLength": 40,
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "x-data-class": "operational"
+              },
+              "last_detail": {
+                "maxLength": 400,
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "x-data-class": "operational"
+              },
+              "last_result": {
+                "description": "ok, or the closed code of the failure (dns_mismatch, port_in_use, validation_failed, rate_limited and the like).",
+                "maxLength": 64,
+                "pattern": "^[a-z_]{1,40}$",
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "x-data-class": "operational"
+              },
+              "managed": {
+                "description": "True when the renewal timer renews this certificate by itself.",
+                "type": "boolean",
+                "x-data-class": "operational"
+              },
+              "names": {
+                "items": {
+                  "maxLength": 253,
+                  "type": "string",
+                  "x-data-class": "operational"
+                },
+                "maxItems": 16,
+                "type": "array",
+                "x-data-class": "operational"
+              },
+              "not_after": {
+                "format": "date-time",
+                "maxLength": 40,
+                "type": "string",
+                "x-data-class": "operational"
+              },
+              "not_before": {
+                "format": "date-time",
+                "maxLength": 40,
+                "type": "string",
+                "x-data-class": "operational"
+              },
+              "renews_from": {
+                "description": "When a third of the lifetime is left, the time svavyom-ctl renews from.",
+                "format": "date-time",
+                "maxLength": 40,
+                "type": "string",
+                "x-data-class": "operational"
+              },
+              "source": {
+                "enum": [
+                  "self_signed",
+                  "lets_encrypt",
+                  "lets_encrypt_staging",
+                  "other"
+                ],
+                "type": "string",
+                "x-data-class": "operational"
+              }
+            },
+            "required": [
+              "names",
+              "issuer",
+              "not_before",
+              "not_after",
+              "days_left",
+              "source",
+              "renews_from",
+              "managed",
+              "last_attempt",
+              "last_result",
+              "last_detail"
+            ],
+            "type": [
+              "object",
+              "null"
+            ],
+            "x-data-class": "operational"
+          },
           "cpu_count": {
             "maximum": 9007199254740991,
             "minimum": 1,
@@ -1989,6 +2109,7 @@ export const SCHEMAS = {
           "bridge",
           "services",
           "started_at",
+          "certificate",
           "capability_findings"
         ],
         "type": "object",

@@ -43,6 +43,8 @@ type alertSources struct {
 	Uptime func() time.Duration
 	// NightlyFailed reports whether the last nightly boot failed.
 	NightlyFailed func() bool
+	// Cert reports how long the TLS certificate in use has left and its whole lifetime; ok is false when there is none.
+	Cert func() (left, lifetime time.Duration, ok bool)
 	// AuditFailing reports whether an authentication audit event could not be stored recently.
 	AuditFailing func() bool
 	Now          func() time.Time
@@ -104,6 +106,9 @@ func (s alertSources) gather(ctx context.Context) alerts.Inputs {
 		if names, ok := s.ShouldRun(ctx); ok {
 			in.ShouldRunKnown, in.ShouldRun, in.HostUptime = true, names, s.Uptime()
 		}
+	}
+	if s.Cert != nil {
+		in.CertLeft, in.CertLifetime, in.CertKnown = s.Cert()
 	}
 	if s.SchedulesFailed != nil {
 		if vms, ok := s.SchedulesFailed(ctx); ok {
@@ -286,6 +291,20 @@ func startAlerts(ctx context.Context, stderr io.Writer, deps *api.Deps, engine *
 	src := alertSources{HostID: "local", Ops: ops, MaxAttempts: 3, VMs: deps.VMs, AuditFailing: auditFailing}
 	if info, err := hosts.Host(ctx); err == nil {
 		src.HostID = info.ID
+	}
+	if cv := deps.Certificate; cv != nil { // the TLS certificate in use (DR-034): certificate_expiring
+		src.Cert = func() (time.Duration, time.Duration, bool) {
+			v := cv()
+			if v == nil {
+				return 0, 0, false
+			}
+			nb, err1 := time.Parse(time.RFC3339, v.NotBefore)
+			na, err2 := time.Parse(time.RFC3339, v.NotAfter)
+			if err1 != nil || err2 != nil {
+				return 0, 0, false
+			}
+			return time.Until(na), na.Sub(nb), true
+		}
 	}
 	if deps.BootPolicy != nil { // the owner's intent (DR-042): a VM that should be running and is not raises vm_not_started_after_boot
 		bp := deps.BootPolicy

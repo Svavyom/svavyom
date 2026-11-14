@@ -56,6 +56,9 @@ type Inputs struct {
 	ScheduleFailed  []string // VM names whose last scheduled backup failed
 	SchedulesKnown  bool
 	NightlyBootFail bool // the last nightly boot failed
+	// CertLeft and CertLifetime describe the TLS certificate in use; CertKnown is false when there is none (a proxy ends TLS) or it could not be read.
+	CertLeft, CertLifetime time.Duration
+	CertKnown              bool
 	// AuditWriteFailing is true when an authentication audit event could not be stored recently (DR-038, F-10).
 	AuditWriteFailing bool
 	HostID            string
@@ -157,6 +160,15 @@ func (ev *Evaluator) Evaluate(in Inputs) (obs []Obs, covered []string) {
 		}
 		covered = append(covered, ScheduledBackup)
 	}
+	if in.CertKnown {
+		warn, crit := CertThresholds(in.CertLifetime)
+		sev := Warning
+		if in.CertLeft <= crit {
+			sev = Critical
+		}
+		obs = append(obs, Obs{Type: CertExpiring, Kind: "Host", ResourceID: in.HostID, Severity: sev, Active: in.CertLeft <= warn, Clear: in.CertLeft > warn})
+		covered = append(covered, CertExpiring)
+	}
 	nb := Obs{Type: NightlyBootFailed, Kind: "Host", ResourceID: in.HostID, Severity: Warning, Active: in.NightlyBootFail, Clear: !in.NightlyBootFail}
 	obs = append(obs, nb)
 	covered = append(covered, NightlyBootFailed)
@@ -164,4 +176,17 @@ func (ev *Evaluator) Evaluate(in Inputs) (obs []Obs, covered []string) {
 	obs = append(obs, aw)
 	covered = append(covered, AuditWriteFailed)
 	return obs, covered
+}
+
+// CertThresholds are how little must be left of a certificate's lifetime for a warning and for a critical alert: 14 days and 3 days, and never more than
+// 20% and 5% of the lifetime, so that a 6-day certificate is not "expiring" from the day it is issued.
+func CertThresholds(lifetime time.Duration) (warn, crit time.Duration) {
+	warn, crit = 14*24*time.Hour, 3*24*time.Hour
+	if w := lifetime * 20 / 100; w < warn {
+		warn = w
+	}
+	if c := lifetime * 5 / 100; c < crit {
+		crit = c
+	}
+	return warn, crit
 }

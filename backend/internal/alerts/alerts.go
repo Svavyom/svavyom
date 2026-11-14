@@ -44,6 +44,9 @@ const (
 	ScheduledBackup   = "scheduled_backup_failed"
 	NightlyBootFailed = "nightly_boot_failed"
 	AuditWriteFailed  = "audit_write_failed"
+	// CertExpiring is raised for the console's TLS certificate when little of its lifetime is left (DR-034 D4): warning from 14 days, critical from 3, scaled
+	// down for short-lived certificates. A renewed certificate clears it.
+	CertExpiring = "certificate_expiring"
 )
 
 // Limits.

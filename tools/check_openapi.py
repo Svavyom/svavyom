@@ -62,7 +62,7 @@ DESIRED_OBSERVED = {
               "creation": ({"object"}, None),  # DR-016: pinned in check_host_extension
               "storage": ({"object"}, None),  # DR-020: pinned in check_host_extension
               "usage": ({"object"}, None),  # DR-022: sampled CPU and memory with a bounded history, pinned in check_host_extension
-              "alerts": ({"object"}, None), "nightly_boot": ({"object", "null"}, None), "bridge": ({"object", "null"}, None),
+              "alerts": ({"object"}, None), "nightly_boot": ({"object", "null"}, None), "certificate": ({"object", "null"}, None), "bridge": ({"object", "null"}, None),
               "services": ({"array"}, None), "started_at": ({"string", "null"}, None)}),  # DR-024 D2, D4, D5; system page
     "Project": ({}, {}),
     "VM": ({"power": _e("running", "stopped"), "backup_schedule": ({"object", "null"}, None), "start_on_boot": (_B, None)},  # DR-024 D3; DR-042

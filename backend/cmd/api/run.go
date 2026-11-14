@@ -354,6 +354,9 @@ func serve(ctx context.Context, args []string, stderr io.Writer) int {
 	deps.SSHKeys = keyLib
 	deps.StartedAt = time.Now()
 	deps.Services = serviceProbe(map[string]string{"agent": *agentSocket, "mutation": *mutSocket, "console": *consoleSocket, "offsite": *offsiteSocket})
+	if tls {
+		deps.Certificate = certificateView(*cert, time.Now)
+	}
 	if *firewallStatus != "" {
 		deps.Firewall = func() []api.FirewallFinding {
 			r, ok := fwstatus.Read(os.ReadFile, *firewallStatus, time.Now(), 7*24*time.Hour)
