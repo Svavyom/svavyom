@@ -31,7 +31,7 @@ DEV = "dedicatedcloud-dev:local"
 PUBLIC_DIRS = ["packages/ubuntu"]
 PUBLIC_DOCS = ["sbom/sbom.cdx.json", "sbom/licenses.json"]  # the rest of the documentation is a separate repository; the artifact carries the top-level documents and the bill of materials
 PRIVATE_DOCS = []  # nothing in the artifact is private any more: the qualification records are public documents (host addresses and names are redacted in the public tree)
-TOP = ["VERSION", "LICENSE", "NOTICE", "LICENSING.md", "SOURCE-OFFER.md", "THIRD-PARTY-NOTICES.md", "README.md", "INSTALLING.md", "USING.md", "BUILDING.md", "SECURITY.md", "CONTRIBUTING.md",
+TOP = ["VERSION", "LICENSE", "NOTICE", "LICENSING.md", "SOURCE-OFFER.md", "THIRD-PARTY-NOTICES.md", "README.md", "INSTALLING.md", "USING.md", "BUILDING.md", "SECURITY.md", "CHANGELOG.md", "CONTRIBUTING.md",
        "LICENSES/AGPL-3.0-or-later.txt", "LICENSES/Apache-2.0.txt"]
 
 

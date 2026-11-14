@@ -5,7 +5,7 @@
 * **Source:** <https://github.com/Svavyom/svavyom> · **Releases:** <https://github.com/Svavyom/svavyom/releases> · **Documentation:** <https://docs.svavyom.com>
 * **Free to use on as many servers as you like.** No limit, licence key, trial or call home (`LICENSING.md`).
 * **Tested on:** Ubuntu 24.04 LTS, x86_64, KVM, libvirt `qemu:///system`. One host per installation.
-* **Not supported in the current release:** high availability, multi-host management, stability guarantees, or suitability for production workloads. Release artifacts are **not signed** yet.
+* **Not supported in the current release:** high availability, multi-host management, stability guarantees, or suitability for production workloads. Releases from 0.1.0-preview.16 are **signed** (fingerprint `247e9193c933b6fa`; see `SECURITY.md` and `INSTALLING.md`).
 ## Tour
 [svavyom-tour.webm] https://github.com/user-attachments/assets/cbdf846e-1466-45d4-8561-63d02db8ac21
 
