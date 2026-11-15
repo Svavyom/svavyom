@@ -108,7 +108,7 @@ class ImageAndVmStages(unittest.TestCase):
         self.assertEqual(argv[-2:], ["--enable-nightly-boot", "03:30"])
 
     def test_the_stage_names(self):
-        self.assertEqual(q.STAGES, ["facts", "prepare", "install", "bootstrap", "verify", "image", "vm", "upgrade", "rollback", "reboot", "nightly", "firewall", "features"])
+        self.assertEqual(q.STAGES, ["facts", "prepare", "install", "bootstrap", "verify", "image", "vm", "upgrade", "rollback", "reboot", "nightly", "firewall", "features", "acme"])
         self.assertEqual(set(q.STAGES), set(q.FUNCS))
 
 
@@ -227,3 +227,28 @@ class BootJudge(unittest.TestCase):
 
     def test_a_domain_that_is_missing_is_a_failure_not_a_pass(self):
         self.assertFalse(all(self.judged({}, {}).values()))
+
+
+class AcmeStage(unittest.TestCase):
+    def test_the_command_names_the_challenge_and_only_the_staging_one_carries_the_flag(self):
+        s = q.acme_command("le.example.org", "a@example.org", True)
+        p = q.acme_command("le.example.org", "a@example.org", False)
+        self.assertIn("--staging", s)
+        self.assertNotIn("--staging", p)
+        self.assertIn("--accept-terms", p)
+        self.assertIn("tls acme-issue --name le.example.org", p)
+
+    def test_each_step_is_judged_by_its_own_words_and_exit_status(self):
+        self.assertTrue(q.judge_acme("staging", "OK the staging service issued a certificate. Nothing was installed.\nEXIT=0")[0])
+        self.assertFalse(q.judge_acme("staging", "OK installed\nEXIT=0")[0])
+        self.assertTrue(q.judge_acme("production", "OK the certificate for x is installed (valid)\nEXIT=0")[0])
+        self.assertFalse(q.judge_acme("production", "ERROR validation_failed\nEXIT=1")[0])
+        self.assertTrue(q.judge_acme("renew", "the certificate for x is valid until 2027-02-12 and not due for renewal until 2027-01-13\nEXIT=0")[0])
+        self.assertFalse(q.judge_acme("renew", "OK renewed the certificate\nEXIT=0")[0])
+
+    def test_the_stage_needs_a_name_and_an_address_and_is_registered(self):
+        self.assertIn("acme", q.STAGES)
+        self.assertIn("acme", q.FUNCS)
+        a = args(stage="acme", acme_name="", acme_email="")
+        self.assertEqual(len(q.validate(a)), 2)
+        self.assertEqual(q.validate(args(stage="acme", acme_name="le.example.org", acme_email="a@example.org")), [])

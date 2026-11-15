@@ -25,22 +25,39 @@ type hostDesired struct {
 }
 
 type hostObserved struct {
-	Reachable          bool           `json:"reachable"`
-	AgentVersion       string         `json:"agent_version"`
-	CPUCount           int            `json:"cpu_count"`
-	MemoryMiB          int64          `json:"memory_mib"`
-	CapabilityVerdict  string         `json:"capability_verdict"`
-	Virtualization     virtualization `json:"virtualization"`
-	Distribution       distribution   `json:"distribution"`
-	Creation           creationJSON   `json:"creation"`
-	Storage            storageJSON    `json:"storage"`
-	Usage              hostUsageJSON  `json:"usage"`
-	Alerts             hostAlertsJSON `json:"alerts"`
-	NightlyBoot        *nightlyJSON   `json:"nightly_boot"`
-	Bridge             *bridgeJSON    `json:"bridge"`
-	Services           []serviceJSON  `json:"services"`
-	StartedAt          *string        `json:"started_at"`
-	CapabilityFindings []finding      `json:"capability_findings"`
+	Reachable          bool             `json:"reachable"`
+	AgentVersion       string           `json:"agent_version"`
+	CPUCount           int              `json:"cpu_count"`
+	MemoryMiB          int64            `json:"memory_mib"`
+	CapabilityVerdict  string           `json:"capability_verdict"`
+	Virtualization     virtualization   `json:"virtualization"`
+	Distribution       distribution     `json:"distribution"`
+	Creation           creationJSON     `json:"creation"`
+	Storage            storageJSON      `json:"storage"`
+	Usage              hostUsageJSON    `json:"usage"`
+	Alerts             hostAlertsJSON   `json:"alerts"`
+	NightlyBoot        *nightlyJSON     `json:"nightly_boot"`
+	Bridge             *bridgeJSON      `json:"bridge"`
+	Services           []serviceJSON    `json:"services"`
+	StartedAt          *string          `json:"started_at"`
+	Certificate        *CertificateView `json:"certificate"`
+	CapabilityFindings []finding        `json:"capability_findings"`
+}
+
+// CertificateView is what the console shows about its own TLS certificate (DR-034): nothing secret, nil when TLS is terminated by a proxy in front.
+type CertificateView struct {
+	Names      []string `json:"names"`
+	Issuer     string   `json:"issuer"`
+	NotBefore  string   `json:"not_before"`
+	NotAfter   string   `json:"not_after"`
+	DaysLeft   int      `json:"days_left"`
+	Source     string   `json:"source"`
+	RenewsFrom string   `json:"renews_from"`
+	// Managed is true when svavyom-ctl renews this certificate by itself.
+	Managed     bool    `json:"managed"`
+	LastAttempt *string `json:"last_attempt"`
+	LastResult  *string `json:"last_result"`
+	LastDetail  *string `json:"last_detail"`
 }
 
 type serviceJSON struct {
@@ -205,6 +222,9 @@ func (h *Handler) hostWithSystem(j hostJSON) hostJSON {
 	if !h.deps.StartedAt.IsZero() {
 		t := h.deps.StartedAt.UTC().Format(time.RFC3339)
 		j.Observed.StartedAt = &t
+	}
+	if h.deps.Certificate != nil {
+		j.Observed.Certificate = h.deps.Certificate()
 	}
 	return j
 }

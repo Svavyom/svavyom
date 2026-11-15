@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"encoding/pem"
 	"errors"
+	"example.invalid/dedicatedcloud/backend/internal/tlsacme"
 	"fmt"
 	"io"
 	"math/big"
@@ -34,6 +35,12 @@ type InstallOptions struct {
 	AllowNotReady bool
 	// TLSSelfSigned, when set, creates a Development Preview certificate for this host name if none exists.
 	TLSSelfSigned string
+	// TLSAcme, with ACMEEmail and AcceptTerms, asks Let's Encrypt for a certificate for this public name after the services are healthy (DR-034 D4): a staging
+	// rehearsal first, then production. The self-signed certificate is made first and stays when any step fails: the service is never left without one.
+	TLSAcme, ACMEEmail string
+	AcceptTerms        bool
+	// acmeDeps replaces the outside world in tests.
+	acmeDeps *ACMEDeps
 	// Pool and Network name the libvirt pool and network the configuration uses (defaults svavyom and default).
 	Pool, Network string
 	// BackupDir, when set, configures the local backup store (created 0700, owned by the mutation identity) and lets the mutation unit write there.
@@ -72,6 +79,9 @@ func (o *InstallOptions) defaults() {
 	if o.Listen == "" {
 		o.Listen = "0.0.0.0:8443"
 	}
+	if o.TLSAcme != "" && o.TLSSelfSigned == "" {
+		o.TLSSelfSigned = o.TLSAcme // the certificate that stays if issuance fails
+	}
 }
 
 func (o InstallOptions) validate() error {
@@ -81,6 +91,14 @@ func (o InstallOptions) validate() error {
 	}
 	if o.TLSSelfSigned != "" && !hostNameRE.MatchString(o.TLSSelfSigned) {
 		return errors.New("--tls-self-signed needs a host name")
+	}
+	if o.TLSAcme != "" {
+		if err := tlsacme.CheckInput(o.TLSAcme, o.ACMEEmail, o.AcceptTerms); err != nil {
+			return fmt.Errorf("--tls-acme: %w (it needs --acme-email and --accept-terms)", err)
+		}
+		if o.TLSSelfSigned != "" && o.TLSSelfSigned != o.TLSAcme {
+			return errors.New("--tls-acme and --tls-self-signed name different hosts; give one name")
+		}
 	}
 	if o.BackupDir != "" && (!filepath.IsAbs(o.BackupDir) || filepath.Clean(o.BackupDir) != o.BackupDir || len(o.BackupDir) > 200) {
 		return errors.New("--backup-dir must be a clean absolute path")
@@ -385,8 +403,17 @@ func Install(ctx context.Context, e *Env, o InstallOptions, w io.Writer) error {
 		}
 		return nil
 	})
+	if o.TLSAcme != "" {
+		p.add("ask Let's Encrypt for a certificate for "+o.TLSAcme+": a staging rehearsal, then production (a temporary listener on port 80 while it runs; no firewall rule is changed). If a step fails the self-signed certificate stays", func() error {
+			e.acmeAtInstall(ctx, o, w)
+			return nil
+		})
+	}
 	p.add("check the firewall for conflicts with the VM network and record the result (read-only; no rule is changed)", func() error { return e.recordFirewall(ctx) })
 	e.nightlyStep(ctx, p, o, w)
+	if !loopbackListen(o.Listen) {
+		_, _ = fmt.Fprintf(w, "note: the console will be reachable from the network on %s; with the self-signed certificate browsers warn. Use --listen 127.0.0.1:8443 with an SSH tunnel or your own proxy if you do not want that.\n", o.Listen)
+	}
 	if err := p.Run(w, o.Apply); err != nil {
 		return err
 	}
@@ -441,6 +468,31 @@ func (e *Env) waitHealthy(ctx context.Context, d time.Duration) error {
 	return fmt.Errorf("the services are not healthy: %s", strings.Join(why, ", "))
 }
 
+// selfSignedPair makes a Development Preview self-signed certificate and its key for host (PEM).
+func (e *Env) selfSignedPair(host string) (certPEM, keyPEM []byte, err error) {
+	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	if err != nil {
+		return nil, nil, err
+	}
+	serial, _ := rand.Int(rand.Reader, new(big.Int).Lsh(big.NewInt(1), 120))
+	tpl := &x509.Certificate{SerialNumber: serial, Subject: pkix.Name{CommonName: host, Organization: []string{"Svavyom Development Preview (self-signed)"}},
+		NotBefore: e.Now().Add(-time.Hour), NotAfter: e.Now().AddDate(1, 0, 0), KeyUsage: x509.KeyUsageDigitalSignature, ExtKeyUsage: []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
+		DNSNames: []string{host, "localhost"}, IPAddresses: []net.IP{net.ParseIP("127.0.0.1"), net.ParseIP("::1")}}
+	if ip := net.ParseIP(host); ip != nil {
+		tpl.IPAddresses = append(tpl.IPAddresses, ip)
+		tpl.DNSNames = []string{"localhost"}
+	}
+	der, err := x509.CreateCertificate(rand.Reader, tpl, tpl, &key.PublicKey, key)
+	if err != nil {
+		return nil, nil, err
+	}
+	kb, err := x509.MarshalPKCS8PrivateKey(key)
+	if err != nil {
+		return nil, nil, err
+	}
+	return pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: der}), pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: kb}), nil
+}
+
 // selfSignedTLS creates cert.pem and key.pem for a Development Preview. An existing pair is never replaced.
 func (e *Env) selfSignedTLS(host string) error {
 	dir := e.P(ConfigDir + "/tls")
@@ -455,30 +507,14 @@ func (e *Env) selfSignedTLS(host string) error {
 	if err := e.ensureDir(dir, 0o750, 0, apiG); err != nil {
 		return err
 	}
-	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	certPEM, keyPEM, err := e.selfSignedPair(host)
 	if err != nil {
 		return err
 	}
-	serial, _ := rand.Int(rand.Reader, new(big.Int).Lsh(big.NewInt(1), 120))
-	tpl := &x509.Certificate{SerialNumber: serial, Subject: pkix.Name{CommonName: host, Organization: []string{"Svavyom Development Preview (self-signed)"}},
-		NotBefore: e.Now().Add(-time.Hour), NotAfter: e.Now().AddDate(1, 0, 0), KeyUsage: x509.KeyUsageDigitalSignature, ExtKeyUsage: []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
-		DNSNames: []string{host, "localhost"}, IPAddresses: []net.IP{net.ParseIP("127.0.0.1"), net.ParseIP("::1")}}
-	if ip := net.ParseIP(host); ip != nil {
-		tpl.IPAddresses = append(tpl.IPAddresses, ip)
-		tpl.DNSNames = []string{"localhost"}
-	}
-	der, err := x509.CreateCertificate(rand.Reader, tpl, tpl, &key.PublicKey, key)
-	if err != nil {
+	if _, err := e.writeAtomic(keyPath, keyPEM, 0o640, 0, apiG); err != nil {
 		return err
 	}
-	kb, err := x509.MarshalPKCS8PrivateKey(key)
-	if err != nil {
-		return err
-	}
-	if _, err := e.writeAtomic(keyPath, pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: kb}), 0o640, 0, apiG); err != nil {
-		return err
-	}
-	_, err = e.writeAtomic(certPath, pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: der}), 0o644, 0, apiG)
+	_, err = e.writeAtomic(certPath, certPEM, 0o644, 0, apiG)
 	return err
 }
 
@@ -528,4 +564,26 @@ func (e *Env) installAccounts(ctx context.Context, ta *trustedArtifact) error {
 		return fmt.Errorf("systemd-tmpfiles: %s", clean(out))
 	}
 	return nil
+}
+
+// acmeAtInstall runs the staging rehearsal and then production. A failure is reported with its closed code and leaves the self-signed certificate in use.
+func (e *Env) acmeAtInstall(ctx context.Context, o InstallOptions, w io.Writer) {
+	var deps ACMEDeps
+	if o.acmeDeps != nil {
+		deps = *o.acmeDeps
+	}
+	base := ACMEOptions{Name: o.TLSAcme, Email: o.ACMEEmail, AcceptTerms: o.AcceptTerms}
+	for _, staging := range []bool{true, false} {
+		step := base
+		step.Staging = staging
+		if err := e.ACMEIssue(ctx, step, deps, w); err != nil {
+			code := tlsacme.CodeIssue
+			var te *tlsacme.Error
+			if errors.As(err, &te) {
+				code = te.Code
+			}
+			_, _ = fmt.Fprintf(w, "WARNING no Let's Encrypt certificate yet (%s): %v\n  The console uses the self-signed certificate. Fix the cause, then run: sudo svavyom-ctl tls acme-issue --name %s --email EMAIL --accept-terms --staging, and again without --staging.\n", code, err, o.TLSAcme)
+			return
+		}
+	}
 }

@@ -41,13 +41,14 @@ const usage = `usage: svavyom-ctl <command> [flags]
   status           [--url URL] [--json]                               service and API health
   support-bundle   --out DIR [--config FILE]                          scrubbed diagnostic archive (mode 0600)
   verify-artifact  DIR [--signatures DIR --public-key FILE] [--json]  check a release artifact against its manifest (and its signatures)
-  install          --artifact DIR [--apply] [--allow-not-ready] [--tls-self-signed HOST] [--pool P] [--network N] [--backup-dir D]
+  install          --artifact DIR [--apply] [--allow-not-ready] [--tls-self-signed HOST | --tls-acme NAME --acme-email E --accept-terms] [--pool P] [--network N] [--backup-dir D]
                    [--create-pool] [--enable-mutation] [--enable-console] [--listen ADDR] [--min-free-gib N]
                    [--enable-nightly-boot HH:MM | --disable-nightly-boot]
                    [--signatures DIR --public-key FILE | --allow-unsigned]   an artifact must be signed, or (unsigned) sit where only root can change it
   upgrade          --artifact DIR [--apply] [--allow-downgrade] [install flags]
   rollback         [--backup ID|latest] [--apply] [--restore-db]
   nightly-boot                                                        root: create, boot, check and delete a disposable VM through the API; record the result
+  tls acme-issue --name N --email E --accept-terms [--staging]       root: get a Let's Encrypt certificate for the console (rehearse with --staging first); also acme-renew, use-self-signed --name N
   firewall-check   [--write] [--config FILE] [--json]                 read-only: does a firewall block the VM network? (--write records it for the console)
   bridge plan                                                         read-only: propose a host bridge (svbr0) for the uplink and show the exact change (root records the plan)
   bridge apply     --plan ID --confirm-bridge svbr0 [--countdown S]   root: apply the plan; the old configuration returns by itself unless "bridge confirm" follows
@@ -80,6 +81,7 @@ func run(ctx context.Context, e *ctl.Env, args []string, stdout, stderr io.Write
 	apply := fl.Bool("apply", false, "perform the plan (default: print it only)")
 	username := fl.String("username", "", "user-unlock: the account to get back in (names the plan; the blocks are cleared for every account)")
 	allowNR := fl.Bool("allow-not-ready", false, "install: continue when the preflight is NOT_READY (never when it FAILs)")
+	tlsAcme := fl.String("tls-acme", "", "install: get a Let's Encrypt certificate for this public name (needs --acme-email and --accept-terms)")
 	tlsHost := fl.String("tls-self-signed", "", "install: create a Development Preview self-signed certificate for this host name if none exists")
 	pool := fl.String("pool", "", "install: libvirt pool name (default svavyom)")
 	network := fl.String("network", "", "install: libvirt network name (default default)")
@@ -102,7 +104,14 @@ func run(ctx context.Context, e *ctl.Env, args []string, stdout, stderr io.Write
 	countdown := fl.Int("countdown", 0, "bridge apply: seconds to confirm before the old configuration returns (default 120)")
 	auto := fl.Bool("auto", false, "bridge rollback: run by the timer; no confirmation, no error when there is nothing to undo")
 	noApply := fl.Bool("no-apply", false, "bridge rollback: only regenerate the netplan output (boot-time recovery)")
-	brName := fl.String("name", "", "bridge adopt: the existing bridge")
+	brName := fl.String("name", "", "bridge adopt: the existing bridge; tls: the public DNS name of the console")
+	acmeEmail := fl.String("email", "", "tls acme-issue: contact e-mail address for the certificate authority")
+	instEmail := fl.String("acme-email", "", "install: the contact e-mail address for --tls-acme")
+	acmeStaging := fl.Bool("staging", false, "tls acme-issue: rehearse against the Let's Encrypt staging service; nothing is installed")
+	acmeTerms := fl.Bool("accept-terms", false, "tls acme-issue, install --tls-acme: accept the certificate authority's terms of service")
+	acmeChallenge := fl.String("challenge", "http-01", "tls acme-issue: http-01 (port 80) or tls-alpn-01 (port 443)")
+	acmeSkipDNS := fl.Bool("skip-dns-check", false, "tls acme-issue: do not require the name to resolve to an address of this host (NAT, a proxy)")
+	acmeNoStaging := fl.Bool("no-staging-first", false, "tls acme-issue: ask the production service without a staging rehearsal (rate limits apply)")
 	keep := fl.Int("keep", 0, "db-backup: keep only this many of the newest copies (0 keeps all)")
 	purge := fl.Bool("purge", false, "uninstall: also delete Svavyom's own data")
 	confirm := fl.String("confirm-purge", "", "uninstall: the confirmation token")
@@ -130,7 +139,7 @@ func run(ctx context.Context, e *ctl.Env, args []string, stdout, stderr io.Write
 		_, _ = fmt.Fprintln(stderr, "ERROR", err)
 		return 1
 	}
-	inst := ctl.InstallOptions{Artifact: *artifact, Signatures: *sigDir, PublicKey: *pubKey, AllowUnsigned: *allowUnsigned, Apply: *apply, AllowNotReady: *allowNR, TLSSelfSigned: *tlsHost, Pool: *pool, Network: *network, BackupDir: *backupDir,
+	inst := ctl.InstallOptions{Artifact: *artifact, Signatures: *sigDir, PublicKey: *pubKey, AllowUnsigned: *allowUnsigned, Apply: *apply, AllowNotReady: *allowNR, TLSSelfSigned: *tlsHost, TLSAcme: *tlsAcme, ACMEEmail: *instEmail, AcceptTerms: *acmeTerms, Pool: *pool, Network: *network, BackupDir: *backupDir,
 		CreatePool: *createPool, EnableMutation: *enMut, EnableConsole: *enCon, Listen: *listen, MinFreeGiB: *minFree, EnableNightlyBoot: *enNightly, DisableNightlyBoot: *disNightly}
 	switch cmd {
 	case "version":
@@ -209,6 +218,27 @@ func run(ctx context.Context, e *ctl.Env, args []string, stdout, stderr io.Write
 		return 0
 	case "rollback":
 		if err := ctl.Rollback(ctx, e, ctl.RollbackOptions{BackupID: *backup, Apply: *apply, RestoreDB: *restoreDB}, stdout); err != nil {
+			return fail(err)
+		}
+		return 0
+	case "tls":
+		if len(pos) != 1 {
+			_, _ = fmt.Fprintln(stderr, "usage: svavyom-ctl tls acme-issue --name NAME --email EMAIL --accept-terms [--staging] [--challenge http-01|tls-alpn-01] [--skip-dns-check]\n       svavyom-ctl tls acme-renew\n       svavyom-ctl tls use-self-signed --name HOST")
+			return 2
+		}
+		var err error
+		switch pos[0] {
+		case "acme-issue":
+			err = e.ACMEIssue(ctx, ctl.ACMEOptions{Name: *brName, Email: *acmeEmail, Staging: *acmeStaging, AcceptTerms: *acmeTerms, Challenge: *acmeChallenge, SkipDNSCheck: *acmeSkipDNS, NoStagingFirst: *acmeNoStaging}, ctl.ACMEDeps{}, stdout)
+		case "acme-renew":
+			err = e.ACMERenew(ctx, ctl.ACMEDeps{}, stdout)
+		case "use-self-signed":
+			err = e.UseSelfSigned(ctx, *brName, stdout)
+		default:
+			_, _ = fmt.Fprintln(stderr, "usage: svavyom-ctl tls acme-issue|acme-renew|use-self-signed")
+			return 2
+		}
+		if err != nil {
 			return fail(err)
 		}
 		return 0

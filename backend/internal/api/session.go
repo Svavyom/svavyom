@@ -63,6 +63,8 @@ type Deps struct {
 	SSHKeys SSHKeyLibrary
 	// Services reports whether each service the API depends on answers (agent, mutation, console, offsite): "ok", "unreachable" or "not_enabled". Nil reports none.
 	Services func() []ServiceState
+	// Certificate describes the TLS certificate in use (DR-034); nil, or returning nil, when TLS is terminated by a proxy in front.
+	Certificate func() *CertificateView
 	// StartedAt is when this API process started (the status page shows it); zero when unknown.
 	StartedAt time.Time
 	// NightlyBoot returns the last nightly real guest boot recorded by svavyom-ctl (DR-024 D4), or nil when none has run. The API reads a file; it never runs one.

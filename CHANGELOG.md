@@ -3,6 +3,7 @@
 What changed in each release, in words an operator can use. The version is in `VERSION` and in `svavyom-ctl version`. Releases from **0.1.0-preview.16** are signed with the maintainer's Ed25519 key (fingerprint `247e9193c933b6fa`, `ci/sign/README.md`); earlier ones are not. An upgrade across a database change can only be rolled back with the pre-upgrade database copy (`INSTALLING.md`, section 5): the entries that say "database" below are those.
 
 ## Unreleased
+* **Certificates from Let's Encrypt.** `svavyom-ctl tls acme-issue` (rehearse with `--staging`, then the real one), `install --tls-acme`, a daily renewal timer that renews when a third of the lifetime is left, and `tls use-self-signed` to go back. The console reloads a new certificate without a restart. **System** shows the certificate, its renewal and the last result, and an alert `certificate_expiring` is raised from 14 days left. Phase 1 uses HTTP-01 (port 80) or TLS-ALPN-01 (port 443); DNS-01 and IP-address certificates are not included.
 * **Start on host boot.** A VM created in the console, and every VM that was running when the host went down, starts again when the host boots; the box is on by default and can be turned off at creation or on the VM page. A VM you stopped, forced off or deleted stays that way. An alert and the System page say when a VM that should be running is stopped. `svavyom-ctl status` reports when `libvirt-guests` would not stop guests cleanly.
 * **Database:** the operations table and a new boot-policy table change. Rolling back needs `--restore-db`.
 

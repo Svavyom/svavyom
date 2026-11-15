@@ -105,7 +105,8 @@
                       "state": "not_enabled"
                     }
                   ],
-                  "started_at": "2026-10-09T08:00:00Z"
+                  "started_at": "2026-10-09T08:00:00Z",
+                  "certificate": null
                 },
                 "allowed_actions": []
               }
@@ -205,7 +206,8 @@
                       "state": "not_enabled"
                     }
                   ],
-                  "started_at": "2026-10-09T08:00:00Z"
+                  "started_at": "2026-10-09T08:00:00Z",
+                  "certificate": null
                 },
                 "allowed_actions": []
               }
@@ -1883,7 +1885,8 @@
                       "state": "not_enabled"
                     }
                   ],
-                  "started_at": "2026-10-09T08:00:00Z"
+                  "started_at": "2026-10-09T08:00:00Z",
+                  "certificate": null
                 },
                 "allowed_actions": []
               }
@@ -1991,7 +1994,8 @@
                       "state": "not_enabled"
                     }
                   ],
-                  "started_at": "2026-10-09T08:00:00Z"
+                  "started_at": "2026-10-09T08:00:00Z",
+                  "certificate": null
                 },
                 "allowed_actions": []
               }

@@ -935,7 +935,7 @@ components:
         observed:
           type: object
           additionalProperties: false
-          required: [reachable, agent_version, cpu_count, memory_mib, capability_verdict, virtualization, distribution, creation, storage, usage, alerts, nightly_boot, bridge, services, started_at, capability_findings]
+          required: [reachable, agent_version, cpu_count, memory_mib, capability_verdict, virtualization, distribution, creation, storage, usage, alerts, nightly_boot, bridge, services, started_at, certificate, capability_findings]
           x-data-class: operational
           properties:
             reachable:
@@ -1284,6 +1284,70 @@ components:
               maxLength: 40
               x-data-class: operational
               description: When this API process started; null when unknown.
+            certificate:
+              type: [object, "null"]
+              additionalProperties: false
+              required: [names, issuer, not_before, not_after, days_left, source, renews_from, managed, last_attempt, last_result, last_detail]
+              x-data-class: operational
+              description: The TLS certificate the console serves (DR-034); null when TLS is ended by a proxy in front of the API. Nothing secret. Issuing and renewing are done on the host with svavyom-ctl; this only reports.
+              properties:
+                names:
+                  type: array
+                  maxItems: 16
+                  x-data-class: operational
+                  items:
+                    type: string
+                    maxLength: 253
+                    x-data-class: operational
+                issuer:
+                  type: string
+                  maxLength: 200
+                  x-data-class: operational
+                not_before:
+                  type: string
+                  format: date-time
+                  maxLength: 40
+                  x-data-class: operational
+                not_after:
+                  type: string
+                  format: date-time
+                  maxLength: 40
+                  x-data-class: operational
+                days_left:
+                  type: integer
+                  minimum: -3650
+                  maximum: 3650
+                  x-data-class: operational
+                  description: Whole days until expiry; negative once it has expired.
+                source:
+                  type: string
+                  enum: [self_signed, lets_encrypt, lets_encrypt_staging, other]
+                  x-data-class: operational
+                renews_from:
+                  type: string
+                  format: date-time
+                  maxLength: 40
+                  x-data-class: operational
+                  description: When a third of the lifetime is left, the time svavyom-ctl renews from.
+                managed:
+                  type: boolean
+                  x-data-class: operational
+                  description: True when the renewal timer renews this certificate by itself.
+                last_attempt:
+                  type: [string, "null"]
+                  format: date-time
+                  maxLength: 40
+                  x-data-class: operational
+                last_result:
+                  type: [string, "null"]
+                  maxLength: 64
+                  pattern: "^[a-z_]{1,40}$"
+                  x-data-class: operational
+                  description: ok, or the closed code of the failure (dns_mismatch, port_in_use, validation_failed, rate_limited and the like).
+                last_detail:
+                  type: [string, "null"]
+                  maxLength: 400
+                  x-data-class: operational
             capability_findings:
               type: array
               maxItems: 16

@@ -18,6 +18,8 @@ export const RULES: Record<string, RuleText> = {
     todo: "Look at the console output and the host log for the reason, then start it again. A guest that shuts itself down is the usual cause." },
   vm_not_started_after_boot: { title: "A virtual machine that should be running is stopped", detail: () => "It was left running and its \"start on host boot\" box is ticked, yet it is stopped (after a host reboot, or because it shut itself down).",
     todo: "Open the machine, look at its console output and the host log for the reason, then start it. Untick \"start on host boot\" on its page if it is meant to stay stopped." },
+  certificate_expiring: { title: "The console's TLS certificate is about to expire", detail: () => "Little of the certificate's lifetime is left, and it has not been renewed.",
+    todo: "Open System to see the certificate and the last renewal result. For a Let's Encrypt certificate run: sudo svavyom-ctl tls acme-renew. A self-signed certificate is replaced with sudo svavyom-ctl tls use-self-signed --name HOST, or install your own certificate." },
   operation_retries_exhausted: { title: "A request ran out of retries", detail: () => "Svavyom tried this several times and the host did not complete it.",
     todo: "Open Activity to see what was asked and why it failed. Cancel the request or fix the cause and ask again." },
   scheduled_backup_failed: { title: "A scheduled backup did not complete", detail: () => "The last scheduled run for this machine failed or could not start.",

@@ -25,3 +25,14 @@ func TestHostWithoutProbeStillListsTheAPIAndNoStartTime(t *testing.T) {
 		t.Fatalf("got %+v %v", got.Observed.Services, got.Observed.StartedAt)
 	}
 }
+
+func TestHostReportsTheCertificateOnlyWhenThereIsOne(t *testing.T) {
+	if got := (&Handler{}).hostWithSystem(hostJSON{}); got.Observed.Certificate != nil {
+		t.Fatal("behind a proxy there is no certificate to report")
+	}
+	cv := &CertificateView{Names: []string{"console.example.org"}, Source: "lets_encrypt", DaysLeft: 60, Managed: true}
+	got := (&Handler{deps: Deps{Certificate: func() *CertificateView { return cv }}}).hostWithSystem(hostJSON{})
+	if got.Observed.Certificate != cv {
+		t.Fatalf("%+v", got.Observed.Certificate)
+	}
+}

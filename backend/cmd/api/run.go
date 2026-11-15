@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"context"
+	ctls "crypto/tls"
 	"errors"
 	"flag"
 	"fmt"
@@ -36,6 +37,7 @@ import (
 	"example.invalid/dedicatedcloud/backend/internal/schedule"
 	"example.invalid/dedicatedcloud/backend/internal/sqlitedb"
 	"example.invalid/dedicatedcloud/backend/internal/sshkeys"
+	"example.invalid/dedicatedcloud/backend/internal/tlsacme"
 )
 
 // run executes a subcommand and returns the process exit code. It never prints a password, hash or token.
@@ -352,6 +354,9 @@ func serve(ctx context.Context, args []string, stderr io.Writer) int {
 	deps.SSHKeys = keyLib
 	deps.StartedAt = time.Now()
 	deps.Services = serviceProbe(map[string]string{"agent": *agentSocket, "mutation": *mutSocket, "console": *consoleSocket, "offsite": *offsiteSocket})
+	if tls {
+		deps.Certificate = certificateView(*cert, time.Now)
+	}
 	if *firewallStatus != "" {
 		deps.Firewall = func() []api.FirewallFinding {
 			r, ok := fwstatus.Read(os.ReadFile, *firewallStatus, time.Now(), 7*24*time.Hour)
@@ -622,10 +627,19 @@ func serve(ctx context.Context, args []string, stderr io.Writer) int {
 	} else {
 		close(workerDone)
 	}
+	if tls {
+		// The certificate is read again when its files change (DR-034 D3): a renewal needs no restart. A new pair that does not parse keeps the old one.
+		rl := &tlsacme.Reloader{CertFile: *cert, KeyFile: *key, Log: func(code, detail string) { _, _ = fmt.Fprintf(stderr, "%s: %s\n", code, detail) }}
+		if err := rl.Load(); err != nil {
+			_, _ = fmt.Fprintln(stderr, "ERROR the TLS certificate and key cannot be used:", err)
+			return 1
+		}
+		srv.TLSConfig = &ctls.Config{GetCertificate: rl.GetCertificate, MinVersion: ctls.VersionTLS12}
+	}
 	errc := make(chan error, 1)
 	go func() {
 		if tls {
-			errc <- srv.ListenAndServeTLS(*cert, *key)
+			errc <- srv.ListenAndServeTLS("", "")
 		} else {
 			errc <- srv.ListenAndServe()
 		}
