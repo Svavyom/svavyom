@@ -31,4 +31,6 @@ export SVAVYOM_SUPERVISOR_BIN=/tmp/svavyom-mutation-supervisor SVAVYOM_HELPER_SI
 if node e2e/sandbox-probe.mjs; then FE_NO_SANDBOX=0; else FE_NO_SANDBOX=1; fi
 export FE_NO_SANDBOX
 # 4 and 5. vite preview on 127.0.0.1 (playwright.config.ts webServer) and the Playwright suite.
-npx playwright test
+# PLAYWRIGHT_ARGS narrows or repeats a run when a scenario is being investigated (for example: e2e/x.spec.ts -g "name" --repeat-each 40); the gate sets nothing.
+# shellcheck disable=SC2086
+npx playwright test ${PLAYWRIGHT_ARGS:-}
