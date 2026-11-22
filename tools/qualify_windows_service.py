@@ -120,8 +120,10 @@ def problems(a):
             out.append("%s is not a valid image id" % n)
     if a.image == a.driver_image:
         out.append("the installer and the driver image must differ")
-    if not re.fullmatch(r"http://127\.0\.0\.1:[0-9]{2,5}|http://localhost:[0-9]{2,5}", a.base):
-        out.append("--base must be the local API address (http://127.0.0.1:PORT): the console client speaks plain WebSocket")
+    try:
+        load_graphics().loopback_base(a.base)
+    except ValueError as e:
+        out.append("--base: %s" % e)
     if not os.path.isfile(a.password_file):
         out.append("--password-file not found")
     return out

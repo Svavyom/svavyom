@@ -2,13 +2,13 @@
 """Real-host qualification of the graphical console, installation media and rescue mode (DR-026). Stdlib only. Drives an INSTALLED Svavyom through its
 public API and a hand-made RFC 6455 + RFB client, so what it sees is what a browser would: the real VNC server of a real QEMU guest, through the broker.
 
-    python3 tools/qualify_graphics.py --base http://127.0.0.1:8443 --user certify --password-file PW --image ubuntu-24.04 --media alpine-virt \
+    python3 tools/qualify_graphics.py --base http://127.0.0.1:8443 (or https://127.0.0.1:8443 for the installation's own self-signed certificate) --user certify --password-file PW --image ubuntu-24.04 --media alpine-virt \
         --key KEY_A --key-b KEY_B --out DIR [--ctl ...]
 
 KEY_A and KEY_B are disposable ssh key pairs (private files, with .pub next to them). The run creates ONE VM named after the run id, proves each criterion and
 removes the VM. Screenshots (PNG) of the guest's screen are written to DIR. No password, cookie, ticket or key is printed.
 """
-import argparse, base64, http.cookiejar, json, os, re, secrets, socket, struct, subprocess, sys, time, urllib.error, urllib.request, zlib
+import argparse, base64, http.cookiejar, json, os, re, secrets, socket, ssl, struct, subprocess, sys, time, urllib.error, urllib.request, zlib
 
 sys.dont_write_bytecode = True
 R = []
@@ -25,11 +25,31 @@ def sh(cmd, timeout=120):
     return r.returncode, (r.stdout + r.stderr)
 
 
+def loopback_base(base):
+    """(scheme, host, port) of a local API address: http or https on 127.0.0.1 or localhost. Nothing else is accepted, because an https address is reached without
+    verifying the certificate (the installation's own self-signed one), which is only sound on the loopback interface."""
+    m = re.fullmatch(r"(https?)://(127\.0\.0\.1|localhost):([0-9]{2,5})", base or "")
+    if not m:
+        raise ValueError("the API address must be http:// or https:// on 127.0.0.1 or localhost, with a port")
+    return m.group(1), m.group(2), int(m.group(3))
+
+
+def insecure_context():
+    ctx = ssl.create_default_context()
+    ctx.check_hostname = False
+    ctx.verify_mode = ssl.CERT_NONE
+    return ctx
+
+
 class Api:
     def __init__(self, base, pwfile, user):
+        self.scheme, self.host, self.port = loopback_base(base)
         self.base, self.pwfile, self.user = base, pwfile, user
         self.jar = http.cookiejar.CookieJar()
-        self.op = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(self.jar))
+        handlers = [urllib.request.HTTPCookieProcessor(self.jar)]
+        if self.scheme == "https":
+            handlers.append(urllib.request.HTTPSHandler(context=insecure_context()))
+        self.op = urllib.request.build_opener(*handlers)
         self.csrf = None
 
     def call(self, method, path, body=None):
@@ -95,11 +115,13 @@ class WS:
         self.sock = None
         if s != 200:
             return
-        host, port = re.match(r"http://([^:/]+):(\d+)", api.base).groups()
+        host, port = api.host, api.port
         cookies = "; ".join(f"{c.name}={c.value}" for c in api.jar)
         key = base64.b64encode(os.urandom(16)).decode()
         proto = "svavyom.graphics.v1" if kind == "graphics" else "svavyom.console.v1"
         sock = socket.create_connection((host, int(port)), timeout=15)
+        if api.scheme == "https":
+            sock = insecure_context().wrap_socket(sock, server_hostname=host)
         sock.sendall((f"GET /console/v1/vms/{vm}/{'graphics-socket' if kind == 'graphics' else 'socket'} HTTP/1.1\r\nHost: {host}:{port}\r\nUpgrade: websocket\r\n"
                       f"Connection: Upgrade\r\nSec-WebSocket-Key: {key}\r\nSec-WebSocket-Version: 13\r\nSec-WebSocket-Protocol: {proto}, t.{t['ticket']}\r\n"
                       f"Origin: {api.base}\r\nCookie: {cookies}\r\n\r\n").encode())
