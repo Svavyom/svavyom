@@ -67,6 +67,42 @@ class Keep(unittest.TestCase):
         self.assertEqual(k.removable_disks(BLK.replace("/pool/wk-a1b2c3", "/pool/../../etc/x")), [])
 
 
+media = load("qualify_media_service")
+win = load("qualify_windows_service")
+
+
+class WaitForTheDomainToGo(unittest.TestCase):
+    """The delete operation has reported success; the service runs measure how long libvirt takes to agree (a lag is recorded, a domain that never goes is a failure)."""
+
+    def test_a_domain_that_goes_after_a_moment_reports_the_wait(self):
+        for mod in (media, win):
+            calls = []
+
+            def names():
+                calls.append(1)
+                return ["x"] if len(calls) < 3 else []
+            waited = mod.wait_domain_gone("x", names, timeout=5, step=0.01)
+            self.assertIsNotNone(waited, mod.__name__)
+            self.assertEqual(len(calls), 3)
+
+    def test_a_domain_that_stays_is_none_after_the_timeout(self):
+        for mod in (media, win):
+            self.assertIsNone(mod.wait_domain_gone("x", lambda: ["x"], timeout=0.05, step=0.01), mod.__name__)
+
+    def test_an_empty_host_means_the_domain_is_gone_and_an_unreadable_one_means_it_may_not_be(self):
+        for mod in (media, win):
+            self.assertEqual(mod.listed("x", {}), [])
+            self.assertEqual(mod.listed("x", []), [])
+            self.assertEqual(mod.listed("x", None), ["x"])
+            self.assertEqual(mod.listed("x", {"y": "running"}), ["y"])
+            self.assertIsNotNone(mod.wait_domain_gone("x", lambda: mod.listed("x", {}), timeout=1, step=0.01))
+            self.assertIsNone(mod.wait_domain_gone("x", lambda: mod.listed("x", None), timeout=0.05, step=0.01))
+
+    def test_a_domain_already_gone_returns_at_once(self):
+        for mod in (media, win):
+            self.assertLess(mod.wait_domain_gone("x", lambda: [], timeout=5, step=1), 0.5, mod.__name__)
+
+
 class Stages(unittest.TestCase):
     def test_the_stages_are_registered(self):
         for s in ("media", "winupgrade"):

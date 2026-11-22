@@ -41,6 +41,31 @@ def virsh(*args, timeout=60):
     return r.returncode, r.stdout
 
 
+def listed(name, rows):
+    """The domains libvirt lists, as a list of names; None (libvirt could not be read) counts as "still there", but an EMPTY list is a host with no domains: the one under
+    test is gone. (A plain `rows or [name]` took an empty host for an unreadable one and failed every run on a host with no other domain.)"""
+    return [name] if rows is None else list(rows)
+
+
+def lingering(name):
+    """What libvirt says about a domain that is still there after its delete succeeded: state, persistence, autostart (for the record of the failure)."""
+    rc, out = virsh("dominfo", name)
+    keep = [ln.strip() for ln in out.splitlines() if ln.split(":")[0].strip() in ("Id", "State", "Persistent", "Autostart", "Managed save")]
+    return "; ".join(keep) if rc == 0 else "dominfo failed"
+
+
+def wait_domain_gone(name, names, timeout=30.0, step=0.5):
+    """Seconds until `name` is no longer among the domains `names()` lists, or None when it is still there after the timeout. The delete operation has already reported success:
+    the wait records how long libvirt took to agree, so a lag is measured, not hidden."""
+    start = time.time()
+    while True:
+        if name not in names():
+            return time.time() - start
+        if time.time() - start >= timeout:
+            return None
+        time.sleep(step)
+
+
 def domain_states():
     rc, out = virsh("list", "--all")
     rows = {}
@@ -254,8 +279,9 @@ def main(argv=None):
             api.op_run("force_off", "VM", name, timeout=90)
             api.wait_vm(name, "stopped", timeout=90)
             ok, m = api.op_run("delete", "VM", name)
-            gone = name not in (domain_states() or {name: ""})
-            rec("cleanup", ok and gone, m + ("; the domain is gone from libvirt" if gone else "; THE DOMAIN IS STILL IN LIBVIRT"))
+            waited = wait_domain_gone(name, lambda: listed(name, domain_states()))
+            gone = waited is not None
+            rec("cleanup", ok and gone, m + ("; the domain is gone from libvirt (after %.1f s)" % waited if gone else "; THE DOMAIN IS STILL IN LIBVIRT 30 SECONDS AFTER THE DELETE SUCCEEDED (%s)" % lingering(name)))
         after = domain_states()
         rec("other-domains-untouched", after is not None and after == before, "every other domain is in the state it was found in" if after == before else "libvirt's domain list changed")
     return finish(g, a)
