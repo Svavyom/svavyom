@@ -406,6 +406,9 @@ func (h *Handler) consoleSocket(w http.ResponseWriter, r *http.Request, vm, kind
 
 // pumpConsole joins the WebSocket and the broker attachment until either ends, the session ends or the lifetime bound is reached.
 // It returns the closed reason (for the audit trail).
+// maxStoreErrors is how many session checks in a row may fail because the store cannot answer before an open console is closed (DR-044 D2).
+const maxStoreErrors = 3
+
 func (h *Handler) pumpConsole(ws *console.WS, att *console.Attachment, token string, c *Console) string {
 	maxLife, check := c.MaxSession, c.SessionCheck
 	if maxLife <= 0 {
@@ -467,6 +470,7 @@ func (h *Handler) pumpConsole(ws *console.WS, att *console.Attachment, token str
 		defer t.Stop()
 		life := time.NewTimer(maxLife)
 		defer life.Stop()
+		storeErrors := 0
 		for {
 			select {
 			case <-done:
@@ -475,9 +479,19 @@ func (h *Handler) pumpConsole(ws *console.WS, att *console.Attachment, token str
 				finish("lifetime", console.CloseGoingAway)
 				return
 			case <-t.C:
-				if _, _, ok, failed := h.sessionByToken(context.Background(), token); !ok && !failed {
+				ok, failed := h.sessionStillValid(context.Background(), token)
+				switch {
+				case !ok && !failed:
 					finish("session_ended", console.ClosePolicy)
 					return
+				case failed:
+					// fail closed (DR-044 D2): a session store that cannot answer three checks in a row ends the console rather than leaving it unwatched
+					if storeErrors++; storeErrors >= maxStoreErrors {
+						finish("session_unavailable", console.ClosePolicy)
+						return
+					}
+				default:
+					storeErrors = 0
 				}
 			}
 		}
@@ -540,6 +554,7 @@ func (h *Handler) pumpGraphics(ws *console.WS, conn net.Conn, token string, c *C
 		defer t.Stop()
 		life := time.NewTimer(maxLife)
 		defer life.Stop()
+		storeErrors := 0
 		for {
 			select {
 			case <-done:
@@ -548,9 +563,19 @@ func (h *Handler) pumpGraphics(ws *console.WS, conn net.Conn, token string, c *C
 				finish("lifetime", console.CloseGoingAway)
 				return
 			case <-t.C:
-				if _, _, ok, failed := h.sessionByToken(context.Background(), token); !ok && !failed {
+				ok, failed := h.sessionStillValid(context.Background(), token)
+				switch {
+				case !ok && !failed:
 					finish("session_ended", console.ClosePolicy)
 					return
+				case failed:
+					// fail closed (DR-044 D2): a session store that cannot answer three checks in a row ends the console rather than leaving it unwatched
+					if storeErrors++; storeErrors >= maxStoreErrors {
+						finish("session_unavailable", console.ClosePolicy)
+						return
+					}
+				default:
+					storeErrors = 0
 				}
 			}
 		}

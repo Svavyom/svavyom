@@ -730,3 +730,34 @@ func TestFirstUnknownUserCostsTheSameAsTheRest(t *testing.T) {
 		t.Fatal("the dummy hash must exist before the first request")
 	}
 }
+
+// DR-044 D3 (finding F-09): Check, which the console uses to look at the session it was opened under, enforces expiry but never extends the idle window, so an open console does
+// not keep an idle session alive; Authenticate (a request to the API) does.
+func TestCheckEnforcesExpiryButDoesNotExtendTheIdleWindow(t *testing.T) {
+	r := newRig(t)
+	r.bootstrap()
+	res := r.signIn()
+	for i := 0; i < 5; i++ { // 25 minutes of an open console checking its session every 5 minutes
+		r.clk.add(5 * time.Minute)
+		if _, err := r.svc.Check(ctx, res.SessionToken); err != nil {
+			t.Fatalf("step %d: %v", i, err)
+		}
+	}
+	r.clk.add(6 * time.Minute) // 31 minutes since the last request to the API
+	if _, err := r.svc.Check(ctx, res.SessionToken); !errors.Is(err, ErrUnauthenticated) {
+		t.Fatalf("checks must not have extended the idle window: %v", err)
+	}
+	if _, err := r.svc.Authenticate(ctx, res.SessionToken); !errors.Is(err, ErrUnauthenticated) {
+		t.Fatalf("the expired session stays dead: %v", err)
+	}
+	// the control: the same time with a real request in the middle keeps the session
+	res = r.signIn()
+	r.clk.add(25 * time.Minute)
+	if _, err := r.svc.Authenticate(ctx, res.SessionToken); err != nil {
+		t.Fatal(err)
+	}
+	r.clk.add(25 * time.Minute)
+	if _, err := r.svc.Check(ctx, res.SessionToken); err != nil {
+		t.Fatalf("a request at +25m keeps the session at +50m: %v", err)
+	}
+}

@@ -33,6 +33,8 @@ const DefaultTicketTTL = 30 * time.Second
 const (
 	ticketBytes = 32
 	maxTickets  = 256
+	// maxPerSession bounds the unused tickets one session may hold, so one operator cannot use up the pool (DR-044 D2, finding F-09).
+	maxPerSession = 8
 )
 
 type entry struct {
@@ -86,7 +88,16 @@ func (t *Tickets) Mint(sessionToken, vm, kind string) (ticket string, expires ti
 	if len(t.m) >= maxTickets {
 		return "", time.Time{}, ErrBusy
 	}
-	t.m[sha256.Sum256([]byte(ticket))] = entry{session: sessionKey(sessionToken), vm: vm, kind: kind, expires: expires}
+	mine, key := 0, sessionKey(sessionToken)
+	for _, e := range t.m {
+		if e.session == key && !e.used && now.Before(e.expires) {
+			mine++
+		}
+	}
+	if mine >= maxPerSession {
+		return "", time.Time{}, ErrBusy
+	}
+	t.m[sha256.Sum256([]byte(ticket))] = entry{session: key, vm: vm, kind: kind, expires: expires}
 	return ticket, expires, nil
 }
 

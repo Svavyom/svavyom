@@ -682,6 +682,16 @@ const touchEvery = 10 * time.Second
 // Authenticate resolves a session token to a Session, enforcing revocation, idle and absolute expiry, and records
 // activity. Any malformed, unknown, revoked or expired token is ErrUnauthenticated, indistinguishably.
 func (s *Service) Authenticate(ctx context.Context, token string) (Session, error) {
+	return s.authenticate(ctx, token, true)
+}
+
+// Check resolves a session token like Authenticate (revocation, idle and absolute expiry are enforced, an expired session is revoked) but does NOT record
+// activity: it is for the console's periodic look at the session it was opened under, which must not keep an idle session alive (DR-044 D3, finding F-09).
+func (s *Service) Check(ctx context.Context, token string) (Session, error) {
+	return s.authenticate(ctx, token, false)
+}
+
+func (s *Service) authenticate(ctx context.Context, token string, touch bool) (Session, error) {
 	if !ValidTokenFormat(token) {
 		return Session{}, ErrUnauthenticated
 	}
@@ -724,7 +734,7 @@ func (s *Service) Authenticate(ctx context.Context, token string) (Session, erro
 		}
 		return Session{}, ErrUnauthenticated
 	}
-	if now.Sub(lastT) >= touchEvery {
+	if touch && now.Sub(lastT) >= touchEvery {
 		// Conditional on revoked_at IS NULL so a concurrent sign-out wins over a touch.
 		if _, err := s.db.ExecContext(ctx, `UPDATE sessions SET last_activity = ? WHERE id_hash = ? AND revoked_at IS NULL AND last_activity < ?`,
 			now.UnixNano(), h, now.UnixNano()); err != nil {
