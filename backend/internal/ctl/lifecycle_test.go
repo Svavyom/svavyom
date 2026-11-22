@@ -563,7 +563,9 @@ func TestSemverOrdering(t *testing.T) {
 	}{{"0.1.0", "0.2.0", true}, {"0.2.0", "0.1.0", false}, {"0.1.0-preview.0", "0.1.0", true}, {"0.1.0", "0.1.0-preview.0", false}, {"1.0.0", "0.9.9", false}, {"0.1.0", "0.1.0", false}, {"0.1.9", "0.1.10", true},
 		// pre-release identifiers are numbers: preview.10 is newer than preview.9 (found when upgrading the qualification host)
 		{"0.1.0-preview.9", "0.1.0-preview.10", true}, {"0.1.0-preview.10", "0.1.0-preview.9", false}, {"0.1.0-preview.10", "0.1.0-preview.10", false},
-		{"0.1.0-preview.2", "0.1.0-preview.11", true}, {"0.1.0-alpha.1", "0.1.0-alpha.beta", true}, {"0.1.0-alpha", "0.1.0-alpha.1", true}, {"0.1.0-rc.1", "0.1.0", true}} {
+		{"0.1.0-preview.2", "0.1.0-preview.11", true}, {"0.1.0-alpha.1", "0.1.0-alpha.beta", true}, {"0.1.0-alpha", "0.1.0-alpha.1", true}, {"0.1.0-rc.1", "0.1.0", true},
+		// the first release candidate comes after every preview, before the release, and before a second candidate
+		{"0.1.0-preview.18", "0.1.0-rc.1", true}, {"0.1.0-rc.1", "0.1.0-preview.18", false}, {"0.1.0-rc.1", "0.1.0-rc.2", true}, {"0.1.0-rc.2", "0.1.0-rc.10", true}} {
 		if semverLess(c.a, c.b) != c.less {
 			t.Errorf("%s < %s should be %v", c.a, c.b, c.less)
 		}
