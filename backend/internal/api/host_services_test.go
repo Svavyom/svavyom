@@ -36,3 +36,17 @@ func TestHostReportsTheCertificateOnlyWhenThereIsOne(t *testing.T) {
 		t.Fatalf("%+v", got.Observed.Certificate)
 	}
 }
+
+func TestHostFindingsJoinTheRecordedFirewallFindings(t *testing.T) {
+	h := &Handler{deps: Deps{
+		Firewall:     func() []FirewallFinding { return []FirewallFinding{{Code: "FW_X", Remediation: "a"}} },
+		HostFindings: func() []FirewallFinding { return []FirewallFinding{{Code: "LIBVIRT_GUESTS_OFF", Remediation: "b"}} },
+	}}
+	got := h.firewallFindings()
+	if len(got) != 2 || got[0].Code != "FW_X" || got[1].Code != "LIBVIRT_GUESTS_OFF" {
+		t.Fatalf("%+v", got)
+	}
+	if (&Handler{}).firewallFindings() != nil {
+		t.Fatal("nothing recorded, nothing computed: no findings")
+	}
+}

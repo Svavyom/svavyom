@@ -53,6 +53,8 @@ type Deps struct {
 	Usage UsageSource
 	// Firewall returns the findings of the last firewall check recorded by svavyom-ctl (DR-024 D1); nil adds none. The API never reads firewall state itself.
 	Firewall func() []FirewallFinding
+	// HostFindings returns findings the API computes itself from files it may read (for now: guests not shut down cleanly, DR-042 D6); nil adds none.
+	HostFindings func() []FirewallFinding
 	// Alerts is the alert subsystem as the API sees it (DR-024 D2). Nil reports no alerts and an empty list.
 	Alerts *AlertsView
 	// Schedules is the backup schedule store (DR-024 D3). Nil reports every VM without a schedule and offers no schedule action.

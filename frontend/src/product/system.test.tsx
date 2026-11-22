@@ -127,3 +127,13 @@ describe("Certificate (DR-034)", () => {
   });
 });
 
+describe("Host findings (DR-042 D6)", () => {
+  it("shows the libvirt-guests finding the API computes, with its remediation", async () => {
+    host = { ...HOST, observed: { ...HOST.observed, capability_findings: [{ code: "LIBVIRT_GUESTS_OFF", remediation: "Enable libvirt-guests (systemctl enable libvirt-guests) and set ON_SHUTDOWN=shutdown in /etc/default/libvirt-guests, so running VMs are shut down cleanly when the host stops." }] } };
+    render(<Root />);
+    expect(await screen.findByRole("heading", { name: "Host findings" })).toBeTruthy();
+    expect(screen.getByText(/set ON_SHUTDOWN=shutdown in \/etc\/default\/libvirt-guests/)).toBeTruthy();
+    expect(validate("Host", host)).toEqual({ ok: true });
+  });
+});
+

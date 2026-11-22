@@ -1,0 +1,126 @@
+{
+  "schema": 1,
+  "description": "The twelve findings of the second security review (target 0.1.0-preview.13) and where each stands (T-1 of operations/FINDINGS-FIX-PLAN-2026-11-14.md). A finding is 'fixed' only with at least one existing test that fails without the fix; an 'open' one names the story that will fix it or says it is undecided. This file is traceability for people; the STRIDE register (threat-register.json) stays the checked security model. tests/unit_review_findings.py keeps it honest.",
+  "findings": [
+    {
+      "id": "F-01",
+      "title": "Backup retention treated an unlisted backup as gone, so a list truncated at 100 entries made it forget backups that still existed",
+      "severity": "high",
+      "status": "fixed",
+      "tests": [
+        "backend/internal/mutagent/list_backups_test.go::TestListedBackupsSignalsTruncation",
+        "backend/internal/schedule/retention_listing_test.go::TestRetentionDoesNothingOnAnIncompleteListing"
+      ],
+      "story": "M0-E01-S08"
+    },
+    {
+      "id": "F-02",
+      "title": "Install and upgrade read a file twice (a swap between verification and use), and signatures were not enforced",
+      "severity": "high",
+      "status": "fixed",
+      "tests": [
+        "backend/internal/ctl/trust_test.go::TestAFileSwappedAfterVerificationIsNotInstalled",
+        "backend/internal/ctl/trust_test.go::TestAnUnsignedArtifactMustSitWhereOnlyRootCanChangeIt",
+        "backend/internal/ctl/signature_test.go::TestSignedArtifactVerifiesAndEveryTamperingIsRefused"
+      ],
+      "story": "M0-E01-S13"
+    },
+    {
+      "id": "F-03",
+      "title": "Sign-in throttling let one visitor lock the administrator out, and trusted the client address wrongly behind a proxy",
+      "severity": "medium",
+      "status": "fixed",
+      "tests": [
+        "backend/internal/api/proxy_signin_test.go::TestProxiedSignInIsThrottledPerClientAndAuditedWithItsAddress",
+        "backend/internal/auth/service_test.go::TestThrottleDoesNotRevealWhetherUsernameExists"
+      ],
+      "story": "M0-E01-S12"
+    },
+    {
+      "id": "F-04",
+      "title": "An operation that used all its attempts wedged its resource, with no way to cancel it",
+      "severity": "medium",
+      "status": "fixed",
+      "tests": [
+        "backend/internal/operation/exhausted_test.go::TestExhaustedOperationBlocksItsSuccessorsUntilCancelled",
+        "backend/internal/api/cancel_route_test.go::TestCancelRouteIsAdminOnlyIdempotentAndTyped"
+      ],
+      "story": "M0-E01-S10"
+    },
+    {
+      "id": "F-05",
+      "title": "Replaying a Snapshot request with the same idempotency key returned a conflict",
+      "severity": "medium",
+      "status": "fixed",
+      "tests": [
+        "backend/internal/operation/replay_test.go::TestReplayReturnsTheFirstOperationWhateverTheServerGenerates",
+        "backend/internal/operation/replay_test.go::TestInputsForClearsTheSnapshotIDOnlyForASnapshot"
+      ],
+      "story": "M0-E01-S07"
+    },
+    {
+      "id": "F-06",
+      "title": "A viewer could read any managed VM's serial scrollback",
+      "severity": "medium",
+      "status": "fixed",
+      "tests": [
+        "backend/internal/api/serial_authority_test.go::TestSerialSnapshotNeedsTheOperatorRoleAndTheSwitch"
+      ],
+      "story": "M0-E01-S11"
+    },
+    {
+      "id": "F-07",
+      "title": "Off-host backup import had no size cap and was listed before it was verified",
+      "severity": "low",
+      "status": "fixed",
+      "tests": [
+        "backend/internal/backupstore/import_test.go::TestImportStopsAtTheDeclaredSize",
+        "backend/internal/backupstore/import_test.go::TestImportIsNotListedUntilVerified"
+      ],
+      "story": "M0-E01-S09"
+    },
+    {
+      "id": "F-08",
+      "title": "Roles are enforced only in the HTTP layer: a demoted or disabled user's queued operation still runs",
+      "severity": "low",
+      "status": "open",
+      "tests": [],
+      "story": "M0-E01-S21"
+    },
+    {
+      "id": "F-09",
+      "title": "Console hardening gaps: no per-session ticket cap, tickets not revoked on sign-out, no fail-closed on session-store errors, idle-timeout rule undecided",
+      "severity": "low",
+      "status": "open",
+      "tests": [],
+      "story": "M0-E01-S21"
+    },
+    {
+      "id": "F-10",
+      "title": "The audit trail lacked the user's identity and failed silently",
+      "severity": "low",
+      "status": "fixed",
+      "tests": [
+        "backend/internal/auth/audit_identity_test.go::TestAuditEventsNameTheUser",
+        "backend/internal/alerts/alerts_test.go::TestAuditWriteFailedAlert"
+      ],
+      "story": "M0-E01-S12"
+    },
+    {
+      "id": "F-11",
+      "title": "No general rate limit on authenticated reads",
+      "severity": "low",
+      "status": "open",
+      "tests": [],
+      "story": null
+    },
+    {
+      "id": "F-12",
+      "title": "Hypothetical volume and VM operation races (a concurrency test first)",
+      "severity": "low",
+      "status": "open",
+      "tests": [],
+      "story": null
+    }
+  ]
+}

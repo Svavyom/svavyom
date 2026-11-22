@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/pem"
+	"example.invalid/dedicatedcloud/backend/internal/guestshutdown"
 	"fmt"
 	"io"
 	"net"
@@ -141,26 +142,19 @@ func healthz(ctx context.Context, e *Env, base string) (code, detail string) {
 }
 
 // guestShutdownFinding reports whether the host would shut its guests down cleanly when it stops (DR-042 D6). Svavyom does not change libvirt-guests: it
-// says what it finds. A VM killed with the host risks its data, and a VM can only be started again after the boot if it was stopped cleanly. It is never
-// part of the verdict (Required is false).
+// says what it finds. A VM killed with the host risks its data. It is never part of the verdict (Required is false).
 func guestShutdownFinding(ctx context.Context, e *Env) Finding {
 	const id = "libvirt-guests"
-	howTo := "Enable it with: systemctl enable libvirt-guests, and set ON_SHUTDOWN=shutdown in /etc/default/libvirt-guests (docs: Using Svavyom, \"Start on host boot\")."
 	enabled, _ := e.Run.Run(ctx, "systemctl", "is-enabled", "--", "libvirt-guests.service")
-	if strings.TrimSpace(enabled) != "enabled" {
-		return Finding{ID: id, Status: Info, Code: "LIBVIRT_GUESTS_OFF", Detail: "libvirt-guests is not enabled: running VMs are killed when the host stops or reboots", Remediation: howTo}
-	}
 	mode := "shutdown"
 	if b, err := e.ReadFile(e.P("/etc/default/libvirt-guests")); err == nil {
-		for _, line := range strings.Split(string(b), "\n") {
-			line = strings.TrimSpace(line)
-			if v, ok := strings.CutPrefix(line, "ON_SHUTDOWN="); ok {
-				mode = strings.Trim(strings.TrimSpace(v), "\"'")
-			}
-		}
+		mode = guestshutdown.OnShutdown(string(b))
 	}
-	if mode != "shutdown" && mode != "suspend" {
-		return Finding{ID: id, Status: Info, Code: "LIBVIRT_GUESTS_MODE", Detail: "libvirt-guests is enabled but ON_SHUTDOWN is " + clean(mode) + ": running VMs are not shut down cleanly", Remediation: howTo}
+	switch guestshutdown.Judge(strings.TrimSpace(enabled) == "enabled", mode) {
+	case guestshutdown.CodeOff:
+		return Finding{ID: id, Status: Info, Code: "LIBVIRT_GUESTS_OFF", Detail: "libvirt-guests is not enabled: running VMs are killed when the host stops or reboots", Remediation: guestshutdown.Remediation}
+	case guestshutdown.CodeMode:
+		return Finding{ID: id, Status: Info, Code: "LIBVIRT_GUESTS_MODE", Detail: "libvirt-guests is enabled but ON_SHUTDOWN is " + clean(mode) + ": running VMs are not shut down cleanly", Remediation: guestshutdown.Remediation}
 	}
 	return Finding{ID: id, Status: Pass, Detail: "enabled, ON_SHUTDOWN=" + mode}
 }
