@@ -83,16 +83,24 @@
       "id": "F-08",
       "title": "Roles are enforced only in the HTTP layer: a demoted or disabled user's queued operation still runs",
       "severity": "low",
-      "status": "open",
-      "tests": [],
+      "status": "fixed",
+      "tests": [
+        "backend/internal/api/queued_cancel_test.go::TestDemotingOrDisablingAUserCancelsTheirQueuedOperationsAndOnlyTheirs",
+        "backend/internal/operation/lifecycle_test.go::TestCancelQueuedByCancelsOnlyThatUsersNotYetStartedOperations"
+      ],
       "story": "M0-E01-S21"
     },
     {
       "id": "F-09",
-      "title": "Console hardening gaps: no per-session ticket cap, tickets not revoked on sign-out, no fail-closed on session-store errors, idle-timeout rule undecided",
+      "title": "Console hardening gaps: a per-session ticket cap, tickets revoked at sign-out, an open console closed when the session store stops answering, and the idle-timeout rule (console traffic does not keep an idle session alive)",
       "severity": "low",
-      "status": "open",
-      "tests": [],
+      "status": "fixed",
+      "tests": [
+        "backend/internal/console/ticket_test.go::TestOneSessionCannotHoldMoreThanEightUnusedTicketsAndOthersCanStillMint",
+        "backend/internal/api/console_test.go::TestSigningOutRevokesTheSessionsConsoleTickets",
+        "backend/internal/api/console_test.go::TestAnOpenConsoleClosesWhenTheSessionStoreStopsAnswering",
+        "backend/internal/auth/service_test.go::TestCheckEnforcesExpiryButDoesNotExtendTheIdleWindow"
+      ],
       "story": "M0-E01-S21"
     },
     {
