@@ -594,6 +594,8 @@ def stage_media(h, a):
             rec("%s-result" % tag, False, "no result file came back")
             continue
         res = json.load(open(local))
+        if tag == "windows-service":  # the picture of the installer, if the run drew one (best effort: the criteria above are the evidence)
+            h.get("%s/%s-installer-screen.png" % (WORKDIR, a.run_id), os.path.join(a.out, "%s-installer-screen.png" % a.run_id))
         for x in res.get("results", []):
             rec("%s:%s" % (tag, x["id"]), x["status"] == "PASS", x.get("detail", ""))
         rec("%s-verdict" % tag, res.get("verdict") == "PASS", "verdict %s" % res.get("verdict"))
