@@ -2,7 +2,8 @@
 
 What changed in each release, in words an operator can use. The version is in `VERSION` and in `svavyom-ctl version`. Releases from **0.1.0-preview.16** are signed with the maintainer's Ed25519 key (fingerprint `247e9193c933b6fa`, `ci/sign/README.md`); earlier ones are not. An upgrade across a database change can only be rolled back with the pre-upgrade database copy (`INSTALLING.md`, section 5): the entries that say "database" below are those.
 
-## Unreleased
+## 0.1.0-rc.1 (2026-11-22) — the first release candidate
+The candidate for **0.1.0**. It adds the two features the owner made release requirements and closes the findings of the second security review that were open; 0.1.0 follows when the real-host proofs of this build are recorded and the maintainer signs it off. Upgrading from a preview: `INSTALLING.md`, section 5 (back up first; the database changed).
 * **Roles at run time and the console (DR-044).** Demoting or disabling a user cancels their queued operations that have not started (a failure to cancel stops the change). One session may hold at most eight unused console tickets, tickets are revoked at sign-out, an open console closes when the session store cannot be read three checks in a row, and an open console no longer keeps an idle session alive.
 * **System** shows when the host would not shut its guests down cleanly (`libvirt-guests`), and `svavyom-ctl status` shares the check.
 * **Certificates from Let's Encrypt.** `svavyom-ctl tls acme-issue` (rehearse with `--staging`, then the real one), `install --tls-acme`, a daily renewal timer that renews when a third of the lifetime is left, and `tls use-self-signed` to go back. The console reloads a new certificate without a restart. **System** shows the certificate, its renewal and the last result, and an alert `certificate_expiring` is raised from 14 days left. Phase 1 uses HTTP-01 (port 80) or TLS-ALPN-01 (port 443); DNS-01 and IP-address certificates are not included.
