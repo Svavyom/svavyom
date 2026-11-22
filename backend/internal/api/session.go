@@ -331,6 +331,22 @@ func (h *Handler) sessionByToken(ctx context.Context, token string) (s auth.Sess
 	return auth.Session{}, token, false, true
 }
 
+// sessionStillValid re-validates a session credential for a console that is already open. It does not record activity (DR-044 D3: an open console does not
+// keep an idle session alive) and tells a session that ended from a store that could not be consulted.
+func (h *Handler) sessionStillValid(ctx context.Context, token string) (ok, failed bool) {
+	if h.deps.Auth == nil {
+		return false, true
+	}
+	_, err := h.deps.Auth.Check(ctx, token)
+	switch {
+	case err == nil:
+		return true, false
+	case errors.Is(err, auth.ErrUnauthenticated):
+		return false, false
+	}
+	return false, true
+}
+
 // anonymousState answers for a caller without a session: a fresh pre-sign-in nonce cookie and its CSRF token (login
 // CSRF), and clears a stale session cookie.
 func (h *Handler) anonymousState(w http.ResponseWriter, r *http.Request, hadSessionCookie bool) {
@@ -451,6 +467,9 @@ func (h *Handler) signOut(w http.ResponseWriter, r *http.Request) {
 		if err := h.deps.Auth.SignOut(r.Context(), token); err != nil {
 			h.reject(w, categoryInternal)
 			return
+		}
+		if c := h.deps.Console; c != nil && c.Tickets != nil { // tickets of a session that ended are not left to expire (DR-044 D2)
+			c.Tickets.RevokeSession(token)
 		}
 	}
 	// Not signed in (or just signed out): the same idempotent answer, and a fresh pre-sign-in state.

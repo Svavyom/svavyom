@@ -1,6 +1,7 @@
 package console
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -84,9 +85,9 @@ func TestSessionRevocationAndBound(t *testing.T) {
 		t.Fatalf("another session's ticket must survive: %v", err)
 	}
 	for i := 0; i < maxTickets; i++ {
-		_, _, _ = ts.Mint("session-C", "web-1", KindSerial)
+		_, _, _ = ts.Mint(fmt.Sprintf("session-C%d", i/maxPerSession), "web-1", KindSerial) // several sessions fill the pool: one session alone is capped lower
 	}
-	if _, _, err := ts.Mint("session-C", "web-1", KindSerial); err != ErrBusy {
+	if _, _, err := ts.Mint("session-Z", "web-1", KindSerial); err != ErrBusy {
 		t.Fatalf("outstanding tickets are bounded: %v", err)
 	}
 }
@@ -95,7 +96,7 @@ func TestTicketsAreRandomAndNotStoredInTheClear(t *testing.T) {
 	ts, _ := newT()
 	seen := map[string]bool{}
 	for i := 0; i < 50; i++ {
-		tk, _, _ := ts.Mint("s", "web-1", KindSerial)
+		tk, _, _ := ts.Mint(fmt.Sprintf("s%d", i), "web-1", KindSerial)
 		if seen[tk] {
 			t.Fatal("duplicate ticket")
 		}
@@ -105,5 +106,53 @@ func TestTicketsAreRandomAndNotStoredInTheClear(t *testing.T) {
 				t.Fatal("ticket stored in the clear")
 			}
 		}
+	}
+}
+
+// DR-044 D2 (finding F-09): one session holds at most eight unused tickets, so it cannot use up the pool; another session can still mint; used and expired tickets do not
+// count; a session's tickets can be revoked as a whole.
+func TestOneSessionCannotHoldMoreThanEightUnusedTicketsAndOthersCanStillMint(t *testing.T) {
+	ts, clk := newT()
+	var first string
+	for i := 0; i < 8; i++ {
+		tk, _, err := ts.Mint("session-A", "web-1", KindSerial)
+		if err != nil {
+			t.Fatalf("ticket %d: %v", i, err)
+		}
+		if i == 0 {
+			first = tk
+		}
+	}
+	if _, _, err := ts.Mint("session-A", "web-1", KindSerial); err != ErrBusy {
+		t.Fatalf("the ninth: %v", err)
+	}
+	if _, _, err := ts.Mint("session-B", "web-1", KindSerial); err != nil {
+		t.Fatalf("another session is not starved: %v", err)
+	}
+	if err := ts.Redeem(first, "session-A", "web-1", KindSerial); err != nil {
+		t.Fatal(err)
+	}
+	if _, _, err := ts.Mint("session-A", "web-1", KindSerial); err != nil {
+		t.Fatalf("a used ticket no longer counts: %v", err)
+	}
+	if _, _, err := ts.Mint("session-A", "web-1", KindSerial); err != ErrBusy {
+		t.Fatalf("back at the cap: %v", err)
+	}
+	clk.advance(31 * time.Second)
+	if _, _, err := ts.Mint("session-A", "web-1", KindSerial); err != nil {
+		t.Fatalf("expired tickets no longer count: %v", err)
+	}
+}
+
+func TestRevokeSessionForgetsEverySessionTicketAndOnlyThatSessions(t *testing.T) {
+	ts, _ := newT()
+	a, _, _ := ts.Mint("session-A", "web-1", KindSerial)
+	b, _, _ := ts.Mint("session-B", "web-1", KindSerial)
+	ts.RevokeSession("session-A")
+	if err := ts.Redeem(a, "session-A", "web-1", KindSerial); err != ErrInvalid {
+		t.Fatalf("a revoked session's ticket is unknown: %v", err)
+	}
+	if err := ts.Redeem(b, "session-B", "web-1", KindSerial); err != nil {
+		t.Fatalf("another session's ticket stays good: %v", err)
 	}
 }
