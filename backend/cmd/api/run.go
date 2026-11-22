@@ -357,6 +357,7 @@ func serve(ctx context.Context, args []string, stderr io.Writer) int {
 	if tls {
 		deps.Certificate = certificateView(*cert, time.Now)
 	}
+	deps.HostFindings = guestFindings("/etc")
 	if *firewallStatus != "" {
 		deps.Firewall = func() []api.FirewallFinding {
 			r, ok := fwstatus.Read(os.ReadFile, *firewallStatus, time.Now(), 7*24*time.Hour)

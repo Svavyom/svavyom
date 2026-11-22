@@ -230,8 +230,12 @@ func (h *Handler) hostWithSystem(j hostJSON) hostJSON {
 }
 
 func (h *Handler) firewallFindings() []FirewallFinding {
-	if h.deps.Firewall == nil {
-		return nil
+	var out []FirewallFinding
+	if h.deps.Firewall != nil {
+		out = h.deps.Firewall()
 	}
-	return h.deps.Firewall()
+	if h.deps.HostFindings != nil {
+		out = append(out[:len(out):len(out)], h.deps.HostFindings()...)
+	}
+	return out
 }
