@@ -40,6 +40,8 @@ Contents: `bin/` (the seven binaries: `api`, `agent`, `mutation-supervisor`, `mu
 
 Verify any artifact with its own tool: `release-out/svavyom-<version>/bin/svavyom-ctl verify-artifact release-out/svavyom-<version>`.
 
+The release manifest (provenance, digests, the signing record, the gate and CI results, the blockers) is made from the files, not typed: `python3 tools/make_manifest.py --artifact release-out/svavyom-<version> --signatures SIGS --public-key ci/sign/release-signing-key.pub --gate-log FULL-GATE.log --ci-run RUN_URL --ci-conclusion success --docs-repo PATH_TO_REQUIREMENTS_REPO --out DIR` (`--browser-log`, `--archive` and `--ctl` add the browser tier, the archive digest and a verification). It refuses, with a typed finding and no output, when a digest, the signing record, the key fingerprint, the gate log, the CI result or a commit does not agree. The sign-off lines stay for a human.
+
 ## 5. Working on the code
 | Area | Where | Notes |
 |---|---|---|
