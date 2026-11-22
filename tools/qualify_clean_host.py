@@ -24,7 +24,7 @@ import time
 sys.dont_write_bytecode = True
 
 R = []
-STAGES = ["facts", "prepare", "install", "bootstrap", "verify", "image", "vm", "upgrade", "rollback", "reboot", "nightly", "firewall", "features", "acme"]
+STAGES = ["facts", "prepare", "install", "bootstrap", "verify", "image", "vm", "upgrade", "rollback", "reboot", "nightly", "firewall", "features", "acme", "media", "winupgrade"]
 HOST_RE = re.compile(r"^[0-9]{1,3}(\.[0-9]{1,3}){3}$")
 NAME_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9.-]{0,251}[A-Za-z0-9]$")
 RUN_RE = re.compile(r"^qr-[0-9]{8}-[0-9a-f]{6}$")
@@ -403,7 +403,7 @@ def rollback_target(backup_id):
     return m.group(1) if m else ""
 
 
-def stage_rollback(h, a):
+def stage_rollback(h, a, between=None):
     """Roll the installation back to the backup the last upgrade made, check it is the earlier version and healthy, then (with --artifact) upgrade again."""
     rc, ver = h.run("cat /usr/libexec/svavyom/VERSION", timeout=30)
     before = ver.strip()
@@ -427,6 +427,8 @@ def stage_rollback(h, a):
     rec("rollback-version", ver.strip() == want, "installed %s, expected %s" % (ver.strip(), want))
     ok = wait_for(lambda: "RESULT: PASS" in h.run("sudo /usr/libexec/svavyom/svavyom-ctl status", timeout=120)[1], 180, every=10)
     rec("services-and-health-after-rollback", bool(ok), "svavyom-ctl status: PASS" if ok else "status is not PASS 3 minutes after the rollback")
+    if between is not None:
+        between()
     if vm_setup(h, a):
         vm_phase(h, a, "check", prefix="rolled-back:", timeout=600)
         vm_teardown(h)
@@ -512,6 +514,138 @@ def stage_firewall(h, a):
     vm_teardown(h)
 
 
+# The installation media of the clean-host media and Windows runs (N7 and N10 of the 2026-11-14 findings plan): id, display name, distribution, version, minimum disk (GiB)
+# and the SHA-256 of the file. The files are found in --media-dir under "<sha256>.iso" (the layout of a Svavyom image store).
+MEDIA_SPECS = (
+    ("alpine-virt", "Alpine virt 3.24.2", "Alpine", "3.24.2", 2, "3ab424762af704b2c2a9e57df1dc37f982af260071504d977f2fb96822e7130b"),
+    ("windowsserver2019-iso", "Windows Server 2019 Eval", "Windows", "2019", 30, "6dae072e7f78f4ccab74a45341de0d6e2d45c39be25f1f5920a2ab4f51d7bcbb"),
+    ("virtio-win", "VirtIO Windows Drivers 0.1.302", "Fedora", "0.1.302", 2, "303f7ae40dad495d6ae474fdc571df58958a4dbc5c37a522d80f9a203867949d"),
+)
+MEDIA_STAGING = "/var/tmp/svq-media"
+KEEP_DIR = "/var/tmp/svq-winkeep"
+
+
+def catalog_has(catalog_text, image_id, sha):
+    """Whether the host's catalog.json already lists this image with this digest."""
+    try:
+        return any(i.get("id") == image_id and i.get("sha256") == sha for i in json.loads(catalog_text).get("images", []))
+    except (ValueError, AttributeError):
+        return False
+
+
+def media_register_command(spec, remote_path):
+    """The root command that registers one installation medium. Every value is quoted; the sources are this tool's own constants."""
+    image_id, display, dist, version, min_disk, _ = spec
+    return ("sudo /usr/libexec/svavyom/api register-image --media iso --source %s --id %s --display-name %s --distribution %s --version %s --min-disk-gib %d "
+            "--provision-config /etc/svavyom/provision.json" % (shlex.quote(remote_path), shlex.quote(image_id), shlex.quote(display), shlex.quote(dist), shlex.quote(version), min_disk))
+
+
+def sha256_file(path):
+    import hashlib
+    d = hashlib.sha256()
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(8 << 20), b""):
+            d.update(chunk)
+    return d.hexdigest()
+
+
+def service_run_command(script, run_id, extra):
+    """One of the on-host service qualification scripts (tools/qualify_media_service.py, tools/qualify_windows_service.py) against the installed API on loopback, over https."""
+    return ("cd %s && python3 %s --base https://127.0.0.1:8443 --user admin --password-file pw %s --out . --run-id %s; echo EXIT=$?" % (WORKDIR, script, extra, run_id))
+
+
+def stage_media(h, a):
+    """The installation media on the host (copied from --media-dir, digest-checked, registered), then the media run (two ISOs on one VM, eject by image id) and the Windows
+    profile run (a Windows VM from installation media with the driver ISO as the second medium, its graphical console drawing the installer) on the installed API."""
+    rc, cat = h.run("sudo cat /var/lib/svavyom/images/catalog.json", timeout=60)
+    for spec in MEDIA_SPECS:
+        image_id, sha = spec[0], spec[5]
+        if catalog_has(cat, image_id, sha):
+            rec("media-%s-registered" % image_id, True, "already in the host's catalog with this digest")
+            continue
+        local = os.path.join(a.media_dir, sha + ".iso")
+        if not os.path.isfile(local) or sha256_file(local) != sha:
+            rec("media-%s-registered" % image_id, False, "%s is missing or its SHA-256 is not the expected one" % os.path.basename(local))
+            return
+        remote = "%s/%s.iso" % (MEDIA_STAGING, sha)
+        h.run("sudo rm -rf %s && install -d -m 0700 %s" % (MEDIA_STAGING, MEDIA_STAGING), timeout=60)
+        prc, pout = h.put(local, remote, timeout=7200)
+        _, rsha = h.run("sha256sum %s | cut -d' ' -f1" % remote, timeout=1800)
+        ok = prc == 0 and rsha.strip() == sha
+        if not ok:
+            rec("media-%s-registered" % image_id, False, "the copy failed or the digest on the host differs: %s" % (pout or rsha)[-120:])
+            return
+        rc, out = h.run(media_register_command(spec, remote) + "; echo EXIT=$?", timeout=1800)
+        h.run("sudo rm -rf %s" % MEDIA_STAGING, timeout=120)
+        rec("media-%s-registered" % image_id, "EXIT=0" in out, "registered with its digest" if "EXIT=0" in out else out[-200:])
+        if "EXIT=0" not in out:
+            return
+    if not vm_setup(h, a):
+        return
+    here = os.path.dirname(os.path.abspath(__file__))
+    for name in ("qualify_graphics.py", "qualify_media_service.py", "qualify_windows_service.py"):
+        h.put(os.path.join(here, name), "%s/%s" % (WORKDIR, name))
+    for script, extra, tag in (("qualify_media_service.py", "--boot-image alpine-virt --data-image virtio-win", "media-service"),
+                               ("qualify_windows_service.py", "--image windowsserver2019-iso --driver-image virtio-win", "windows-service")):
+        h.run(service_run_command(script, a.run_id, extra), timeout=3600)
+        local = os.path.join(a.out, "%s-%s.json" % (a.run_id, tag))
+        grc, _ = h.get("%s/%s-%s.json" % (WORKDIR, a.run_id, tag), local)
+        if grc != 0 or not os.path.isfile(local):
+            rec("%s-result" % tag, False, "no result file came back")
+            continue
+        res = json.load(open(local))
+        for x in res.get("results", []):
+            rec("%s:%s" % (tag, x["id"]), x["status"] == "PASS", x.get("detail", ""))
+        rec("%s-verdict" % tag, res.get("verdict") == "PASS", "verdict %s" % res.get("verdict"))
+    vm_teardown(h)
+
+
+def winkeep_setup(h, a):
+    """The Windows keep-running checker, its client and the administrator's password in a private directory that the rollback's own set-up does not wipe."""
+    pw_path = os.path.join(a.out, "%s-admin-password" % a.run_id)
+    if not os.path.isfile(pw_path):
+        rec("admin-password", False, "no password file from the bootstrap stage of this run")
+        return False
+    here = os.path.dirname(os.path.abspath(__file__))
+    h.run("sudo rm -rf %s && install -d -m 0700 %s" % (KEEP_DIR, KEEP_DIR), timeout=60)
+    h.run("umask 077; cat > %s/pw" % KEEP_DIR, timeout=30, stdin=open(pw_path).read().strip() + "\n")
+    ok = all(h.put(os.path.join(here, n), "%s/%s" % (KEEP_DIR, n))[0] == 0 for n in ("qualify_graphics.py", "qualify_winkeep.py"))
+    return rec("winkeep-copied", ok, "the keep-running checker is on the host")
+
+
+def winkeep_phase(h, a, phase, prefix):
+    cmd = ("cd %s && python3 qualify_winkeep.py --base https://127.0.0.1:8443 --user admin --password-file pw --image windowsserver2019-iso --run-id %s --out . --phase %s; echo EXIT=$?"
+           % (KEEP_DIR, a.run_id, phase))
+    h.run(cmd, timeout=1800)
+    local = os.path.join(a.out, "%s-winkeep-%s.json" % (a.run_id, phase))
+    grc, _ = h.get("%s/%s-winkeep-%s.json" % (KEEP_DIR, a.run_id, phase), local)
+    if grc != 0 or not os.path.isfile(local):
+        rec(prefix + "result", False, "no result file came back (phase %s)" % phase)
+        return False
+    ok = True
+    for x in json.load(open(local)).get("results", []):
+        ok = rec(prefix + x["id"], x["status"] == "PASS", x.get("detail", "")) and ok
+    return ok
+
+
+def stage_winupgrade(h, a):
+    """N10: a RUNNING Windows VM through a rollback and an upgrade of Svavyom. The VM is started from installation media (the installer is running), the installation is rolled
+    back to the previous release with the database copy and upgraded again, and after each step the VM must still be running in the very QEMU process it started in."""
+    if not (a.artifact and a.restore_db):
+        rec("winupgrade-arguments", False, "needs --artifact (the version to upgrade to again) and --restore-db (the rollback past a schema change)")
+        return
+    if not winkeep_setup(h, a):
+        return
+    try:
+        if not winkeep_phase(h, a, "start", "win:"):
+            return
+        stage_rollback(h, a, between=lambda: winkeep_phase(h, a, "check", "after-rollback:"))
+        winkeep_phase(h, a, "check", "after-upgrade:")
+    finally:
+        winkeep_phase(h, a, "stop", "win:")
+        h.run("shred -u %s/pw 2>/dev/null; rm -rf %s" % (KEEP_DIR, KEEP_DIR), timeout=60)
+
+
 CTL = "sudo /usr/libexec/svavyom/svavyom-ctl"
 
 
@@ -565,7 +699,7 @@ def stage_acme(h, a):
             h.run("sudo ufw delete allow 80/tcp", timeout=60)
 
 
-FUNCS = {"facts": stage_facts, "prepare": stage_prepare, "install": stage_install, "bootstrap": stage_bootstrap, "verify": stage_verify, "image": stage_image, "vm": stage_vm, "upgrade": stage_upgrade, "rollback": stage_rollback, "reboot": stage_reboot, "nightly": stage_nightly, "firewall": stage_firewall, "features": stage_features, "acme": stage_acme}
+FUNCS = {"facts": stage_facts, "prepare": stage_prepare, "install": stage_install, "bootstrap": stage_bootstrap, "verify": stage_verify, "image": stage_image, "vm": stage_vm, "upgrade": stage_upgrade, "rollback": stage_rollback, "reboot": stage_reboot, "nightly": stage_nightly, "firewall": stage_firewall, "features": stage_features, "acme": stage_acme, "media": stage_media, "winupgrade": stage_winupgrade}
 
 
 def validate(a):
@@ -584,6 +718,8 @@ def validate(a):
         out.append("--nightly must be a time of day written HH:MM")
     if a.stage == "install" and not (a.artifact and os.path.isfile(os.path.join(a.artifact, "MANIFEST.json"))):
         out.append("--artifact must be a release artifact directory")
+    if a.stage == "media" and not (getattr(a, "media_dir", "") and os.path.isdir(a.media_dir)):
+        out.append("--media-dir must be a directory with the installation media")
     if a.stage == "acme":
         if not NAME_RE.fullmatch(getattr(a, "acme_name", "") or ""):
             out.append("--acme-name must be the public DNS name that points at the host")
@@ -605,6 +741,7 @@ def main(argv=None):
     ap.add_argument("--public-key", default="")
     ap.add_argument("--tls-name", required=True, help="the host name the self-signed certificate is made for")
     ap.add_argument("--listen", default="0.0.0.0:8443")
+    ap.add_argument("--media-dir", default="", help="media stage: a directory holding the installation media as <sha256>.iso (the layout of a Svavyom image store)")
     ap.add_argument("--acme-name", default="", help="acme stage: a public DNS-only name that points at the host")
     ap.add_argument("--acme-email", default="", help="acme stage: the contact address given to Let's Encrypt")
     ap.add_argument("--out", required=True)
