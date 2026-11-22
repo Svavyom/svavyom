@@ -144,3 +144,40 @@ func TestForceOffSupersedesAStuckStop(t *testing.T) {
 		t.Fatal("force off happened without a Force Off operation")
 	}
 }
+
+// DR-044 D1 (finding F-08): the not-yet-started operations of one user are cancelled with an audit event that names who changed the user; a running operation is
+// not recalled; another user's operation is untouched; a second call finds nothing to do.
+func TestCancelQueuedByCancelsOnlyThatUsersNotYetStartedOperations(t *testing.T) {
+	e := newEnv(t)
+	own := func(name string, p string) Operation { return mustSubmit(t, e.m, req(Create, name, p)) }
+	a1, a2 := own("vm-a1", "k1"), own("vm-a2", "k2")
+	b, err := e.m.Submit(Actor{ID: "bob"}, Request{ProjectID: "p2", Type: Create, Kind: KindVM, ResourceID: "vm-b", IdempotencyKey: "k3"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	running, _, _ := e.store.Get(a2.ID)
+	running.Status = Running
+	if _, err := e.store.Update(running); err != nil {
+		t.Fatal(err)
+	}
+	e.audit.events = nil
+	done, err := e.m.CancelQueuedBy("alice", "root-admin", "role_changed")
+	if err != nil || len(done) != 1 || done[0] != a1.ID {
+		t.Fatalf("%v %v", done, err)
+	}
+	if got, _, _ := e.store.Get(a1.ID); got.Status != Cancelled {
+		t.Fatalf("a1: %s", got.Status)
+	}
+	if got, _, _ := e.store.Get(a2.ID); got.Status != Running {
+		t.Fatalf("a running operation is not recalled: %s", got.Status)
+	}
+	if got, _, _ := e.store.Get(b.ID); got.Status != Pending {
+		t.Fatalf("another user's operation: %s", got.Status)
+	}
+	if len(e.audit.events) != 1 || e.audit.events[0].Actor != "root-admin" || e.audit.events[0].Event != "operation.cancel_actor_changed" || e.audit.events[0].ErrorCategory != "role_changed" {
+		t.Fatalf("%+v", e.audit.events)
+	}
+	if again, err := e.m.CancelQueuedBy("alice", "root-admin", "role_changed"); err != nil || len(again) != 0 {
+		t.Fatalf("nothing left to cancel: %v %v", again, err)
+	}
+}

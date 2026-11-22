@@ -359,6 +359,33 @@ func (m *Manager) Cancel(actor Actor, id string) (Operation, error) {
 	return saved, nil
 }
 
+// CancelQueuedBy cancels every operation that user requested and that has not started on the host (pending or retryable_failure): the user was demoted
+// or disabled, so work queued under the authority they no longer have must not run (DR-044 D1, finding F-08). An operation already running is not recalled
+// (undoing half a change is worse than finishing it); the audit event of each cancellation names who changed the user and why. It returns the ids it cancelled.
+// An operation that moved on between the listing and the cancel (the worker started it) is skipped, not failed.
+func (m *Manager) CancelQueuedBy(user, changedBy, reason string) ([]string, error) {
+	open, err := m.store.NonTerminal()
+	if err != nil {
+		return nil, fail(storeCategory(err))
+	}
+	var done []string
+	for _, op := range open {
+		if op.RequestedBy != user || (op.Status != Pending && op.Status != RetryableFailure) {
+			continue
+		}
+		op.Status = Cancelled
+		saved, err := m.save(op, changedBy, "operation.cancel_actor_changed", reason)
+		if err != nil {
+			if CategoryOf(err) == CatConflict {
+				continue
+			}
+			return done, err
+		}
+		done = append(done, saved.ID)
+	}
+	return done, nil
+}
+
 // storeCategory maps a store failure to an operation category. A conflict (CAS lost, terminal record) stays a
 // conflict and a store that already classified its failure keeps it; anything else is unavailable. Raw driver
 // errors never leave this package.

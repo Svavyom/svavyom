@@ -199,9 +199,18 @@ func (h *Handler) setUserRole(w http.ResponseWriter, r *http.Request) {
 		h.userError(w, err)
 		return
 	}
+	before := h.userRole(r.Context(), name)
+	demotion := before != "" && !role.AtLeast(before) // what the person queued under the old role does not run (DR-044 D1)
+	if demotion && !h.cancelQueuedBy(name, sess.Username, "role_changed") {
+		h.reject(w, categoryUnavailable) // fail closed: the role is left as it was
+		return
+	}
 	if err := h.deps.Auth.SetRole(r.Context(), name, role); err != nil {
 		h.userError(w, err)
 		return
+	}
+	if demotion {
+		h.cancelQueuedBy(name, sess.Username, "role_changed") // anything submitted between the first pass and the change
 	}
 	h.replyUser(w, r, name, sess)
 }
@@ -224,9 +233,16 @@ func (h *Handler) setUserDisabled(w http.ResponseWriter, r *http.Request, disabl
 		h.reject(w, categoryValidation)
 		return
 	}
+	if disable && !h.cancelQueuedBy(name, sess.Username, "user_disabled") {
+		h.reject(w, categoryUnavailable) // fail closed: the user is left as they were
+		return
+	}
 	if err := h.deps.Auth.SetDisabled(r.Context(), name, disable); err != nil {
 		h.userError(w, err)
 		return
+	}
+	if disable {
+		h.cancelQueuedBy(name, sess.Username, "user_disabled")
 	}
 	h.replyUser(w, r, name, sess)
 }
@@ -334,4 +350,29 @@ func (h *Handler) mustChangeGate(w http.ResponseWriter, r *http.Request) bool {
 	}
 	h.reject(w, categoryForbidden)
 	return false
+}
+
+// userRole is the current role of a user, or "" when it cannot be read.
+func (h *Handler) userRole(ctx context.Context, name string) auth.Role {
+	users, err := h.deps.Auth.ListUsers(ctx)
+	if err != nil {
+		return ""
+	}
+	for _, u := range users {
+		if u.Username == name {
+			return u.Role
+		}
+	}
+	return ""
+}
+
+// cancelQueuedBy cancels the not-yet-started operations of a user who is being demoted or disabled (DR-044 D1) and reports whether it could. It is called before the
+// change (a failure stops the change: fail closed) and again after it, for what was submitted in between.
+func (h *Handler) cancelQueuedBy(user, by, reason string) bool {
+	c := h.deps.Creation
+	if c == nil || c.Ops == nil {
+		return true // no operations on this installation: nothing is queued
+	}
+	_, err := c.Ops.CancelQueuedBy(user, by, reason)
+	return err == nil
 }
