@@ -9,7 +9,10 @@ export default defineConfig({
   testMatch: /.*\.spec\.ts/,
   fullyParallel: false,
   workers: 1,
-  retries: 0,
+  // N6 of the 2026-11-14 findings plan: three CI runs in a row had a different scenario time out once under load (waiting for text that did not appear in time; the cause under load is not yet known),
+  // each passing on a re-run and 80 of 80 times locally. A scenario gets two more attempts; the list reporter names every one that needed them ("flaky"), so the
+  // flakes stay visible and countable, and a real regression fails all three attempts. tests/unit_fe_browser_flake.py pins this number.
+  retries: 2,
   forbidOnly: true,
   timeout: 60000,
   reporter: [["list"]],

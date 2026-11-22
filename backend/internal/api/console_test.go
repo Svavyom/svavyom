@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"encoding/binary"
 	"encoding/json"
+	"example.invalid/dedicatedcloud/backend/internal/sqlitedb"
 	"io"
 	"net"
 	"net/http"
@@ -465,4 +466,54 @@ func TestConsoleRoutesAreClosedWithoutABroker(t *testing.T) {
 		}
 	}
 	_ = http.StatusOK
+}
+
+// DR-044 D2 (finding F-09): signing out forgets the session's unused console tickets.
+func TestSigningOutRevokesTheSessionsConsoleTickets(t *testing.T) {
+	c := newConsRig(t, true)
+	tk, rep := c.ticket("web-1")
+	if rep.status != 200 || tk == "" {
+		t.Fatalf("%d %s", rep.status, rep.body)
+	}
+	token := strings.TrimPrefix(c.sessionCookie(), "svavyom_session=")
+	if so := c.b.signOut(); so.status != 200 {
+		t.Fatal(so.status)
+	}
+	if err := c.tickets.Redeem(tk, token, "web-1", console.KindSerial); err != console.ErrInvalid {
+		t.Fatalf("the ticket must be gone, not merely unusable: %v", err)
+	}
+}
+
+// DR-044 D2: a session store that cannot answer three checks in a row ends an open console (fail closed) instead of leaving it unwatched.
+func TestAnOpenConsoleClosesWhenTheSessionStoreStopsAnswering(t *testing.T) {
+	c := newConsRig(t, true)
+	w := c.open("web-1")
+	w.readUntil(t, "login: ")
+	db, err := sqlitedb.Open(c.path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+	if _, err := db.Exec(`DROP TABLE sessions`); err != nil { // the store now fails every lookup
+		t.Fatal(err)
+	}
+	_ = w.c.SetDeadline(time.Now().Add(5 * time.Second))
+	for {
+		op, _, err := w.frame()
+		if err != nil || op == 0x8 {
+			break
+		}
+	}
+	found := false
+	for i := 0; i < 100 && !found; i++ {
+		for _, a := range c.auditEvents() {
+			if a.Event == "console.closed" && a.Outcome == "session_unavailable" {
+				found = true
+			}
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+	if !found {
+		t.Fatalf("no session_unavailable close: %+v", c.auditEvents())
+	}
 }
