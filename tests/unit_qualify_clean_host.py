@@ -108,7 +108,7 @@ class ImageAndVmStages(unittest.TestCase):
         self.assertEqual(argv[-2:], ["--enable-nightly-boot", "03:30"])
 
     def test_the_stage_names(self):
-        self.assertEqual(q.STAGES, ["facts", "prepare", "install", "bootstrap", "verify", "image", "vm", "upgrade", "rollback", "reboot", "nightly", "firewall", "features", "acme"])
+        self.assertEqual(q.STAGES, ["facts", "prepare", "install", "bootstrap", "verify", "image", "vm", "upgrade", "rollback", "reboot", "nightly", "firewall", "features", "acme", "media", "winupgrade"])
         self.assertEqual(set(q.STAGES), set(q.FUNCS))
 
 
